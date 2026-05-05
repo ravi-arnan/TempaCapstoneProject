@@ -1,6 +1,16 @@
-# Sistem Deteksi Tingkat Pemahaman Mahasiswa Berdasarkan Hasil Kuis Berbasis Data
+<p align="center">
+  <img src="assets/logo.svg" alt="Asahlagi logo" width="240">
+</p>
 
-A web-based educational application that helps users measure their understanding after studying text-based learning materials. The system converts learning material into a quiz, evaluates the quiz result, then provides understanding level, insight, recommendation, and simple visual feedback. [file:42]
+# Asahlagi
+
+> *Asah lagi sampai paham.*
+
+**Asahlagi** is a web-based educational tool that converts learning material into an automatic quiz, evaluates the result, then surfaces an understanding level, insight, and learning recommendation — so students can measure their grasp of a topic instead of guessing it. The name itself encodes the loop: read, asah, asah lagi, sampai paham.
+
+> See [`BRAND.md`](BRAND.md) for the full brand identity (name, voice, copy library) and [`DESIGN.md`](DESIGN.md) for visual design tokens.
+
+**Formal project title (academic submission)**: *Sistem Deteksi Tingkat Pemahaman Mahasiswa Berdasarkan Hasil Kuis Berbasis Data*
 
 ## Theme
 
@@ -8,7 +18,7 @@ A web-based educational application that helps users measure their understanding
 
 ## Team
 
-**Team ID:** TP-G005 [file:42]
+**Team ID:** TP-G005 — Capstone for the **Tempa** learning program [file:42]
 
 - Audry Nabila Anastasya — Backend Quiz Generator [file:42]
 - Ariq Marwan Permana — Backend Data & Analisis [file:42]

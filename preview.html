@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Design System Preview — TempaCapstoneProject</title>
+<title>Asahlagi · Design System Preview</title>
+<link rel="icon" type="image/svg+xml" href="frontend/public/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
@@ -403,14 +404,14 @@
     align-items: center;
     gap: 8px;
     font-weight: 500;
-    font-size: 15px;
+    font-size: 16px;
     color: var(--text-primary);
+    letter-spacing: -0.3px;
   }
   .nav-brand-icon {
-    width: 18px;
-    height: 18px;
-    border-radius: 4px;
-    background: var(--brand-green);
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
   }
   .nav-links {
     display: flex;
@@ -625,8 +626,8 @@
 </div>
 
 <header class="header">
-  <h1>Design System Preview</h1>
-  <p>TempaCapstoneProject — TP-G005 · Emerald base · Toggle the theme on the top-right to switch between Light &amp; Dark</p>
+  <h1>Asahlagi · Design System Preview</h1>
+  <p>Capstone TP-G005 · <em>Asah lagi sampai paham.</em> · Emerald base · Toggle the theme on the top-right to switch between Light &amp; Dark</p>
 </header>
 
 <main class="container">
@@ -730,7 +731,7 @@
     <h2>4. Buttons</h2>
     <p class="subhead">Primary pill (emerald-branded) · Secondary · Ghost · Destructive.</p>
     <div class="btn-row">
-      <button class="btn btn-primary">Mulai Kuis</button>
+      <button class="btn btn-primary">Mulai Mengasah</button>
       <button class="btn btn-secondary">Lihat Materi</button>
       <button class="btn btn-ghost">Batal</button>
       <button class="btn btn-destructive">Reset</button>
@@ -763,13 +764,18 @@
     <h2>6. Navigation</h2>
     <p class="subhead">Sticky header with brand identity, links, and primary CTA.</p>
     <nav class="nav">
-      <div class="nav-brand"><div class="nav-brand-icon"></div>Tempa</div>
+      <div class="nav-brand">
+        <svg class="nav-brand-icon" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path fill="#3ecf8e" d="M32 8 L56 56 L43 56 L32 30 L21 56 L8 56 Z M20 38 L44 38 L44 44 L20 44 Z"/>
+        </svg>
+        asahlagi
+      </div>
       <div class="nav-links">
         <a href="#">Beranda</a>
         <a href="#">Materi</a>
         <a href="#">Riwayat</a>
         <a href="#">Tentang</a>
-        <button class="btn btn-primary btn-small">Mulai Kuis</button>
+        <button class="btn btn-primary btn-small">Mulai Mengasah</button>
       </div>
     </nav>
   </section>
@@ -847,7 +853,7 @@
     </div>
   </section>
 
-  <p class="footer-note">PREVIEW · TEMPACAPSTONEPROJECT · TP-G005 · NOT FOR PRODUCTION</p>
+  <p class="footer-note">PREVIEW · ASAHLAGI · TP-G005 · NOT FOR PRODUCTION</p>
 
 </main>
 
