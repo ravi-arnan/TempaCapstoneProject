@@ -23,7 +23,7 @@ export function Logo({ variant = "full", className }: LogoProps) {
       >
         <path
           fill="#3ecf8e"
-          d="M32 8 L56 56 L43 56 L32 30 L21 56 L8 56 Z M20 38 L44 38 L44 44 L20 44 Z"
+          d="M32 8 L56 56 L43 56 L32 30 L21 56 L8 56 Z M19 47 L43 32 L46 37 L22 52 Z"
         />
       </svg>
     );
@@ -44,7 +44,7 @@ export function Logo({ variant = "full", className }: LogoProps) {
       >
         <path
           fill="#3ecf8e"
-          d="M32 8 L56 56 L43 56 L32 30 L21 56 L8 56 Z M20 38 L44 38 L44 44 L20 44 Z"
+          d="M32 8 L56 56 L43 56 L32 30 L21 56 L8 56 Z M19 47 L43 32 L46 37 L22 52 Z"
         />
       </svg>
       <span className="text-[17px] text-text-primary">asahlagi</span>

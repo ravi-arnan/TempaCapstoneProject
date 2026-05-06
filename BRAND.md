@@ -94,14 +94,15 @@ All logo assets live in `assets/`:
 
 The icon is a **stylized letter "A"** (the first letter of _Asahlagi_), rendered as:
 - A solid emerald chevron forming the outer angled strokes
-- A horizontal bar forming the crossbar in negative space
+- A **diagonal slash** crossbar (going up-right) — replaces the conventional horizontal bar of the letter A
 
-Visually it reads as both:
+Visually it reads as:
 - The letter "A" (first letter of "Asahlagi")
 - An upward arrow / mountain peak (suggesting progression, sharpening, rising)
+- A **checkmark integrated into the letter** — the diagonal slash reads like a tick of approval / sharpness / completion
 - The tip of a sharpened blade (literal metaphor for "asah")
 
-This triple-reading is intentional: the brand is rooted in education progression, and the metaphor is rooted in the etymology of the name.
+The slash crossbar is the **brand-distinguishing detail**. A regular horizontal bar would make the mark generic; the diagonal slash gives it personality and reinforces the brand themes of forward motion and sharpening.
 
 ### Logo variants
 
