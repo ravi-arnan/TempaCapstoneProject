@@ -21,18 +21,22 @@ Sebelum Week 1 coding dimulai, **semua scaffolding sudah selesai**. Setiap orang
 
 ### ✅ Sudah selesai
 - Repo + GitHub setup (https://github.com/ravi-arnan/TempaCapstoneProject)
-- Dokumentasi planning lengkap: `CLAUDE.md`, `PRD.md`, `README.md`, `DESIGN.md`, `API.md`, `ARCHITECTURE.md`, `BRAND.md`
+- Dokumentasi planning lengkap: `CLAUDE.md`, `PRD.md`, `README.md`, `DESIGN.md`, `API.md`, `ARCHITECTURE.md`, `BRAND.md`, `ML.md`
 - Frontend scaffolding (Vite + React + TS + Tailwind): pages, components, hooks, types, API client, i18n labels, theme system (light/dark)
 - Backend scaffolding (FastAPI): main app, CORS + exception handler, routes, schemas (public + internal), in-memory storage, submit coordinator
+- ML layer scaffolding: `backend/ml/{generator,classifier}/` dengan inference stubs + training script templates
 - Brand identity: nama "Asahlagi", logo SVG (V1 slash-crossbar), favicon
-- Placeholder implementations untuk **3 service** yang masih menunggu implementasi proper:
-  - `quiz_generator.py` (Audry's stub — fill-in-the-blank rule-based)
-  - `quiz_evaluator.py` (Ariq's stub — standard scoring)
-  - `understanding_classifier.py` (Desta's stub — rules dari PRD §15)
+- Rule-based fallback implementations (jadi safety net kalau ML/DL fail):
+  - `quiz_generator.py` — fallback rule-based fill-in-the-blank
+  - `quiz_evaluator.py` — pure scoring logic (NO ML — tetap rule-based, ini benar)
+  - `understanding_classifier.py` — fallback rule-based threshold
 - Base templates di `insight_engine.py` dan `recommendation_engine.py` dari BRAND.md §7.6-7.7
 
-### ⏳ Yang harus dikerjakan tim
-Replace placeholder implementations dengan logic proper masing-masing. Detail di section "Task Breakdown Per Member".
+### ⏳ Yang harus dikerjakan tim — UPDATED untuk scope ML/DL
+- **Audry**: implement `ml/generator/inference.py` + train fine-tuned IndoT5 di Colab + push ke HF Hub
+- **Ariq**: refine `quiz_evaluator.py` (tetap rule-based, NO ML wajib — bonus opsi: TF-IDF analytics)
+- **Desta**: implement `ml/classifier/{data_generation,train,inference}.py` + 3 modules (classifier wrapper, insight, recommendation)
+- **Ravi**: polish frontend, terutama loading state untuk 15-40s wait saat generate quiz
 
 ---
 
@@ -78,19 +82,22 @@ Replace placeholder implementations dengan logic proper masing-masing. Detail di
 
 ---
 
-## 🛤️ Critical Path
+## 🛤️ Critical Path (UPDATED untuk ML/DL scope)
 
 ```
-Week 1     Week 2          Week 3          Week 4         Week 5
-─────────  ─────────       ─────────       ─────────      ─────────
-Setup &    AUDRY ⭐         ARIQ ⭐          DESTA ⭐        Polish
-Sync       quiz_generator  quiz_evaluator  classifier     +
-                                            insight        Demo
-                                            recommendation
-                ↓               ↓               ↓
-            All review      Desta start     All integrate
-                            mendekati impl
+Week 1          Week 2              Week 3                Week 4              Week 5
+─────────       ─────────           ─────────             ─────────           ─────────
+Setup &         AUDRY ⭐ (DL)        ARIQ ⭐ + DESTA ⭐ (ML) DESTA ⭐ (Templates) Polish + Demo
+ML prep         IndoT5 fine-tune    Evaluator + sklearn   Insight + recommend
+                in Colab            Random Forest         sub-conditions
+                push to HF Hub      train .pkl artifact
+                + integration       + integration
 ```
+
+### Critical path slip rules
+- Audry's DL training (Week 2) is the **highest-risk slot** — kalau Colab issue / quality kurang, fallback ke pretrained tanpa fine-tune (still DL, just lower quality).
+- Desta's ML training (Week 3) is **lower-risk** — sklearn cepat, synthetic data full controlled.
+- Frontend (Ravi) tidak di critical path tapi loading state UX harus siap di Week 2 ketika DL pertama kali muncul.
 
 **Aturan critical path**:
 - Kalau **main owner minggu ini meleset**, downstream geser. Kabari secepatnya kalau bakal late.
@@ -101,75 +108,82 @@ Sync       quiz_generator  quiz_evaluator  classifier     +
 
 ## Milestone Mingguan
 
-### Minggu 1 — Setup & Sync (semua orang aktif)
+### Minggu 1 — Setup & Sync + ML Prep (semua orang aktif)
 
-**Goal**: semua orang setup environment, baca dokumentasi, sepakat soal `EvaluationResult` shape.
+**Goal**: semua orang setup environment, baca dokumentasi, sepakat soal `EvaluationResult` shape, dan ML setup ready.
 
 | Owner | Task |
 |---|---|
-| All | Clone repo, install dependencies (frontend + backend), run dev server lokal |
-| All | Baca `API.md` (HTTP contract) + `ARCHITECTURE.md` §6 (internal types) + `ARCHITECTURE.md` §10 (dependency graph) |
+| All | Clone repo, install dependencies (frontend + backend + ml), run dev server lokal |
+| All | Baca `API.md` (HTTP contract) + `ARCHITECTURE.md` §5b-§6 + `ML.md` (ML strategy) |
 | All | Baca section spesifik masing-masing di `BRAND.md` §7 (copy library) |
-| All | **Sign-off**: tick checklist di `API.md` §12, `ARCHITECTURE.md` §14, `BRAND.md` §11 |
+| All | **Sign-off**: tick checklist di `API.md` §12, `ARCHITECTURE.md` §14, `BRAND.md` §11, `ML.md` §9 |
 | All | **Lock `EvaluationResult` shape** — kalau ada usulan perubahan, raise di sync meeting Week 1 |
-| Audry | Riset approach quiz generator. Siapkan 2-3 sampel materi belajar untuk testing (fotosintesis, fotografi, ekonomi mikro, dll). |
-| Ariq | Riset apakah perlu pandas/scikit-learn. Sketch pseudocode evaluator + test cases. |
-| Desta | List edge cases klasifikasi (boundary score 79% vs 80%, all unanswered, dll). Refine template insight & recommendation berdasarkan BRAND.md §7.6-7.7. |
-| Ravi | Polish frontend: tambah loading states, error toast, mobile responsive verification. |
+| **Audry** | Daftar akun **Hugging Face** + generate access token. Test login dari Colab. Familiarize dengan Transformers quickstart. Siapkan 2-3 sampel materi (fotosintesis, fotografi, ekonomi mikro). |
+| Ariq | Sketch pseudocode evaluator + test cases. Decide pandas vs native Python. |
+| **Desta** | Familiarize dengan sklearn Random Forest. Run `python -m ml.classifier.train` di local untuk test pipeline (placeholder akan dibuat). |
+| Ravi | Polish frontend: **add loading state untuk 15-40s wait** saat generate quiz. Progress messages sesuai BRAND.md §7.3 ("Sedang menyusun pertanyaan..."). Mobile responsive. |
 
 ---
 
-### Minggu 2 — Audry's Week ⭐
+### Minggu 2 — Audry's Week ⭐ (DL training + integration)
 
-**Goal**: `quiz_generator.py` selesai diimplementasi + di-merge ke `main`.
+**Goal**: Fine-tuned IndoT5 model published to HF Hub + integrated dengan backend.
 
 | Owner | Task |
 |---|---|
-| **Audry** ⭐ | Implementasi quiz_generator — replace placeholder dengan logic kamu. Output: `QuizInternal` per ARCHITECTURE.md §6.1-6.2. |
-| **Audry** | Tulis unit tests di `backend/tests/test_quiz_generator.py` (minimal 3-5 cases: normal text, empty, very short, very long, edge cases). |
-| **Audry** | Daily progress update di chat. |
-| **Audry** | Open PR `feat/audry-quiz-generator` → review by 1+ anggota → merge. |
+| **Audry** ⭐ | **Day 1-2**: Buka Colab notebook `train_quiz_generator.ipynb`. Run cells untuk download TyDiQA-id, set up training. |
+| **Audry** ⭐ | **Day 3-4**: Run fine-tuning (3-5 epoch, ~1-2 jam runtime di Colab T4). Manual review 20-30 generated questions dari validation set. Tweak hyperparameter kalau quality kurang. |
+| **Audry** ⭐ | **Day 5**: Push fine-tuned model ke HF Hub: `audry-asahlagi/indot5-quizgen-asahlagi`. Verify accessible publicly. |
+| **Audry** ⭐ | **Day 6-7**: Implement `ml/generator/inference.py` — load from HF Hub, generate questions + distractors. Update `app/services/quiz_generator.py` thin wrapper. Add fallback ke rule-based. |
+| **Audry** ⭐ | Daily progress update di chat (Hari ini training X, BLEU score Y, dll). |
+| **Audry** ⭐ | Open PR `feat/audry-quiz-generator-dl` → review by 1+ anggota → merge. |
 | Ariq | Review PR Audry. Sketch evaluator pseudocode. Mulai familiar dengan `EvaluationResult` shape. |
-| Desta | Refine insight/recommendation TEMPLATES (text saja, belum coding). Brainstorm sub-conditions: "high score + slow time", "low score + many unanswered", dll. |
-| Ravi | Polish frontend: cek behavior dengan placeholder backend, fix any UX issues, test di multiple screen sizes. |
+| Desta | Refine insight/recommendation TEMPLATES (text saja, belum coding). Brainstorm sub-conditions. Mulai test data_generation script di local. |
+| Ravi | Polish frontend: **finalize loading state** untuk DL inference (15-40s). Progress messages "Sedang menyusun pertanyaan..." dengan animation. Test cold start (first request) vs warm. |
 
-**Definition of Done untuk Week 2**: PR Audry merged, full flow `POST /quiz/generate` return real questions (bukan placeholder fallback).
+**Definition of Done untuk Week 2**: PR Audry merged. `POST /quiz/generate` return real DL-generated questions. Cold start ~30s, warm ~15-25s acceptable. Fallback to rule-based kalau ML fails.
 
 ---
 
-### Minggu 3 — Ariq's Week ⭐ + Desta start
+### Minggu 3 — Ariq's Week ⭐ + Desta ML training
 
-**Goal**: `quiz_evaluator.py` selesai + Desta mulai coding modulnya.
+**Goal**: `quiz_evaluator.py` selesai + Desta's ML conv classifier trained & integrated.
 
 | Owner | Task |
 |---|---|
-| **Ariq** ⭐ | Implementasi quiz_evaluator. Audry's `QuizInternal` shape sudah stable. Output: `EvaluationResult` per ARCHITECTURE.md §6.3. |
-| **Ariq** | Eksplorasi pandas kalau perlu (per-question time, distribution analysis, dll) — tapi MVP boleh tanpa. |
+| **Ariq** ⭐ | Implementasi quiz_evaluator (rule-based, NO ML). Audry's `QuizInternal` shape sudah stable. Output: `EvaluationResult` per ARCHITECTURE.md §6.3. |
+| **Ariq** | Eksplorasi pandas kalau perlu (per-question time, distribution analysis) — opsional MVP. |
 | **Ariq** | Tests di `backend/tests/test_quiz_evaluator.py`. |
 | **Ariq** | Open PR `feat/ariq-evaluator` → review → merge. |
-| Desta | Mulai implement `understanding_classifier.py` pakai `EvaluationResult` dari Ariq. Tweak thresholds dari PRD §15. |
-| Audry | Review PR Ariq + Desta. Fix bug di generator kalau ada laporan. |
-| Ravi | Integration testing dengan real backend. Verify edge cases UI: error responses, slow responses, empty results. |
+| **Desta** | **Day 1-2**: Implement `ml/classifier/data_generation.py` — generate 10k synthetic samples + verify distribution balanced. |
+| **Desta** | **Day 3**: Implement `ml/classifier/train.py` — sklearn Random Forest pipeline. Run lokal, verify accuracy ≥ 85%. Commit `.pkl` artifact. |
+| **Desta** | **Day 4-5**: Implement `ml/classifier/inference.py` — load + predict. Update `app/services/understanding_classifier.py` wrapper. Add fallback. |
+| **Desta** | Tests di `backend/tests/test_understanding_classifier.py`. |
+| **Desta** | Open PR `feat/desta-classifier-ml` → review → merge. |
+| Audry | Review PRs Ariq + Desta. Fix bugs di DL generator kalau ada laporan. |
+| Ravi | Integration testing dengan real backend (DL + ML). Verify cold-warm-cold cycle. |
 
-**Definition of Done Week 3**: PR Ariq merged. Submit endpoint return real `EvaluationResult` (bukan placeholder).
+**Definition of Done Week 3**: PRs Ariq + Desta classifier merged. Full pipeline jalan: DL generates → Ariq evaluates → ML predicts level. End-to-end test pass.
 
 ---
 
-### Minggu 4 — Desta's Week ⭐ + integration
+### Minggu 4 — Desta's Week ⭐ Insight & Recommendation + integration
 
-**Goal**: ketiga modul Desta selesai + full flow end-to-end pass test.
+**Goal**: insight + recommendation engines selesai dengan sub-conditions + full flow end-to-end pass test.
 
 | Owner | Task |
 |---|---|
-| **Desta** ⭐ | Tweak `understanding_classifier.py` thresholds berdasarkan testing dengan materi nyata. |
-| **Desta** | Implement sub-conditions di `insight_engine.py` — bukan cuma base template, tapi variasi based on score+time pattern. |
-| **Desta** | Implement sub-conditions di `recommendation_engine.py`. |
-| **Desta** | Tests untuk ketiga modul. |
-| **Desta** | Open PR `feat/desta-classifier-insight-recommendation` → review → merge. |
+| **Desta** ⭐ | Implement sub-conditions di `insight_engine.py` — minimum 6-8 variasi based on level + score/time/unanswered patterns. |
+| **Desta** ⭐ | Implement sub-conditions di `recommendation_engine.py` (paralel dengan insight). Pastikan brand callback "...lalu asah lagi." tetap muncul. |
+| **Desta** | Tests untuk insight + recommendation engines. Pakai sample fixtures untuk cover semua sub-conditions. |
+| **Desta** | Tweak ML classifier thresholds/synthetic data kalau testing E2E menunjukkan model behaviour aneh. |
+| **Desta** | Open PR `feat/desta-insight-recommendation` → review → merge. |
 | All | Integration testing: `pytest tests/test_routes.py::test_generate_then_submit_full_flow` HARUS pass. Test 5 skenario: high/medium/low + edge cases. |
+| All | **Fallback verification**: simulate HF Hub down + simulate `classifier.pkl` missing — pastikan rule-based kick in tanpa break demo. |
 | Ravi | Result page polish: tuning chart visualization, animation pada result reveal, mobile-responsive verification. |
 
-**Definition of Done Week 4**: full E2E flow jalan dengan real implementations (no placeholders), PR Desta merged.
+**Definition of Done Week 4**: full E2E flow jalan dengan real DL + ML implementations, PR Desta merged. Fallback paths verified.
 
 ---
 
@@ -192,31 +206,61 @@ Sync       quiz_generator  quiz_evaluator  classifier     +
 
 ## Task Breakdown Per Member
 
-### 1. Audry — Backend Quiz Generator
+### 1. Audry — Backend Quiz Generator (Deep Learning)
 
-**Main file**: `backend/app/services/quiz_generator.py`
+**Main files**:
+- `backend/ml/generator/inference.py` (DL inference logic — MAIN focus)
+- `backend/ml/generator/notebooks/train_quiz_generator.ipynb` (Colab training)
+- `backend/app/services/quiz_generator.py` (thin wrapper, calls ml/)
 
-**Status saat ini**: Placeholder rule-based fill-in-the-blank sudah jalan (split kalimat → pick keyword → fill blank). Output sesuai `QuizInternal` shape.
+**Status saat ini**:
+- Rule-based fallback sudah ada di `app/services/quiz_generator.py` (placeholder)
+- ML layer scaffolding di `ml/generator/` dengan stub inference + training notebook template
+- Yang harus dikerjakan: full DL pipeline
 
 **Tasks**:
-- [ ] Review placeholder code & tentukan apakah replace total atau extend
-- [ ] Tentukan strategi quiz generator (rule-based, template-based, dll)
-- [ ] Tentukan jumlah soal default (sekarang 5, bisa di-tweak)
-- [ ] Implementasi proper di `quiz_generator.py`
-- [ ] Validasi minimal panjang materi (sudah ada, bisa diperkuat)
-- [ ] Siapkan 3-5 dummy materi untuk testing (variasi: sains, sosial, teknologi)
-- [ ] Unit tests di `tests/test_quiz_generator.py` (minimal 5 cases)
-- [ ] Dokumentasikan asumsi generator di docstring file
+
+**Phase 1 — Setup (Week 1)**
+- [ ] Daftar akun Hugging Face di huggingface.co (gratis)
+- [ ] Generate access token (Settings → Access Tokens, "Write" permissions)
+- [ ] Familiarize dengan Hugging Face Transformers (baca quickstart docs)
+- [ ] Buka Colab notebook template di `ml/generator/notebooks/train_quiz_generator.ipynb`
+
+**Phase 2 — Training (Week 2)**
+- [ ] Run notebook step-by-step di Colab dengan T4 GPU runtime
+- [ ] Download TyDiQA-id dataset (auto via HF datasets)
+- [ ] Filter Indonesian subset
+- [ ] Fine-tune `Wikidepia/IndoT5-base` (3-5 epoch, ~1-2 jam Colab)
+- [ ] Evaluasi: BLEU score + manual review 20-30 generated questions
+- [ ] Push fine-tuned model ke HF Hub: `audry-asahlagi/indot5-quizgen-asahlagi`
+- [ ] Verify model accessible publicly (cek URL)
+
+**Phase 3 — Inference & Integration (Week 2)**
+- [ ] Implement `ml/generator/inference.py`: load model dari HF Hub, generate questions
+- [ ] Strategy multiple-choice options: extract distractors dari source material
+- [ ] Update `app/services/quiz_generator.py` untuk panggil `ml/generator/inference.py`
+- [ ] Implement try/except fallback ke rule-based kalau ML inference gagal
+- [ ] Test di backend lokal (cold start lama, warm cepat)
+
+**Phase 4 — Testing & Polish (Week 3)**
+- [ ] Unit tests di `tests/test_quiz_generator.py` (minimum 5 cases)
+- [ ] Test cases: normal text (Indonesian), too short, too long, model unavailable (fallback path)
+- [ ] Dokumentasikan asumsi + hyperparameter di docstring + ML.md changelog
+- [ ] Siapkan 3-5 dummy materi yang well-tested untuk demo
 
 **Kontrak yang harus dijaga** (jangan diubah tanpa diskusi):
-- Input: `material_text: str`
-- Output: `QuizInternal` (`schemas/internal.py`) dengan exactly 4 options per question, satu `correct_option_index`
-- Errors: raise `ApiException` dengan code dari `app/utils/errors.py`
+- `app/services/quiz_generator.py` input: `material_text: str` → output: `QuizInternal`
+- `ml/generator/inference.py` exposes: `generate(material_text: str) -> list[QuestionInternal]`
+- Errors: raise `ApiException(QUIZ_GENERATION_FAILED)` saat fail; fallback path tidak raise
+- Setiap question: exactly 4 options + 1 correct_option_index 0-3
 
 **Reference**:
+- `ML.md` §3 (DL strategy lengkap)
 - `API.md` §4.2 (HTTP layer)
-- `ARCHITECTURE.md` §6.1-6.2, §8 (data flow)
-- `BRAND.md` §6 (voice & tone — kalau bikin question prompt seperti "Lengkapi kalimat berikut...")
+- `ARCHITECTURE.md` §5b (ML layer), §6.1-6.2, §8 (data flow)
+- `BRAND.md` §6 (voice & tone)
+- HF Transformers docs: https://huggingface.co/docs/transformers
+- TyDiQA dataset: https://huggingface.co/datasets/tydiqa
 
 ---
 
@@ -249,20 +293,46 @@ Sync       quiz_generator  quiz_evaluator  classifier     +
 
 ---
 
-### 3. Desta — Backend Logic, Insight & Recommendation
+### 3. Desta — Backend Logic, Insight & Recommendation (Conventional ML + Templates)
 
 **Main files**:
-- `backend/app/services/understanding_classifier.py`
-- `backend/app/services/insight_engine.py`
-- `backend/app/services/recommendation_engine.py`
+- `backend/ml/classifier/data_generation.py` — synthetic dataset (NEW, ML)
+- `backend/ml/classifier/train.py` — sklearn training (NEW, ML)
+- `backend/ml/classifier/inference.py` — load + predict (NEW, ML)
+- `backend/app/services/understanding_classifier.py` — thin wrapper, calls ml/
+- `backend/app/services/insight_engine.py` (templates)
+- `backend/app/services/recommendation_engine.py` (templates)
 
 **Status saat ini**:
-- Classifier: rules dari PRD §15 sudah jalan (high/medium/low based on score + time)
+- Rule-based fallback classifier ada di `app/services/understanding_classifier.py`
+- ML layer scaffolding di `ml/classifier/` dengan stub data_generation/train/inference
 - Insight engine: base templates per level (BRAND.md §7.6) sudah ada
 - Recommendation engine: base templates per level (BRAND.md §7.7) sudah ada — termasuk brand callback "...lalu asah lagi."
 
 **Tasks**:
-- [ ] Review classifier thresholds — test dengan beberapa skenario, tweak kalau perlu
+
+**Phase 1 — ML Conv Classifier (Week 3)**
+- [ ] Implement `ml/classifier/data_generation.py`:
+  - [ ] Generate 10,000 synthetic samples
+  - [ ] Features: score_percentage, time_taken_seconds, wrong_count, unanswered_count
+  - [ ] Labels: high/medium/low dengan rule-based + 5% noise injection
+  - [ ] Verify distribution roughly balanced (~33% each class)
+- [ ] Implement `ml/classifier/train.py`:
+  - [ ] Load synthetic data
+  - [ ] Train/test split 80/20
+  - [ ] Fit `RandomForestClassifier(n_estimators=100, max_depth=10)`
+  - [ ] Print accuracy + classification report + feature importances
+  - [ ] Save model: `joblib.dump(model, "artifacts/classifier.pkl")`
+  - [ ] Target: ≥ 85% test accuracy (lebih tinggi 95% expected, tapi noise akan cap)
+- [ ] Implement `ml/classifier/inference.py`:
+  - [ ] Load `.pkl` at module import
+  - [ ] `predict(features: list[float]) -> str` returning level
+  - [ ] Try/except fallback ke rule-based
+- [ ] Run `python -m ml.classifier.train` lokal, verify `.pkl` artifact created
+- [ ] Update `app/services/understanding_classifier.py` untuk call ml/classifier
+- [ ] Commit `.pkl` artifact (kecil, ~1-5MB)
+
+**Phase 2 — Insight & Recommendation Refinement (Week 4)**
 - [ ] Implement sub-conditions di insight_engine:
   - [ ] High score + fast time → "kamu paham dan cepat"
   - [ ] High score + slow time → "kamu paham tapi mungkin masih ragu"
@@ -271,18 +341,26 @@ Sync       quiz_generator  quiz_evaluator  classifier     +
   - [ ] dll (minimal 6-8 variasi total)
 - [ ] Implement sub-conditions di recommendation_engine (paralel dengan insight)
 - [ ] Pastikan voice consistency (BRAND.md §6): "kamu" not "Anda", honest, calm, no patronizing
-- [ ] Unit tests untuk ketiga modul
 - [ ] Pastikan brand callback "asah lagi" tetap muncul di recommendation low/medium
 
+**Phase 3 — Testing (Week 4)**
+- [ ] Unit tests di `tests/test_understanding_classifier.py` (test ML wrapper + fallback)
+- [ ] Unit tests di `tests/test_insight_engine.py` (cover sub-conditions)
+- [ ] Unit tests di `tests/test_recommendation_engine.py` (idem)
+- [ ] Pakai `sample_eval_result` fixture di `tests/conftest.py`
+
 **Kontrak yang harus dijaga**:
-- Classifier input: `EvaluationResult`. Output: `UnderstandingLevel` (high/medium/low)
+- `ml/classifier/inference.py` exposes: `predict(features: list[float]) -> str` returning "high"|"medium"|"low"
+- `app/services/understanding_classifier.py` input: `EvaluationResult`. Output: `UnderstandingLevel`
 - Insight & Recommendation input: `UnderstandingLevel + EvaluationResult`. Output: `str` (Indonesian, 1-2 sentences)
 
 **Reference**:
-- `PRD.md` §15 (rule starting point)
+- `ML.md` §4 (ML conv strategy lengkap)
+- `PRD.md` §15 (rule starting point untuk synthetic labeling)
 - `BRAND.md` §6 (voice rules)
 - `BRAND.md` §7.6-7.7 (base templates)
-- `ARCHITECTURE.md` §6.3, §9
+- `ARCHITECTURE.md` §5b (ML layer), §6.3, §9
+- sklearn docs: https://scikit-learn.org/stable/modules/ensemble.html#random-forests
 
 ---
 

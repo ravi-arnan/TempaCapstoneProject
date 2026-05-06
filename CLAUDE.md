@@ -47,27 +47,42 @@ The core objective is to help students evaluate their understanding after readin
 - TypeScript [file:42]
 
 ### Backend
-- Python [file:42]
+- Python (FastAPI)
+
+### Machine Learning / Deep Learning
+- **Quiz Generator (Audry)**: Deep Learning via pretrained Indonesian T5 model (`Wikidepia/IndoT5-base`) — fine-tuned on TyDiQA-id dataset for question generation
+- **Understanding Classifier (Desta)**: Conventional ML via scikit-learn Random Forest — trained on synthetic dataset
+- **Frameworks**: Hugging Face Transformers + PyTorch (DL), scikit-learn (ML conv)
+- **Training infrastructure**: Google Colab (free tier with GPU T4) for DL training; local CPU for ML conv training
+- **Model hosting**: Hugging Face Hub (public, free) for fine-tuned DL model
+- **Inference**: backend runs all inference on CPU (no GPU at runtime)
 
 ### Data / Analysis
 - Pandas for processing quiz result data. [file:42]
-- Scikit-learn is optional, not required for MVP. [file:42]
+- Scikit-learn for classification and analytics.
+- TyDiQA-id (existing dataset) for DL fine-tuning.
+- Synthetic data generation in Python for ML conv training.
 
 ### Tools
 - GitHub for version control. [file:42]
 - VS Code for development. [file:42]
+- Google Colab for DL training notebook execution.
+- Hugging Face Hub for model artifact distribution.
 
 ## Architecture Principles
 
 - Keep the system simple and modular.
 - Separate concerns clearly:
   - frontend UI
-  - quiz generation logic
-  - result evaluation logic
-  - insight/recommendation rules
-- Prefer rule-based logic for MVP.
+  - quiz generation (DL-based, in `backend/ml/generator/`)
+  - result evaluation logic (in `backend/app/services/`)
+  - understanding classification (ML-based, in `backend/ml/classifier/`)
+  - insight/recommendation rules (template-based with sub-conditions)
+- **Hybrid ML strategy**: DL for text-generation tasks (quiz gen), conventional ML for tabular classification (understanding level), rule-based templates for narrative output (insight, recommendation).
+- **Separate ML training from app runtime**: training scripts live in `backend/ml/`, web app loads pre-trained artifacts at startup. Heavy training deps (`torch`, `transformers`) are in a separate `requirements-ml.txt` so the app process doesn't need them.
+- **CPU inference only at runtime**: no GPU available in production. Choose model sizes accordingly. Loading state UX must accommodate 15-40s wait at quiz generation time.
 - Do not introduce unnecessary infrastructure.
-- Avoid over-engineering. [file:42]
+- Avoid over-engineering. Each ML component must justify its complexity vs. a rule-based alternative. [file:42]
 
 ## Expected User Flow
 
@@ -97,12 +112,14 @@ The core objective is to help students evaluate their understanding after readin
 - Show validation if the material is too short.
 
 ### 2. Quiz Generator
-- Generate simple multiple-choice questions from text.
+- Generate multiple-choice questions from text using a **fine-tuned Indonesian T5 model** (Hugging Face: `Wikidepia/IndoT5-base`).
 - Each question must contain:
   - prompt
-  - answer options
-  - correct answer
-- Keep implementation deterministic and understandable.
+  - answer options (4 total)
+  - correct answer (stored server-side, not exposed in response)
+- Fine-tune on TyDiQA-id dataset via Google Colab; deploy to Hugging Face Hub.
+- Backend runs inference on CPU; expect 15-40s for 5 questions.
+- Fallback: rule-based generator (already scaffolded as placeholder) if DL inference fails.
 
 ### 3. Quiz Session
 - Show questions one by one or in a list.
@@ -113,12 +130,18 @@ The core objective is to help students evaluate their understanding after readin
 - Compute correct count, wrong count, score percentage, and time taken.
 
 ### 5. Understanding Classification
-Use simple rule-based classification:
+Use a **scikit-learn Random Forest classifier** trained on synthetic data. Categories:
 - High
 - Medium
 - Low
 
-Do not use advanced ML unless explicitly requested.
+**Features**: `score_percentage`, `time_taken_seconds`, `correct_count`, `wrong_count`, `unanswered_count`.
+
+**Training data**: synthetic generation in `backend/ml/classifier/data_generation.py` — programmatically created from rule-based labels with noise injection (~10k samples).
+
+**Why ML conv (not rule-based, not DL)**: tabular features with discrete labels are exactly the use case for sklearn. DL is overkill; rule-based doesn't satisfy the capstone ML requirement.
+
+**Fallback**: rule-based classifier (already scaffolded as placeholder) if model loading fails.
 
 ### 6. Insight Engine
 Generate short explanations based on user performance.
@@ -155,38 +178,69 @@ Display a simple chart such as:
 │  └─ package.json
 │
 ├─ backend/
-│  ├─ app/
+│  ├─ app/                    # web service
 │  │  ├─ main.py
 │  │  ├─ routes/
-│  │  ├─ services/
-│  │  ├─ models/
+│  │  ├─ services/            # thin wrappers calling ml/ for predictions
 │  │  ├─ schemas/
 │  │  └─ utils/
+│  ├─ ml/                     # ML/DL layer (training + inference)
+│  │  ├─ classifier/          # DESTA — conventional ML
+│  │  │  ├─ data_generation.py
+│  │  │  ├─ train.py
+│  │  │  ├─ inference.py
+│  │  │  └─ artifacts/        # trained .pkl files (gitignored or LFS)
+│  │  ├─ generator/           # AUDRY — DL
+│  │  │  ├─ inference.py      # loads from Hugging Face Hub
+│  │  │  └─ notebooks/        # Colab notebooks for training
+│  │  ├─ requirements-ml.txt  # heavy training deps (torch, transformers)
+│  │  └─ README.md            # how to train each model
 │  ├─ tests/
-│  └─ requirements.txt
+│  └─ requirements.txt        # base + lightweight ML inference deps
 │
 ├─ docs/
-│  ├─ PRD.md
 │  └─ project-plan.md
 │
+├─ ML.md                      # ML/DL strategy, datasets, models
+├─ API.md                     # HTTP contract
+├─ ARCHITECTURE.md            # internal system structure
+├─ BRAND.md                   # brand identity
+├─ DESIGN.md                  # visual design
+├─ PRD.md
+├─ TASKS.md
 └─ README.md
 ```
 
 ## Backend Guidelines
 
-- Use Python for quiz logic and analysis. [file:42]
+- Use Python for quiz logic, analysis, and ML/DL inference.
 - Keep APIs small and explicit.
-- Prefer pure functions for scoring, classification, and recommendation rules.
+- Prefer pure functions for scoring and template rules. ML inference is impure (loads model state) but isolated to `backend/ml/`.
 - Keep business logic out of route handlers.
-- Store reusable logic in `services/`.
+- Store reusable logic in `app/services/`. ML training + inference logic in `backend/ml/`.
+- App layer services should be **thin wrappers** that call into `ml/` for predictions. They handle Pydantic validation and error wrapping; `ml/` handles model loading and inference.
 - If persistence is needed for MVP, prefer lightweight local storage or simple file-based storage before introducing a complex database.
+- Model artifacts:
+  - DL (Audry): pull from Hugging Face Hub at startup. `from_pretrained("audry-asahlagi/indot5-quizgen-asahlagi")`. Cache in HF default location (`~/.cache/huggingface`).
+  - ML conv (Desta): commit `.pkl` files to repo (small, < 5MB). Load at startup via `joblib.load()`.
 
 ### Suggested backend modules
-- `quiz_generator.py`
-- `quiz_evaluator.py`
-- `understanding_classifier.py`
-- `insight_engine.py`
-- `recommendation_engine.py`
+
+App layer (`backend/app/services/`) — thin wrappers, no business logic:
+- `quiz_generator.py` — calls `ml/generator/inference.py` (Audry's DL model)
+- `quiz_evaluator.py` — pure scoring logic (Ariq, no ML)
+- `understanding_classifier.py` — calls `ml/classifier/inference.py` (Desta's ML model)
+- `insight_engine.py` — template-based with sub-conditions (Desta)
+- `recommendation_engine.py` — template-based with sub-conditions (Desta)
+- `submit_coordinator.py` — orchestrator
+- `quiz_storage.py` — in-memory store
+
+ML layer (`backend/ml/`) — training + inference:
+- `generator/inference.py` — loads fine-tuned IndoT5 from Hugging Face Hub
+- `generator/notebooks/train_quiz_generator.ipynb` — Colab notebook for fine-tuning
+- `classifier/data_generation.py` — synthetic dataset for understanding levels
+- `classifier/train.py` — sklearn Random Forest training script (run locally)
+- `classifier/inference.py` — load `.pkl` and predict at runtime
 
 ## Frontend Guidelines
 

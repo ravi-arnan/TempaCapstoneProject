@@ -35,8 +35,9 @@ Bagaimana membangun sistem sederhana yang dapat mengubah materi pembelajaran men
 
 - Tidak mendukung input materi kompleks seperti PDF, video, atau audio pada MVP. [file:42]
 - Tidak membangun sistem login, autentikasi, atau manajemen akun yang kompleks pada MVP. [file:42]
-- Tidak menggunakan model AI/ML kompleks sebagai komponen utama analisis pada MVP. [file:42]
 - Tidak membangun learning management system penuh seperti manajemen kelas, forum, atau penugasan multi-user.
+- Tidak melatih model bahasa besar dari nol (gunakan pretrained model + fine-tuning ringan).
+- Tidak menggunakan GPU di runtime production (inference di CPU; training pakai Colab).
 
 ## 6. Target Pengguna
 
@@ -58,9 +59,11 @@ Produk ini tidak hanya memberikan nilai akhir, tetapi juga:
 ## 8. Asumsi Produk
 
 - Input materi diberikan dalam bentuk teks atau hasil copy-paste.
-- Quiz generator pada MVP menggunakan pendekatan sederhana berbasis aturan atau ekstraksi informasi dasar dari teks. [file:42]
-- Analisis pemahaman menggunakan rule-based logic, bukan model AI kompleks. [file:42]
-- Backend dibangun dengan Python untuk logika quiz dan analisis, sedangkan frontend dibangun dengan React + TypeScript sesuai proposal. [file:42]
+- **Quiz generator menggunakan pendekatan Deep Learning** dengan pretrained model Indonesian T5 (`Wikidepia/IndoT5-base`), di-fine-tune pada dataset TyDiQA-id via Google Colab.
+- **Analisis tingkat pemahaman menggunakan ML konvensional** (scikit-learn Random Forest), dilatih pada dataset sintetis yang di-generate secara programatis.
+- **Insight & rekomendasi tetap berbasis template** dengan sub-conditions — bukan dari model NLG yang sulit dikontrol kualitasnya untuk MVP.
+- Backend dibangun dengan Python untuk logika quiz, analisis, dan ML/DL inference; frontend dibangun dengan React + TypeScript sesuai proposal. [file:42]
+- Inference DL di CPU — wait time saat generate kuis ~15-40 detik (sekali per session); seluruh interaction lain instant.
 
 ## 9. User Flow
 
@@ -83,18 +86,22 @@ Pengguna dapat memasukkan materi pembelajaran dalam bentuk teks melalui text are
 - Sistem menolak input kosong.
 - Sistem menampilkan pesan validasi jika teks terlalu pendek.
 
-### 10.2 Quiz Generator
-Sistem menghasilkan kuis otomatis dari materi yang dimasukkan.
+### 10.2 Quiz Generator (Deep Learning)
+Sistem menghasilkan kuis otomatis dari materi yang dimasukkan menggunakan **fine-tuned IndoT5 model**.
 
 **Scope MVP**
-- Format soal pilihan ganda.
-- Jumlah soal dapat dibuat tetap, misalnya 5–10 soal.
-- Soal dibangun dengan pendekatan sederhana, bukan generasi AI kompleks. [file:42]
+- Format soal pilihan ganda (4 opsi per soal, 1 jawaban benar).
+- Jumlah soal default 5 (bisa di-tweak).
+- **Implementasi**: pretrained `Wikidepia/IndoT5-base` di-fine-tune pada TyDiQA-id (Indonesian QA dataset) via Google Colab.
+- Hosting model: Hugging Face Hub (public, gratis).
+- Inference di runtime: CPU, expected 15-40s per quiz.
 
 **Acceptance criteria**
 - Setelah materi dikirim, sistem menampilkan daftar soal.
-- Setiap soal memiliki pertanyaan, beberapa opsi jawaban, dan satu jawaban benar.
+- Setiap soal memiliki pertanyaan, 4 opsi jawaban, dan satu jawaban benar.
 - Soal tetap relevan dengan isi materi input.
+- Loading state di frontend visible selama proses generate (tidak terkesan freeze).
+- Fallback ke rule-based generator kalau DL inference gagal.
 
 ### 10.3 Halaman Pengerjaan Kuis
 Pengguna menjawab kuis pada halaman interaktif.
@@ -113,23 +120,36 @@ Sistem menampilkan hasil dasar pengerjaan kuis.
 - Sistem menampilkan durasi pengerjaan.
 - Sistem menampilkan ringkasan performa.
 
-### 10.5 Deteksi Tingkat Pemahaman
-Sistem mengklasifikasikan tingkat pemahaman pengguna.
+### 10.5 Deteksi Tingkat Pemahaman (Conventional ML)
+Sistem mengklasifikasikan tingkat pemahaman pengguna menggunakan **scikit-learn Random Forest classifier**.
 
-**Kategori awal**
-- Tinggi
-- Sedang
-- Rendah
+**Kategori**
+- Tinggi (`high`)
+- Sedang (`medium`)
+- Rendah (`low`)
 
-**Input analisis**
-- Persentase skor
-- Waktu pengerjaan
-- Pola salah atau jumlah soal yang tidak dijawab
+**Input fitur** (dari `EvaluationResult`)
+- `score_percentage`
+- `time_taken_seconds`
+- `correct_count`
+- `wrong_count`
+- `unanswered_count`
+- (opsional turunan) avg time per question, time variance
+
+**Training data**: dataset sintetis (~10,000 sample) yang di-generate dengan rule-based labeling + noise injection. Generator-nya di `backend/ml/classifier/data_generation.py`.
+
+**Algoritma**: Random Forest Classifier (sklearn). Alasan dipilih:
+- Tabular features dengan dataset sedang → sklearn ideal (DL overkill)
+- Interpretable — bisa expose feature importance ke dosen sebagai insight tambahan
+- Robust terhadap outlier
+- Training cepat (<1 menit di CPU lokal)
 
 **Acceptance criteria**
 - Setiap hasil kuis memiliki satu kategori tingkat pemahaman.
-- Logika klasifikasi terdokumentasi dan konsisten.
+- Model accuracy ≥ 85% di test set sintetis.
+- Logika dan training reproducible — `python -m ml.classifier.train` dari `backend/`.
 - Hasil klasifikasi muncul langsung di halaman hasil.
+- Fallback ke rule-based kalau model loading gagal.
 
 ### 10.6 Insight Otomatis
 Sistem menjelaskan kenapa pengguna mendapat kategori tertentu.
@@ -172,13 +192,14 @@ Sistem menampilkan visualisasi sederhana dari hasil pengerjaan.
 ## 11. Kebutuhan Fungsional
 
 - Sistem harus menerima input materi dalam bentuk teks. [file:42]
-- Sistem harus dapat mengubah materi menjadi kuis sederhana. [file:42]
+- Sistem harus dapat mengubah materi menjadi kuis menggunakan **model Deep Learning** (IndoT5 fine-tuned).
 - Sistem harus menyediakan halaman pengerjaan kuis.
 - Sistem harus menghitung skor, benar, salah, dan waktu pengerjaan. [file:42]
-- Sistem harus menentukan tingkat pemahaman berdasarkan rule tertentu. [file:42]
-- Sistem harus menampilkan insight otomatis. [file:42]
-- Sistem harus menampilkan rekomendasi belajar. [file:42]
+- Sistem harus menentukan tingkat pemahaman menggunakan **model Machine Learning konvensional** (Random Forest classifier).
+- Sistem harus menampilkan insight otomatis berbasis template + sub-conditions. [file:42]
+- Sistem harus menampilkan rekomendasi belajar berbasis template + sub-conditions. [file:42]
 - Sistem harus menampilkan grafik sederhana. [file:42]
+- Sistem harus mempertahankan fallback rule-based untuk DL/ML components agar tidak ada hard failure di demo.
 
 ## 12. Kebutuhan Non-Fungsional
 
@@ -210,46 +231,64 @@ Sistem menampilkan visualisasi sederhana dari hasil pengerjaan.
 ### Frontend
 - React
 - TypeScript [file:42]
+- Tailwind CSS + shadcn-style design system (lihat DESIGN.md)
 
-### Backend
-- Python untuk logika quiz dan analisis data. [file:42]
+### Backend (web app layer)
+- Python (FastAPI) untuk HTTP layer + orchestration. [file:42]
+- Pydantic untuk schema validation.
 
-### Library/Tools
-- Pandas untuk pengolahan data. [file:42]
-- Scikit-learn opsional bila dibutuhkan untuk eksplorasi analisis tambahan. [file:42]
+### ML/DL Layer
+- **PyTorch + Hugging Face Transformers** — Quiz Generator (Audry's DL).
+- **scikit-learn** — Understanding Classifier (Desta's ML konvensional).
+- **Pandas** — data processing untuk Ariq's evaluator + Desta's training data analysis.
+
+### Training Infrastructure
+- **Google Colab** (free tier dengan GPU T4) untuk fine-tuning IndoT5.
+- Lokal CPU untuk training sklearn Random Forest.
+
+### Model Distribution
+- **Hugging Face Hub** — fine-tuned IndoT5 di-push ke account Audry, di-load di backend startup.
+- **Git** — sklearn `.pkl` artifact di-commit langsung (kecil, < 5MB).
+
+### Tools
 - GitHub untuk version control. [file:42]
 - VS Code sebagai development environment. [file:42]
+- Hugging Face Hub untuk distribusi model.
 
 ### Arsitektur logis
 - Frontend menerima input materi dan menampilkan hasil.
-- Backend menerima materi, memproses generator kuis, menyimpan hasil sementara, menjalankan analisis, lalu mengembalikan hasil ke frontend.
-- Komponen analisis terdiri dari scoring, classification rules, insight generator, dan recommendation rules.
+- Backend `app/` menerima request, memvalidasi, memanggil layer `ml/` untuk inference (DL untuk QG, ML konv untuk klasifikasi), menjalankan business logic (scoring, insight, recommendation), lalu mengembalikan hasil.
+- ML layer (`backend/ml/`) menjalankan model loading + inference. Model artifacts di-load sekali saat app startup.
+- Komponen analisis terdiri dari evaluator (rule-based), classifier (ML), insight engine (template), recommendation engine (template).
 
-## 15. Logika Analisis Awal
+## 15. Logika Analisis
 
-Berikut rule awal yang bisa dipakai sebagai MVP:
-
-### Variabel
+### Variabel input (dari `EvaluationResult`)
 - `score_percentage`
-- `completion_time`
+- `time_taken_seconds`
 - `correct_count`
 - `wrong_count`
 - `unanswered_count`
 
-### Rule kategori
-- **Tinggi**: skor tinggi, kesalahan rendah, waktu masih wajar.
-- **Sedang**: skor menengah atau skor cukup baik tetapi waktu terlalu lama.
-- **Rendah**: skor rendah atau banyak jawaban salah/tidak dijawab.
+### Klasifikasi tingkat pemahaman (ML — Random Forest)
+Diserahkan ke model sklearn yang dilatih pada dataset sintetis. Aturan **deterministik** berikut digunakan sebagai **ground truth saat generate training data** (bukan sebagai aturan runtime — model yang menentukan):
 
-### Rule insight
-- Jika skor tinggi dan waktu efisien → pengguna cenderung memahami materi dengan baik.
-- Jika skor sedang dan waktu lama → pengguna memahami sebagian, tetapi masih memerlukan penguatan.
-- Jika skor rendah → pengguna perlu meninjau ulang konsep utama materi.
+- **Tinggi** (training label): `score_percentage >= 80` AND `time_taken <= total_questions * 90s`
+- **Sedang** (training label): `50 <= score_percentage < 80` OR (skor tinggi tetapi waktu lebih dari 1.5x baseline)
+- **Rendah** (training label): `score_percentage < 50` OR (banyak unanswered)
 
-### Rule rekomendasi
-- Tinggi → lanjut ke kuis lanjutan atau materi berikutnya.
-- Sedang → ulangi bagian penting dan kerjakan kuis ulang.
-- Rendah → baca ulang materi, fokus pada poin dasar, lalu ulangi evaluasi.
+Setelah training, model akan generalize berdasarkan pattern di data sintetis (bukan strict rule). Lihat `backend/ml/classifier/data_generation.py` untuk detail logika synthetic generation.
+
+### Insight (template + sub-conditions, di `insight_engine.py`)
+Base templates per level (lihat BRAND.md §7.6) + sub-conditions:
+- Tinggi + waktu efisien → "kamu paham dan cepat menyerap materi"
+- Tinggi + waktu lambat → "kamu paham tapi mungkin masih ragu-ragu"
+- Sedang + many unanswered → "kamu skip beberapa soal — coba lebih confident"
+- Rendah + all answered → "kamu coba semua tapi banyak salah — konsep dasar perlu di-review"
+- dst (Desta extend untuk minimal 6-8 variasi)
+
+### Rekomendasi (template + sub-conditions, di `recommendation_engine.py`)
+Sama dengan insight tapi fokus pada **next action**. Brand mechanic: medium/low recommendations ditutup dengan "...lalu asah lagi." (callback brand name).
 
 ## 16. Metrik Keberhasilan MVP
 
@@ -338,8 +377,10 @@ Miskomunikasi dapat memperlambat integrasi. Mitigasinya adalah pembagian peran j
 ## 22. Future Enhancements
 
 - Dukungan file PDF atau dokumen.
-- Analisis berbasis topik atau per submateri.
+- Analisis berbasis topik atau per submateri (TF-IDF clustering — bisa dieksplor Ariq sebagai bonus).
 - Riwayat pengerjaan kuis.
 - Dashboard perkembangan pengguna.
 - Login dan penyimpanan data persisten.
-- Peningkatan kualitas quiz generation dengan pendekatan NLP/LLM.
+- LLM-based question generation (e.g., Llama / GPT API) — saat ini pakai T5 fine-tuned untuk MVP.
+- GPU inference untuk turun-kan latency (saat ini CPU only).
+- Real user data collection untuk re-training Random Forest dengan distribusi data nyata (bukan sintetis).

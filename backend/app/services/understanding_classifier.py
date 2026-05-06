@@ -2,36 +2,65 @@
 
 OWNER: Desta (Backend — Logic, Insight & Recommendation)
 
-Pure function — rule-based per CLAUDE.md and PRD.md §15.
+This is a THIN WRAPPER around `ml/classifier/inference.py` (sklearn Random Forest).
+The wrapper:
+    1. Extracts features from EvaluationResult
+    2. Tries ML inference via ml.classifier
+    3. Falls back to rule-based threshold logic if ML is unavailable
 
-This file currently contains a PLACEHOLDER implementation following the
-rules described in PRD.md §15. Desta should review and refine — e.g.,
-add sub-conditions for "high score but slow time" or "low score with
-many unanswered" to make insights and recommendations richer.
+The actual model loading + prediction lives in
+`backend/ml/classifier/inference.py`. See ML.md §4 for details.
+
+If you want to swap the ML approach (e.g., XGBoost, NN), edit
+`ml/classifier/{train,inference}.py`. This wrapper file should rarely change.
 """
+
+from __future__ import annotations
+
+import logging
 
 from app.schemas.internal import EvaluationResult
 from app.schemas.result import UnderstandingLevel
+from ml.classifier import inference as ml_classifier
 
-# Tunable thresholds — Desta, adjust based on real test runs.
+logger = logging.getLogger(__name__)
+
+# Rule-based fallback thresholds (mirror PRD.md §15 + ml/classifier/data_generation.py)
 HIGH_SCORE_THRESHOLD = 80
 MEDIUM_SCORE_THRESHOLD = 50
-
-# "Reasonable" pace: 60 seconds per question. The high-tier requires that
-# the user finish within 1.5x of this baseline; otherwise their pace
-# suggests hesitation and we downgrade them to medium.
 SECONDS_PER_QUESTION_BASELINE = 60
 HIGH_TIME_MULTIPLIER = 1.5
 
 
 def classify(eval_result: EvaluationResult) -> UnderstandingLevel:
-    """Apply rule-based classification.
+    """Apply ML or fallback rule-based classification.
 
-    Rules (per PRD.md §15):
-        - HIGH:   score >= 80 AND time within 1.5x of baseline pace
-        - MEDIUM: score >= 50 (or HIGH score with slow pace)
-        - LOW:    everything else
+    Tries the trained Random Forest first. Falls back to rule-based
+    thresholds if model not loaded.
     """
+    # === Path 1: ML via ml/classifier (preferred) ===
+    if ml_classifier.is_available():
+        try:
+            features = [
+                float(eval_result.score_percentage),
+                float(eval_result.time_taken_seconds),
+                float(eval_result.wrong_count),
+                float(eval_result.unanswered_count),
+            ]
+            label_str = ml_classifier.predict(features)
+            return UnderstandingLevel(label_str)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "understanding_classifier: ML path failed (%s), falling back to rule-based",
+                exc,
+            )
+
+    # === Path 2: rule-based fallback ===
+    return _classify_rule_based(eval_result)
+
+
+def _classify_rule_based(eval_result: EvaluationResult) -> UnderstandingLevel:
+    """Rule-based classification (PRD.md §15). Used as fallback."""
     score = eval_result.score_percentage
     time = eval_result.time_taken_seconds
     total = eval_result.total_questions

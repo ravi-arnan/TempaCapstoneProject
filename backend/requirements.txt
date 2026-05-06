@@ -1,15 +1,29 @@
 # Asahlagi Backend Dependencies
 # Python 3.11+ required
+#
+# This file contains the runtime web service deps + lightweight ML inference.
+# For heavier training-time deps, see ml/requirements-ml.txt.
 
-# Core framework
+# ===== Web framework =====
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
 pydantic==2.9.2
 
-# Optional analytical tooling (per CLAUDE.md / PRD.md — only if Ariq needs them)
-# pandas==2.2.3
-# scikit-learn==1.5.2
+# ===== ML conv (sklearn) — used at training AND inference =====
+scikit-learn==1.5.2
+joblib==1.4.2
+numpy==2.0.2
+pandas==2.2.3
 
-# Dev / testing
+# ===== DL inference (PyTorch CPU + Hugging Face) =====
+# CPU-only torch is much smaller (~200MB vs ~700MB for CUDA build).
+# Install with: pip install torch --index-url https://download.pytorch.org/whl/cpu
+# Or just pip install -r requirements.txt — pip will pick CPU build automatically on systems without CUDA.
+torch==2.4.1
+transformers==4.45.2
+sentencepiece==0.2.0  # required by T5 tokenizer
+huggingface-hub==0.25.2
+
+# ===== Dev / testing =====
 pytest==8.3.3
 httpx==0.27.2  # used by FastAPI's TestClient

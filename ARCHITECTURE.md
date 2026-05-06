@@ -49,10 +49,17 @@ flowchart LR
 |---|---|---|
 | Frontend | React + TypeScript + Vite | Per proposal & CLAUDE.md. Vite for fast dev server. |
 | UI primitives | shadcn/ui + Tailwind CSS | Per design discussion. Emerald base from `DESIGN.md`. |
-| Backend | Python 3.11+ + FastAPI | Per proposal. FastAPI for Pydantic validation + auto-docs. |
+| Backend (web) | Python 3.11+ + FastAPI | Per proposal. FastAPI for Pydantic validation + auto-docs. |
 | Server | Uvicorn (dev), single-process | MVP doesn't need multi-worker. |
 | Data layer | In-memory dict | Demo single-session. See §7 for migration path. |
-| Pandas/Scikit-learn | optional, only if Ariq needs it | Not load-bearing for MVP rule-based logic. |
+| **DL framework** | **PyTorch + Hugging Face Transformers** | For Audry's quiz generator (text generation requires DL). |
+| **DL model** | **`Wikidepia/IndoT5-base`**, fine-tuned on TyDiQA-id | Indonesian-specific T5; sufficient quality for QG. |
+| **DL training** | **Google Colab (free GPU T4)** | No local GPU; Colab handles fine-tuning in 1-2 hours. |
+| **Model hosting** | **Hugging Face Hub (free)** | Reliable distribution; backend pulls at startup. |
+| **ML conv** | **scikit-learn** | Random Forest for understanding classification (tabular). |
+| **ML conv training** | **Local CPU** | sklearn trains in <1 minute; no GPU needed. |
+| **ML conv data** | **Synthetic generation in Python** | ~10k samples programmatically created from rule-based labels + noise. |
+| **Pandas** | data manipulation in Ariq's evaluator | Optional but useful for analytics. |
 
 ---
 
@@ -79,18 +86,18 @@ TempaCapstoneProject/
 │   └── vite.config.ts
 │
 ├── backend/
-│   ├── app/
+│   ├── app/                        # WEB SERVICE LAYER (HTTP, business logic)
 │   │   ├── main.py                 # FastAPI app, exception handlers, CORS
 │   │   ├── routes/
 │   │   │   ├── health.py           # GET /health
 │   │   │   └── quiz.py             # POST /quiz/generate, /quiz/submit
-│   │   ├── services/
-│   │   │   ├── quiz_generator.py           # AUDRY
+│   │   ├── services/               # thin wrappers; ML calls go to ml/ layer
+│   │   │   ├── quiz_generator.py           # AUDRY — wraps ml/generator/inference.py
 │   │   │   ├── quiz_storage.py             # shared (Audry seeds, Ariq reads)
-│   │   │   ├── quiz_evaluator.py           # ARIQ
-│   │   │   ├── understanding_classifier.py # DESTA
-│   │   │   ├── insight_engine.py           # DESTA
-│   │   │   ├── recommendation_engine.py    # DESTA
+│   │   │   ├── quiz_evaluator.py           # ARIQ (no ML, pure scoring)
+│   │   │   ├── understanding_classifier.py # DESTA — wraps ml/classifier/inference.py
+│   │   │   ├── insight_engine.py           # DESTA (template-based)
+│   │   │   ├── recommendation_engine.py    # DESTA (template-based)
 │   │   │   └── submit_coordinator.py       # orchestrator (any owner)
 │   │   ├── schemas/
 │   │   │   ├── quiz.py             # public types: Question, Answer, ...
@@ -99,6 +106,19 @@ TempaCapstoneProject/
 │   │   │   └── error.py            # ApiError, ApiException
 │   │   └── utils/
 │   │       └── errors.py           # ApiException, error code constants
+│   ├── ml/                         # ML/DL LAYER (training + inference)
+│   │   ├── classifier/             # DESTA — conventional ML
+│   │   │   ├── data_generation.py  # synthetic dataset generator
+│   │   │   ├── train.py            # sklearn Random Forest training
+│   │   │   ├── inference.py        # load .pkl + predict (called from app)
+│   │   │   └── artifacts/
+│   │   │       └── classifier.pkl  # trained model (committed)
+│   │   ├── generator/              # AUDRY — DL
+│   │   │   ├── inference.py        # load IndoT5 from HF Hub + generate
+│   │   │   └── notebooks/
+│   │   │       └── train_quiz_generator.ipynb  # Colab fine-tuning notebook
+│   │   ├── requirements-ml.txt     # heavy training deps (torch, transformers)
+│   │   └── README.md               # how to train each model
 │   ├── tests/
 │   │   ├── test_quiz_generator.py
 │   │   ├── test_quiz_evaluator.py
@@ -106,7 +126,7 @@ TempaCapstoneProject/
 │   │   ├── test_insight_engine.py
 │   │   ├── test_recommendation_engine.py
 │   │   └── test_routes.py
-│   └── requirements.txt
+│   └── requirements.txt            # base + lightweight ML inference deps
 │
 ├── docs/                           # supporting docs (optional later)
 ├── CLAUDE.md
@@ -283,15 +303,91 @@ flowchart TB
 
 | Module | Owner | Pure function? | Inputs (internal type) | Output (internal type) |
 |---|---|---|---|---|
-| `quiz_generator.py` | Audry | yes | `material_text: str` | `QuizInternal` |
+| `quiz_generator.py` (app) | Audry | no (calls DL) | `material_text: str` | `QuizInternal` |
 | `quiz_storage.py` | shared | no (stateful) | `QuizInternal` | `quiz_id: str` / `QuizInternal \| None` |
 | `quiz_evaluator.py` | Ariq | yes | `QuizInternal`, `list[Answer]`, `time_taken_seconds: int` | `EvaluationResult` |
-| `understanding_classifier.py` | Desta | yes | `EvaluationResult` | `UnderstandingLevel` |
+| `understanding_classifier.py` (app) | Desta | no (calls ML) | `EvaluationResult` | `UnderstandingLevel` |
 | `insight_engine.py` | Desta | yes | `UnderstandingLevel`, `EvaluationResult` | `str` (Indonesian) |
 | `recommendation_engine.py` | Desta | yes | `UnderstandingLevel`, `EvaluationResult` | `str` (Indonesian) |
 | `submit_coordinator.py` | orchestrator (any owner) | no (calls others) | `quiz_id`, `answers`, `time_taken_seconds` | `QuizSubmitResponse` |
 
 > **"Pure function" means**: same input always produces same output, no I/O, no global mutation. Every service marked `pure` MUST be testable with simple `assert eq(f(input), expected)` — no mocks needed.
+>
+> **`quiz_generator.py` and `understanding_classifier.py` are NOT pure** because they delegate to the ML layer (`backend/ml/*/inference.py`), which loads models from disk/network. They are tested via integration tests, not pure unit tests.
+
+---
+
+## 5b. ML Layer (`backend/ml/`)
+
+ML/DL training + inference is **separated from the web app layer**. The web app calls into `ml/` only at inference time. Training is a separate process.
+
+### Why separate `ml/` from `app/`?
+
+1. **Different concerns**: training loads datasets, fits models, dumps artifacts. Web app loads artifacts, runs predictions. These don't share runtime requirements.
+2. **Different dependencies**: training needs `torch`, `transformers`, `datasets`, `accelerate` (~2GB combined). Web app at runtime needs only inference subset.
+3. **Different lifecycle**: training is one-shot per model version. Web app is long-running.
+4. **Reproducibility**: every model artifact in `ml/*/artifacts/` should be reproducible from training scripts.
+
+### Module ownership in `ml/`
+
+| Module | Owner | Purpose |
+|---|---|---|
+| `ml/generator/inference.py` | Audry | Load fine-tuned IndoT5 from Hugging Face Hub. `generate(material) -> list[QuestionInternal]`. |
+| `ml/generator/notebooks/train_quiz_generator.ipynb` | Audry | Colab notebook: download TyDiQA-id, fine-tune IndoT5-base, push to HF Hub. |
+| `ml/classifier/data_generation.py` | Desta | Generate ~10k synthetic samples (score, time, etc → label). |
+| `ml/classifier/train.py` | Desta | Train sklearn Random Forest, save `classifier.pkl` to `artifacts/`. |
+| `ml/classifier/inference.py` | Desta | Load `.pkl` and predict. Called from `app/services/understanding_classifier.py`. |
+
+### Inference contract (the boundary)
+
+The web app layer calls into `ml/` via simple function imports — NOT via HTTP, NOT via subprocess. Same Python process, just different module.
+
+```python
+# app/services/quiz_generator.py
+from ml.generator import inference as gen_inference
+
+def generate_quiz(material_text: str) -> QuizInternal:
+    questions = gen_inference.generate(material_text)  # may take 15-40s on CPU
+    return QuizInternal(quiz_id=str(uuid.uuid4()), questions=questions, ...)
+```
+
+```python
+# ml/generator/inference.py
+from transformers import T5ForConditionalGeneration, T5Tokenizer
+
+# Load once at module import (cached for app lifetime)
+_MODEL_NAME = "audry-asahlagi/indot5-quizgen-asahlagi"
+_tokenizer = T5Tokenizer.from_pretrained(_MODEL_NAME)
+_model = T5ForConditionalGeneration.from_pretrained(_MODEL_NAME)
+
+def generate(material_text: str) -> list[QuestionInternal]:
+    # ... inference logic ...
+    return questions
+```
+
+### Model loading strategy
+
+Both DL and ML conv models are loaded **once at app startup** (when the module is first imported) and cached for the app's lifetime. Subsequent inference calls skip the load step.
+
+- DL model: ~5-10s startup overhead (downloads ~1GB on first run if not cached locally)
+- ML conv model: ~50ms startup overhead (load `.pkl`)
+
+This means the **first request after server boot is slow** (model loading happens on first import); subsequent requests skip the load.
+
+### Fallback strategy
+
+Both `ml/generator/inference.py` and `ml/classifier/inference.py` MUST gracefully degrade to rule-based logic if model loading fails. The placeholder implementations from before scaffolding stay in the codebase as fallback paths.
+
+```python
+try:
+    _model = T5ForConditionalGeneration.from_pretrained(_MODEL_NAME)
+    _USE_DL = True
+except Exception as e:
+    log.warning("DL model load failed, using rule-based fallback: %s", e)
+    _USE_DL = False
+```
+
+This protects the demo from network/HF outages.
 
 ---
 
@@ -598,18 +694,24 @@ The hard dependency chain that drives task ordering:
 ```mermaid
 flowchart LR
     A["material_text<br/>(input)"]
-    G["generate_quiz<br/>(Audry)"]
+    DL["ml/generator<br/>(IndoT5 DL)"]
+    G["app/services/<br/>quiz_generator<br/>(Audry)"]
     S["quiz_storage<br/>(shared)"]
     E["evaluate<br/>(Ariq)"]
-    C["classify<br/>(Desta)"]
+    ML["ml/classifier<br/>(Random Forest ML)"]
+    C["app/services/<br/>understanding_classifier<br/>(Desta)"]
     I["insight<br/>(Desta)"]
     R["recommendation<br/>(Desta)"]
     Out["QuizSubmitResponse"]
 
     A --> G
+    G -.calls.-> DL
+    DL -.returns questions.-> G
     G --> S
     S --> E
     E --> C
+    C -.calls.-> ML
+    ML -.returns level.-> C
     E --> I
     E --> R
     C --> I

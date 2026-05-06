@@ -204,6 +204,21 @@ Generates a multiple-choice quiz from learning material.
 | 422 | (FastAPI auto) | wrong types, missing field | (FastAPI default body) |
 | 500 | `QUIZ_GENERATION_FAILED` | Generator raises | "Gagal menghasilkan kuis. Silakan coba lagi." |
 
+### Response time expectation
+
+> ⚠️ **`POST /quiz/generate` is the slowest endpoint by design.**
+> The DL model (fine-tuned IndoT5) runs inference on CPU (no GPU at runtime). Expected latency:
+> - **Cold start** (first request after server boot): 25-50s — includes ~10s model load + ~15-40s generation
+> - **Warm inference** (subsequent requests): 15-40s for 5 questions
+> - **Per question**: 3-8s on typical CPU
+>
+> Frontend MUST show loading state with progress messages during this wait. See `BRAND.md` §7.3 for copy.
+> Frontend timeout for this endpoint should be set to at least **60 seconds** to avoid spurious "connection lost" errors.
+>
+> All other endpoints (`/health`, `/quiz/submit`) respond in < 100ms.
+>
+> See `ML.md` §7 for full latency breakdown and optimization options.
+
 #### Example
 
 ```bash
