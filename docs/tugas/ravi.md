@@ -148,115 +148,59 @@ Sekarang button submit di bawah list — kalau quiz panjang user harus scroll. M
 
 ---
 
-## 🔵 PART 2: DL Training (taken over from Audry)
+## 🔵 PART 2: DL Setup (modified — fine-tuning skipped)
 
-Karena kamu lebih familiar dengan Hugging Face workflow, kamu yang handle bagian ini. Setelah model ter-published ke HF, kasih URL ke Audry untuk integrate.
+> **Update 2026-05-08**: fine-tuning attempt gagal karena fp16 NaN issue (T5 known instability). Decision: ship MVP dengan base pretrained `Wikidepia/IndoT5-base` (tanpa fine-tune), dengan quality check di wrapper yang fall back ke rule-based saat DL output garbage.
+>
+> Detail di [`/ML.md` §3 "MVP decision: SKIP fine-tuning"](../../ML.md).
 
-### Pre-requisites
+### Yang perlu dilakukan untuk DL setup (sekarang minimal)
 
-- Akun Hugging Face (gratis): https://huggingface.co/join
-- Akses Google Colab (gratis): https://colab.research.google.com/
-- Browser modern (Chrome/Firefox)
+#### Step 1: Verify HF account ready
+Token HF kamu masih valid (dari setup earlier). Tidak perlu push apapun karena kita pakai base model `Wikidepia/IndoT5-base` yang sudah public.
 
-### Step 1: Setup HF account
-
-1. Daftar di https://huggingface.co/join
-2. Verifikasi email
-3. Generate access token:
-   - https://huggingface.co/settings/tokens
-   - Klik **"New token"**
-   - Nama: `asahlagi-training`
-   - Type: **Write** (penting!)
-   - Save token (hidden setelah ini, simpan baik-baik)
-
-### Step 2: Buka Colab notebook
-
-Cara paling cepat (setelah scaffolding di-push ke main):
-
-```
-https://colab.research.google.com/github/ravi-arnan/TempaCapstoneProject/blob/main/backend/ml/generator/notebooks/train_quiz_generator.ipynb
+#### Step 2: Test inference pakai base model
+```bash
+cd backend
+source .venv/bin/activate
+python -m ml.generator.inference
 ```
 
-Atau manual upload:
-1. https://colab.research.google.com/
-2. `File → Upload notebook`
-3. Upload `backend/ml/generator/notebooks/train_quiz_generator.ipynb`
+Expected behavior:
+- **Best case**: model output beberapa pertanyaan yang masuk akal (T5 base kadang nangkep prompt "buat pertanyaan:" dan output question-like text)
+- **Realistic case**: banyak output garbage (`aaaaa` atau paraphrase). Quality check di `inference.py` akan filter ini, dan wrapper di `app/services/quiz_generator.py` akan fall back ke rule-based generator.
 
-### Step 3: Aktifkan GPU
-
-`Runtime → Change runtime type → T4 GPU → Save`.
-
-### Step 4: Run all cells
-
-Klik `Runtime → Run all`, atau run cell per cell pakai `Shift+Enter`.
-
-| Cell | Aksi | Durasi |
-|---|---|---|
-| Install deps | pip install transformers, datasets, dll | ~2 menit |
-| HF login | paste access token | instant (manual) |
-| Load TyDiQA-id | download Indonesian QA dataset | ~1 menit |
-| Load IndoT5 base | download `Wikidepia/IndoT5-base` (~1GB) | ~3 menit |
-| Preprocess | tokenize dataset | ~1 menit |
-| Setup args | training arguments | instant |
-| **Train** | fine-tune 3 epochs | **1-2 jam** ⏰ |
-| Eval | manual review 3 sample passages | ~30 detik |
-| Push to HF | upload model | ~5 menit |
-
-**Saat training (Cell #7)**: bisa kamu tinggal makan/kerja lain. Tab Colab WAJIB tetap aktif (jangan close, bisa minimize). Tips anti-disconnect:
-
-```javascript
-// Buka DevTools (F12) → Console → paste & enter:
-function ClickConnect(){console.log("Working"); document.querySelector("colab-connect-button").click()} setInterval(ClickConnect,60000)
+#### Step 3: Test full backend
+```bash
+uvicorn app.main:app --reload
 ```
 
-### Step 5: Edit username sebelum push
-
-Di cell terakhir, ada line:
-```python
-HF_USERNAME = "audry-asahlagi"     # ← REPLACE
+Lalu:
+```bash
+curl -X POST http://localhost:8000/quiz/generate \
+  -H "Content-Type: application/json" \
+  --max-time 90 \
+  -d '{"material_text": "Fotosintesis adalah proses pembentukan glukosa oleh tumbuhan hijau dengan bantuan cahaya matahari dan klorofil. Proses ini terjadi di kloroplas dan menghasilkan oksigen sebagai produk samping."}'
 ```
 
-Ganti dengan **username HF kamu sendiri**. Misal username kamu `ravi-arnan-irianto`:
-```python
-HF_USERNAME = "ravi-arnan-irianto"
-```
+Cek log backend — harusnya muncul **salah satu** dari:
+- `INFO ml.generator: Loaded IndoT5 ...` + `INFO quiz_generator: DL path produced 5 questions` → DL ada output yang lolos quality check ✓
+- `INFO ml.generator: skipping low-quality output ...` (multiple) + `WARNING quiz_generator: DL path produced only N questions, falling back` → DL output garbage, fallback ke rule-based ✓
 
-Run cell. Setelah selesai, model kamu live di:
-```
-https://huggingface.co/ravi-arnan-irianto/indot5-quizgen-asahlagi
-```
+**Keduanya OK** untuk demo. Yang penting endpoint return valid quiz.
 
-### Step 6: Manual quality review
+### Optional: re-attempt fine-tuning post-MVP
 
-Sebelum handoff ke Audry, review minimal 10 generated questions di cell sebelumnya. Kriteria:
-- ✅ Pertanyaan grammatical Bahasa Indonesia
-- ✅ Pertanyaan relevant ke passage input
-- ✅ Question mark di akhir
-- ❌ Bukan summary atau paraphrase
-- ❌ Bukan kalimat random
+Kalau setelah demo ada waktu dan mau improve quality DL, edit notebook:
 
-Kalau >70% pertanyaan acceptable, model bisa di-handoff. Kalau di bawah, rerun training dengan epoch lebih banyak (5 instead of 3) atau learning rate lebih rendah (5e-5 instead of 1e-4).
+1. Buka `backend/ml/generator/notebooks/train_quiz_generator.ipynb`
+2. Cari cell `Seq2SeqTrainingArguments`
+3. Ganti `fp16=True` → `bf16=True` (T4 support bf16 stable untuk T5)
+4. Re-run notebook di Colab
+5. Push ke HF Hub
+6. Update `_MODEL_NAME` di `inference.py`
 
-### Step 7: Handoff ke Audry
-
-Post di chat tim:
-
-```
-@Audry — DL training selesai. Modelmu siap di:
-
-Model URL: https://huggingface.co/<username>/indot5-quizgen-asahlagi
-Final eval BLEU: <X.XX>
-Sample questions: [paste 5-10 dari Cell #8 evaluation]
-
-Tugas kamu lanjut:
-1. Edit backend/ml/generator/inference.py line 30:
-   _MODEL_NAME = "<username>/indot5-quizgen-asahlagi"
-2. Test: python -m ml.generator.inference
-3. Improve distractor logic (currently keyword-based, bisa lebih smart)
-4. Unit tests + PR
-
-Detail: docs/tugas/audry.md
-```
+Tapi ini **tidak perlu untuk MVP**.
 
 ---
 
@@ -270,12 +214,11 @@ Detail: docs/tugas/audry.md
 - [ ] Mobile responsive verified
 - [ ] Error states tested
 
-### DL Training
-- [ ] HF account setup + token generated
-- [ ] Colab notebook completed (all cells run sukses)
-- [ ] Model published to HF Hub: `<username>/indot5-quizgen-asahlagi`
-- [ ] Manual quality review: ≥7/10 questions acceptable
-- [ ] Handoff message posted ke Audry dengan URL + sample
+### DL Setup (revised — no fine-tuning)
+- [x] HF account setup + token generated
+- [x] Decision: skip fine-tuning, use base IndoT5 (per ML.md §3)
+- [ ] Verify base model loading works (`python -m ml.generator.inference`)
+- [ ] Verify backend `/quiz/generate` returns valid quiz (DL or fallback)
 - [ ] PR untuk frontend changes merged
 
 ---

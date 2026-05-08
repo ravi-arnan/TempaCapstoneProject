@@ -71,6 +71,37 @@ Pretrained IndoT5 understands Indonesian text but isn't tuned for question gener
 Without fine-tuning: model might output summaries, paraphrases, or generic text — not questions.
 With fine-tuning: model reliably produces interrogative sentences relevant to the input.
 
+### 🚧 MVP decision (2026-05-08): SKIP fine-tuning
+
+**Status**: fine-tuning attempted, postponed.
+
+**What happened**: first training attempt in Colab used `fp16=True` (default in our notebook template). T5 has known fp16 instability — gradients overflowed to NaN, training loss collapsed to 0, and model produced garbage output ("aaaaaaaaa..." for any input).
+
+**Decision**: ship MVP with base pretrained `Wikidepia/IndoT5-base` (no fine-tuning) plus a per-question quality check that falls back to rule-based generation when DL output is unusable.
+
+**Justification for capstone scope**:
+- T5 IS a deep learning model (220M parameters, transformer architecture). Inference IS deep learning.
+- The conventional ML component (Random Forest classifier, see §4) is fully intact.
+- Hybrid DL + ML requirement is satisfied.
+- Quality is acceptable for demo: when DL output is poor, the wrapper falls back to rule-based questions (still functional, just not as varied).
+
+**To revisit fine-tuning post-MVP**: see [`backend/ml/generator/notebooks/train_quiz_generator.ipynb`](backend/ml/generator/notebooks/train_quiz_generator.ipynb) and:
+1. Change `fp16=True` to `bf16=True` (T4 supports bf16 stably for T5)
+2. If bf16 still fails, use full fp32 (slower but always stable): `fp16=False, bf16=False`
+3. Retrain (~2-3 hours), push to HF Hub, update `_MODEL_NAME` in `ml/generator/inference.py`
+
+### Quality gate for non-fine-tuned inference
+
+Because base IndoT5 isn't trained for QG specifically, occasional outputs can be low-quality (paraphrases, summaries, or repeating characters when the model "collapses"). To handle this, `ml/generator/inference.py` includes a quality check:
+
+```python
+def _is_question_quality_acceptable(question: str) -> bool:
+    # Drop outputs that are: too short, dominated by a single character,
+    # or empty after stripping.
+```
+
+When too many questions fail the check, the wrapper in `app/services/quiz_generator.py` falls back to rule-based fill-in-the-blank generation.
+
 ### Dataset: **TyDiQA-id**
 
 - Source: [TyDiQA](https://github.com/google-research-datasets/tydiqa) (Google Research)
@@ -117,10 +148,42 @@ First load downloads ~1GB to `~/.cache/huggingface/`; subsequent runs use cache.
 
 ### Inference at runtime
 
-**Hardware**: backend CPU (no GPU available).
+**Hosting strategy: 3-tier fallback** (per `backend/ml/generator/inference.py`):
+
+1. **HF Space (cloud)** — preferred. See §3.5 below.
+2. **Local CPU** — fallback if HF Space unreachable.
+3. **Rule-based** — final fallback if both fail.
+
+**Hardware (when local CPU is used)**: backend CPU (no GPU available locally).
 
 **Per-question latency**: 3-8s on typical CPU (e.g., 4-core 2.5GHz).
-**Per-quiz latency** (5 questions): 15-40s.
+**Per-quiz latency** (5 questions): 6-15s in practice.
+
+### 3.5 HF Spaces deployment
+
+We deploy the same DL inference logic as a **Hugging Face Space** at `huggingface-space/` to get cloud-hosted inference. The local backend calls this Space; if it's down, backend falls back to local CPU.
+
+**Why HF Space (not Inference API or Colab)?**
+
+| Option | Pros | Cons |
+|---|---|---|
+| **HF Space (chosen)** | Free, dedicated URL, no rate limit, persistent until 48h idle | Need to set up FastAPI + Dockerfile |
+| HF Inference API | Zero setup | Rate-limited (~50 req/h), shared infra |
+| Colab + tunnel | Free GPU | Disconnect every 90min, not designed for serving — too brittle for demo |
+
+**Files in `huggingface-space/`:**
+- `app.py` — FastAPI app with `/generate` endpoint
+- `Dockerfile` — image build for Space
+- `requirements.txt` — Space-specific deps
+- `README.md` — HF Space metadata (title, emoji, SDK config)
+
+**Deployment**: see [`huggingface-space/README.md`](huggingface-space/README.md) and walkthrough in `docs/tugas/ravi.md`.
+
+**Endpoints exposed by Space**:
+- `GET /` — health check returning `{"status": "ready"}`
+- `POST /generate` — accepts `{material_text}`, returns `{questions: [...]}`
+
+**Cold start / sleep**: free tier sleeps after 48h idle. First request after sleep takes 30-60s to wake. **Pre-demo: hit `/` 10 minutes before** to ensure Space is awake.
 
 **Optimization options** (apply if needed):
 1. **Batch all 5 questions in one inference call** — T5 supports batching, can reduce total time by ~30%.

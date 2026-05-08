@@ -2,7 +2,9 @@
 
 Halo Audry! Tugasmu adalah **integrate Ravi's trained DL model** ke backend, **improve question quality**, dan **make sure the wrapper works end-to-end**.
 
-> **Catatan**: bagian Colab + Hugging Face training di-handle Ravi karena dia lebih familiar dengan workflow-nya. Kamu fokus ke integrasi + kualitas + testing — tetap bagian penting karena ini yang **menentukan apa yang user lihat**.
+> **Catatan (update 2026-05-08)**: bagian Colab + Hugging Face training di-handle Ravi, tapi **fine-tuning di-skip** untuk MVP karena fp16 NaN issue di T5. Kita pakai **base pretrained `Wikidepia/IndoT5-base`** (no fine-tuning). Backend wrapper sudah ada quality check + rule-based fallback supaya tidak return garbage.
+>
+> Detail rationale: lihat [`/ML.md` §3 "MVP decision: SKIP fine-tuning"](../../ML.md). Ini bukan blocker — wrapper sudah resilient.
 
 ## 📌 Big picture
 
@@ -52,13 +54,9 @@ python -c "from transformers import T5Tokenizer; print('OK')"
 # Should print: OK
 ```
 
-### 3. Tunggu handoff dari Ravi
+### 3. Tidak perlu nunggu Ravi (model sudah ready)
 
-Sebelum kamu bisa mulai, **tunggu Ravi finish training**. Indikasi siap:
-- Ravi post di chat tim: "DL training selesai, model di HF Hub: `<URL>`"
-- URL HF accessible (bisa kamu cek dengan buka URL-nya di browser)
-
-Sambil nunggu, kamu bisa kerjain **Step 1 baca docs** di bawah.
+Karena fine-tuning di-skip dan kita pakai `Wikidepia/IndoT5-base` (sudah public di HF Hub), kamu **bisa langsung mulai** tanpa nunggu Ravi handoff. Model akan auto-download saat backend startup pertama kali.
 
 ---
 
@@ -80,17 +78,9 @@ Kunci yang harus kamu pahami:
 
 ---
 
-## 🚀 Step 2: Plug in Ravi's model
+## 🚀 Step 2: Verify base model integration
 
-Setelah Ravi handoff URL, edit `backend/ml/generator/inference.py` line ~30:
-
-```python
-# Ganti baris ini:
-_MODEL_NAME = "Wikidepia/IndoT5-base"
-
-# Jadi (pakai username HF Ravi):
-_MODEL_NAME = "ravi-arnan-irianto/indot5-quizgen-asahlagi"  # ← Ravi's HF repo
-```
+`_MODEL_NAME` di `backend/ml/generator/inference.py` sudah default ke `Wikidepia/IndoT5-base`. **Tidak perlu edit**.
 
 ### Test: model bisa load
 
@@ -100,21 +90,24 @@ source .venv/bin/activate
 python -m ml.generator.inference
 ```
 
-Expected output (request pertama lambat karena download model ~1GB):
+Expected behavior (mungkin bervariasi karena base model bukan QG-specific):
+
+**Best case** — quality check loloskan beberapa output:
 ```
-[INFO] ml.generator: Loading IndoT5 from ravi-arnan-irianto/indot5-quizgen-asahlagi ...
-[INFO] ml.generator: Loaded IndoT5 from HF Hub: ... (params=220M)
+[INFO] ml.generator: Loaded IndoT5 from HF Hub: Wikidepia/IndoT5-base (params=220M)
 Generating quiz from sample material (XX chars)...
 
-Q1: Apa peran utama klorofil dalam fotosintesis?
- A.  Menyimpan glukosa
- B. ✓ Menyerap cahaya matahari
- C.  Menghasilkan oksigen
- D.  Memecah air
-...
+Q1: Apa yang dimaksud dengan fotosintesis?
+ A.  ...
 ```
 
-Kalau output muncul + grammatical → model loaded, integration sukses ✅
+**Realistic case** — banyak output di-filter, fallback ke rule-based via wrapper:
+```
+[INFO] ml.generator: skipping low-quality output for passage 0: 'aaaaa...'
+[INFO] ml.generator: skipping low-quality output for passage 1: ...
+```
+
+**Keduanya OK** — fokus kamu di **improve distractor logic** (Step 3) untuk meningkatkan kualitas options yang ditampilkan ke user, dan rule-based fallback yang menghasilkan question stems yang acceptable.
 
 ---
 

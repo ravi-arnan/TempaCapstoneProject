@@ -87,3 +87,6 @@ Thumbs.db
 *.log
 tmp/
 .cache/
+
+# HF Space clone (separate git repo for huggingface.co/spaces/raviarnan/asahlagi-quizgen)
+backend/asahlagi-quizgen/
