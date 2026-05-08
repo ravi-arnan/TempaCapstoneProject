@@ -18,45 +18,29 @@ const BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
   "http://localhost:8000";
 
-async function postJson<TReq, TRes>(path: string, body: TReq): Promise<TRes> {
-  let res: Response;
+// Default timeout for most endpoints
+const DEFAULT_TIMEOUT_MS = 10_000;
+
+// Quiz generation goes through DL inference (HF Space) and can take 6-15s
+// for a normal quiz, longer if Space is cold-starting (~30s).
+// 90s gives safe headroom without making users wait absurdly long.
+const QUIZ_GENERATE_TIMEOUT_MS = 90_000;
+
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    res = await fetch(`${BASE_URL}${path}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-  } catch {
-    throw new ApiException(
-      { detail: "Koneksi terputus. Pastikan kamu terhubung ke internet." },
-      0,
-    );
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  if (!res.ok) {
-    let errBody: ApiError;
-    try {
-      errBody = (await res.json()) as ApiError;
-    } catch {
-      errBody = { detail: "Terjadi kesalahan tak terduga." };
-    }
-    throw new ApiException(errBody, res.status);
-  }
-
-  return (await res.json()) as TRes;
 }
 
-async function getJson<TRes>(path: string): Promise<TRes> {
-  let res: Response;
-  try {
-    res = await fetch(`${BASE_URL}${path}`, { method: "GET" });
-  } catch {
-    throw new ApiException(
-      { detail: "Koneksi terputus. Pastikan kamu terhubung ke internet." },
-      0,
-    );
-  }
-
+async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     let errBody: ApiError;
     try {
@@ -66,8 +50,59 @@ async function getJson<TRes>(path: string): Promise<TRes> {
     }
     throw new ApiException(errBody, res.status);
   }
+  return (await res.json()) as T;
+}
 
-  return (await res.json()) as TRes;
+function networkErrorToApiException(err: unknown): ApiException {
+  if (err instanceof DOMException && err.name === "AbortError") {
+    return new ApiException(
+      {
+        detail:
+          "Permintaan terlalu lama. Coba lagi sebentar — sistem sedang menyiapkan model.",
+        code: "TIMEOUT",
+      },
+      408,
+    );
+  }
+  return new ApiException(
+    { detail: "Koneksi terputus. Pastikan kamu terhubung ke internet." },
+    0,
+  );
+}
+
+async function postJson<TReq, TRes>(
+  path: string,
+  body: TReq,
+  timeoutMs: number = DEFAULT_TIMEOUT_MS,
+): Promise<TRes> {
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(
+      `${BASE_URL}${path}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      },
+      timeoutMs,
+    );
+  } catch (err) {
+    throw networkErrorToApiException(err);
+  }
+  return handleResponse<TRes>(res);
+}
+
+async function getJson<TRes>(
+  path: string,
+  timeoutMs: number = DEFAULT_TIMEOUT_MS,
+): Promise<TRes> {
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(`${BASE_URL}${path}`, { method: "GET" }, timeoutMs);
+  } catch (err) {
+    throw networkErrorToApiException(err);
+  }
+  return handleResponse<TRes>(res);
 }
 
 // ============================================================================
@@ -89,6 +124,7 @@ export function generateQuiz(
   return postJson<QuizGenerateRequest, QuizGenerateResponse>(
     "/quiz/generate",
     req,
+    QUIZ_GENERATE_TIMEOUT_MS,
   );
 }
 

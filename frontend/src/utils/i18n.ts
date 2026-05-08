@@ -53,6 +53,17 @@ export const EMPTY_STATES = {
 } as const;
 
 // ============================================================================
+// Loading progress messages — rotated during DL inference (~9s wait)
+// ============================================================================
+
+export const LOADING_PROGRESS_MESSAGES = [
+  "Membaca materimu...",
+  "Menyusun pertanyaan...",
+  "Memeriksa kualitas pertanyaan...",
+  "Hampir selesai...",
+] as const;
+
+// ============================================================================
 // Error messages (BRAND.md §7.4 + API.md §6)
 // ============================================================================
 

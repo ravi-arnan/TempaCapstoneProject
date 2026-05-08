@@ -64,15 +64,39 @@ export function QuizPage() {
     }
   }
 
-  const allAnswered = answers.every((a) => a.selected_option_index !== null);
+  const answeredCount = answers.filter(
+    (a) => a.selected_option_index !== null,
+  ).length;
+  const allAnswered = answeredCount === quiz.total_questions;
+  const progressPercent = (answeredCount / quiz.total_questions) * 100;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-medium tracking-tight text-text-primary">
-          Kuis sedang berlangsung
-        </h1>
-        <QuizTimer seconds={seconds} />
+    <div className="space-y-6 pb-32">
+      {/* Sticky header: title + timer + progress bar */}
+      <div className="sticky top-0 z-10 -mx-6 bg-bg-page/80 px-6 py-3 backdrop-blur-sm sm:-mx-0 sm:rounded-xl sm:border sm:border-border-standard sm:bg-bg-page sm:px-4 sm:shadow-level-1">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-xl font-medium tracking-tight text-text-primary sm:text-2xl">
+            Kuis sedang berlangsung
+          </h1>
+          <QuizTimer seconds={seconds} />
+        </div>
+
+        <div className="mt-3 space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-mono uppercase tracking-[1.2px] text-text-muted">
+              {answeredCount} / {quiz.total_questions} terjawab
+            </span>
+            <span className="font-mono tabular-nums text-text-secondary">
+              {Math.round(progressPercent)}%
+            </span>
+          </div>
+          <div className="h-1 w-full overflow-hidden rounded-full bg-bg-subtle">
+            <div
+              className="h-full bg-brand-button transition-all duration-300 ease-out"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -89,20 +113,28 @@ export function QuizPage() {
       </div>
 
       {submitError && (
-        <p className="text-sm text-status-rendah">
+        <p className="rounded-xl border border-status-rendah bg-bg-alt p-3 text-sm text-status-rendah">
           {getErrorMessage(submitError.code, submitError.message)}
         </p>
       )}
 
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={submitting || !allAnswered}
-          className="rounded-pill border border-brand-button bg-brand-button px-8 py-2 text-sm font-medium text-white shadow-level-1 transition-colors hover:bg-brand-button-hover disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {submitting ? "Menganalisis hasil..." : BUTTON_LABELS.submitQuiz}
-        </button>
+      {/* Sticky bottom submit bar */}
+      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-border-standard bg-bg-page/95 px-6 py-4 backdrop-blur-sm shadow-level-3">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-text-muted">
+            {allAnswered
+              ? "Semua soal sudah terjawab"
+              : `Sisa ${quiz.total_questions - answeredCount} soal`}
+          </p>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={submitting || !allAnswered}
+            className="rounded-pill border border-brand-button bg-brand-button px-8 py-2.5 text-sm font-medium text-white shadow-level-1 transition-colors hover:bg-brand-button-hover disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {submitting ? "Menganalisis hasil..." : BUTTON_LABELS.submitQuiz}
+          </button>
+        </div>
       </div>
     </div>
   );

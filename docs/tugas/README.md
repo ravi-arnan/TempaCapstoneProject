@@ -13,7 +13,11 @@ Halo tim! 👋 Folder ini berisi tugas masing-masing anggota dalam format step-b
 
 **Cuma baca file kamu**. Tidak perlu baca file orang lain (kecuali penasaran).
 
-> **Catatan handoff Ravi → Audry**: Bagian DL training (Colab + Hugging Face) di-handle Ravi. Setelah training selesai dan model di-push ke HF Hub, Ravi handoff URL ke Audry. Audry yang integrate ke backend + improve quality + testing.
+> **Architecture update (2026-05-09)**: DL inference (Quiz Generator) sekarang di **cloud Hugging Face Space**, bukan local. Backend cuma manggil Space via HTTP. Implication: tim **tidak perlu install torch/transformers locally** — backend ringan (~450MB venv).
+>
+> Ravi sudah deploy Space di `https://raviarnan-asahlagi-quizgen.hf.space`. Audry tinggal set `HF_SPACE_URL` di `.env` dan focus ke integration + quality improvement (distractor logic dll).
+>
+> Fine-tuning di-skip untuk MVP (fp16 NaN issue). Detail di [`/ML.md`](../../ML.md).
 
 ---
 

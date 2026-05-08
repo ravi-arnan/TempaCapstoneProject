@@ -2,9 +2,11 @@
 
 Halo Audry! Tugasmu adalah **integrate Ravi's trained DL model** ke backend, **improve question quality**, dan **make sure the wrapper works end-to-end**.
 
-> **Catatan (update 2026-05-08)**: bagian Colab + Hugging Face training di-handle Ravi, tapi **fine-tuning di-skip** untuk MVP karena fp16 NaN issue di T5. Kita pakai **base pretrained `Wikidepia/IndoT5-base`** (no fine-tuning). Backend wrapper sudah ada quality check + rule-based fallback supaya tidak return garbage.
+> **Catatan (update 2026-05-09)**: Architecture berubah — DL inference sekarang di **cloud (Hugging Face Space)**, bukan local CPU lagi. Backend kamu cuma manggil Space via HTTP. Kamu **tidak perlu install torch/transformers locally** — itu di Space. Backend deps sekarang ringan (~450MB venv vs sebelumnya ~3GB).
 >
-> Detail rationale: lihat [`/ML.md` §3 "MVP decision: SKIP fine-tuning"](../../ML.md). Ini bukan blocker — wrapper sudah resilient.
+> Fine-tuning juga **di-skip** untuk MVP karena fp16 NaN issue di T5. Space pakai base pretrained `Wikidepia/IndoT5-base`. Backend wrapper sudah punya 3-tier fallback (HF Space → Local CPU → Rule-based).
+>
+> Detail rationale: lihat [`/ML.md` §3 "MVP decision: SKIP fine-tuning"](../../ML.md) dan [`/ML.md` §3.5 "HF Spaces deployment"](../../ML.md).
 
 ## 📌 Big picture
 
@@ -45,18 +47,29 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-> **Catatan**: install pertama akan download `torch` (~700MB) — sabar, ini sekali aja.
+> **Catatan**: install ringan (~450MB total venv) — tidak ada torch/transformers karena DL di cloud Space.
 
-### 2. Quick verify
+### 2. Set HF_SPACE_URL
 
 ```bash
-python -c "from transformers import T5Tokenizer; print('OK')"
-# Should print: OK
+cp .env.example .env
+# Edit .env, set:
+# HF_SPACE_URL=https://raviarnan-asahlagi-quizgen.hf.space
 ```
 
-### 3. Tidak perlu nunggu Ravi (model sudah ready)
+> URL Space sudah aktif. Tidak perlu deploy Space sendiri kecuali mau experiment.
 
-Karena fine-tuning di-skip dan kita pakai `Wikidepia/IndoT5-base` (sudah public di HF Hub), kamu **bisa langsung mulai** tanpa nunggu Ravi handoff. Model akan auto-download saat backend startup pertama kali.
+### 3. Quick verify
+
+```bash
+# Test backend bisa connect ke Space
+curl https://raviarnan-asahlagi-quizgen.hf.space/
+# Should return: {"service":"asahlagi-quizgen","status":"ready"}
+```
+
+### 4. Tidak perlu nunggu Ravi (Space sudah running)
+
+Architecture sudah cloud — kamu bisa langsung start tanpa nunggu siapa-siapa. Ravi sudah deploy Space dengan base pretrained model. Kalau Space sleep (48h idle), wake-up first request akan ambil ~30-60s sekali aja.
 
 ---
 

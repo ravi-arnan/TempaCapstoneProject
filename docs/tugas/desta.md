@@ -29,7 +29,7 @@ Insight engine       Recommendation engine
 
 ---
 
-## ⚙️ Setup awal (sekali aja, ~10 menit)
+## ⚙️ Setup awal (sekali aja, ~5 menit)
 
 ### 1. Clone repo & install backend
 
@@ -42,13 +42,13 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-> **Catatan**: install pertama akan download `torch` (~700MB) — sabar. Tapi kamu **tidak akan pakai torch**, cuma sklearn. Adanya torch di requirements karena Audry's DL.
+> **Catatan**: install ringan (~450MB venv) — sklearn + numpy + pandas. **Tidak ada torch/transformers** karena DL inference di cloud (Audry's domain). Kamu murni pakai sklearn untuk classifier.
 
 ### 2. Quick verify
 
 ```bash
-python -c "import sklearn; print(sklearn.__version__)"
-# Should print: 1.5.2
+python -c "import sklearn, joblib; print('sklearn:', sklearn.__version__, '| joblib:', joblib.__version__)"
+# Should print: sklearn: 1.5.2 | joblib: 1.4.2
 ```
 
 ---
