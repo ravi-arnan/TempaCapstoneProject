@@ -18,6 +18,12 @@ export interface QuizGenerateRequest {
   material_text: string;
 }
 
+export interface QuizGenerateFromUrlRequest {
+  url: string;
+}
+
+export type SourceType = "text" | "url" | "pdf";
+
 export interface QuizGenerateResponse {
   quiz_id: string;
   questions: Question[];

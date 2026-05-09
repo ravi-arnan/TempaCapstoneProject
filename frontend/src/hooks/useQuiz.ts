@@ -1,5 +1,10 @@
 import { useCallback, useState } from "react";
-import { generateQuiz, submitQuiz } from "@/services/api";
+import {
+  generateQuiz,
+  generateQuizFromPdf,
+  generateQuizFromUrl,
+  submitQuiz,
+} from "@/services/api";
 import type {
   QuizGenerateResponse,
   QuizSubmitRequest,
@@ -15,7 +20,7 @@ interface UseQuizState {
 }
 
 /**
- * Hook for orchestrating the generate + submit flow.
+ * Hook for orchestrating the generate (text/url/pdf) + submit flow.
  * Owns the loading/error states; pages own the navigation between them.
  */
 export function useQuiz() {
@@ -26,7 +31,13 @@ export function useQuiz() {
     submitError: null,
   });
 
-  const generate = useCallback(
+  function toApiException(err: unknown): ApiException {
+    return err instanceof ApiException
+      ? err
+      : new ApiException({ detail: "Terjadi kesalahan tak terduga." }, 0);
+  }
+
+  const generateFromText = useCallback(
     async (materialText: string): Promise<QuizGenerateResponse | null> => {
       setState((s) => ({ ...s, generating: true, generateError: null }));
       try {
@@ -34,11 +45,49 @@ export function useQuiz() {
         setState((s) => ({ ...s, generating: false }));
         return res;
       } catch (err) {
-        const apiErr =
-          err instanceof ApiException
-            ? err
-            : new ApiException({ detail: "Terjadi kesalahan tak terduga." }, 0);
-        setState((s) => ({ ...s, generating: false, generateError: apiErr }));
+        setState((s) => ({
+          ...s,
+          generating: false,
+          generateError: toApiException(err),
+        }));
+        return null;
+      }
+    },
+    [],
+  );
+
+  const generateFromUrl = useCallback(
+    async (url: string): Promise<QuizGenerateResponse | null> => {
+      setState((s) => ({ ...s, generating: true, generateError: null }));
+      try {
+        const res = await generateQuizFromUrl({ url });
+        setState((s) => ({ ...s, generating: false }));
+        return res;
+      } catch (err) {
+        setState((s) => ({
+          ...s,
+          generating: false,
+          generateError: toApiException(err),
+        }));
+        return null;
+      }
+    },
+    [],
+  );
+
+  const generateFromPdf = useCallback(
+    async (file: File): Promise<QuizGenerateResponse | null> => {
+      setState((s) => ({ ...s, generating: true, generateError: null }));
+      try {
+        const res = await generateQuizFromPdf(file);
+        setState((s) => ({ ...s, generating: false }));
+        return res;
+      } catch (err) {
+        setState((s) => ({
+          ...s,
+          generating: false,
+          generateError: toApiException(err),
+        }));
         return null;
       }
     },
@@ -53,11 +102,11 @@ export function useQuiz() {
         setState((s) => ({ ...s, submitting: false }));
         return res;
       } catch (err) {
-        const apiErr =
-          err instanceof ApiException
-            ? err
-            : new ApiException({ detail: "Terjadi kesalahan tak terduga." }, 0);
-        setState((s) => ({ ...s, submitting: false, submitError: apiErr }));
+        setState((s) => ({
+          ...s,
+          submitting: false,
+          submitError: toApiException(err),
+        }));
         return null;
       }
     },
@@ -66,7 +115,9 @@ export function useQuiz() {
 
   return {
     ...state,
-    generate,
+    generateFromText,
+    generateFromUrl,
+    generateFromPdf,
     submit,
   };
 }

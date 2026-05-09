@@ -6,6 +6,7 @@
  */
 
 import type {
+  QuizGenerateFromUrlRequest,
   QuizGenerateRequest,
   QuizGenerateResponse,
   QuizSubmitRequest,
@@ -126,6 +127,35 @@ export function generateQuiz(
     req,
     QUIZ_GENERATE_TIMEOUT_MS,
   );
+}
+
+export function generateQuizFromUrl(
+  req: QuizGenerateFromUrlRequest,
+): Promise<QuizGenerateResponse> {
+  return postJson<QuizGenerateFromUrlRequest, QuizGenerateResponse>(
+    "/quiz/generate-from-url",
+    req,
+    QUIZ_GENERATE_TIMEOUT_MS,
+  );
+}
+
+export async function generateQuizFromPdf(
+  file: File,
+): Promise<QuizGenerateResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(
+      `${BASE_URL}/quiz/generate-from-pdf`,
+      { method: "POST", body: formData },
+      QUIZ_GENERATE_TIMEOUT_MS,
+    );
+  } catch (err) {
+    throw networkErrorToApiException(err);
+  }
+  return handleResponse<QuizGenerateResponse>(res);
 }
 
 export function submitQuiz(

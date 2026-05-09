@@ -58,10 +58,13 @@ def generate_quiz(material_text: str) -> QuizInternal:
             raw_questions = ml_generator.generate(text)
             questions: list[QuestionInternal] = []
             for i, q in enumerate(raw_questions, start=1):
+                cleaned = _clean_question_text(q["question"])
+                if cleaned is None:
+                    continue  # cleanup made it invalid; skip
                 questions.append(
                     QuestionInternal(
-                        id=i,
-                        question=q["question"],
+                        id=len(questions) + 1,  # renumber after dropping
+                        question=cleaned,
                         options=q["options"],
                         correct_option_index=q["correct_option_index"],
                     )
@@ -87,6 +90,107 @@ def generate_quiz(material_text: str) -> QuizInternal:
 
     # === Path 2: rule-based fallback ===
     return _generate_rule_based(text)
+
+
+# ============================================================================
+# Quality cleanup (defense-in-depth — runs on top of ml/generator output)
+# ============================================================================
+
+import re
+
+# Patterns to strip from the start (and embedded) of generated questions.
+# Non-fine-tuned T5 sometimes echoes instruction prefixes back into output.
+_PROMPT_PREFIX_PATTERNS = (
+    "buat pertanyaan:",
+    "buatlah pertanyaan:",
+    "pertanyaan seperti ini:",
+    "pertanyaan:",
+)
+
+# Indonesian question starters. A clean question SHOULD start with one of these.
+# We scan for them in the text and trim everything before the first occurrence.
+_QUESTION_STARTERS = (
+    "Apa", "Apakah", "Bagaimana", "Mengapa", "Kenapa", "Siapa", "Kapan",
+    "Di mana", "Dimana", "Berapa", "Manakah", "Mana yang", "Sebutkan",
+    "Jelaskan", "Tulislah", "Tuliskan", "Tentukan", "Hitunglah",
+)
+
+_MIN_CLEANED_LENGTH = 15  # after cleanup, need at least this much text
+
+# Compile a regex to find any question starter as a word boundary
+_QUESTION_STARTER_RE = re.compile(
+    r"\b(" + "|".join(re.escape(s) for s in _QUESTION_STARTERS) + r")\b",
+    re.IGNORECASE,
+)
+
+
+def _clean_question_text(raw: str) -> str | None:
+    """Defense-in-depth cleanup on each generated question.
+
+    Strips prompt-prefix leakage, leading garbage, and rejects outputs that
+    don't look like proper questions. Returns None if not salvageable.
+    """
+    if not raw:
+        return None
+
+    text = raw.strip()
+
+    # Iteratively strip prompt-prefix patterns from the start.
+    # Loop because models sometimes repeat: "Buat pertanyaan: Buat pertanyaan: ..."
+    for _ in range(4):
+        stripped = False
+        for pattern in _PROMPT_PREFIX_PATTERNS:
+            if text.lower().startswith(pattern):
+                text = text[len(pattern):].strip()
+                stripped = True
+                break
+        if not stripped:
+            break
+
+    # Aggressive scan: find the FIRST Indonesian question starter and trim
+    # everything before it. Handles cases like "Inflasi  Buat pertanyaan: Apa..."
+    # where the prefix isn't at position 0.
+    match = _QUESTION_STARTER_RE.search(text)
+    if match:
+        text = text[match.start():].strip()
+    else:
+        # No proper question starter found → not a valid question
+        return None
+
+    # Truncate at first '?' if present (drops trailing artifacts)
+    if "?" in text:
+        text = text.split("?", 1)[0].strip() + "?"
+
+    # Drop leading non-letter chars (defensive — should be moot after starter match)
+    while text and not text[0].isalnum():
+        text = text[1:].strip()
+
+    # Capitalize first letter for readability
+    if text and text[0].islower():
+        text = text[0].upper() + text[1:]
+
+    # Ensure ends with '?' (model sometimes truncates mid-sentence)
+    if text and text[-1] not in "?.!":
+        text += "?"
+
+    # Reject if too short
+    if len(text) < _MIN_CLEANED_LENGTH:
+        return None
+
+    # Reject single-character-dominated output (model collapse)
+    letters = [c for c in text.lower() if c.isalpha()]
+    if not letters:
+        return None
+    if letters.count(max(letters, key=letters.count)) / len(letters) > 0.5:
+        return None
+
+    # Reject if no meaningful content (need at least 1 word with 5+ chars)
+    if not any(
+        len("".join(c for c in w if c.isalpha())) >= 5 for w in text.split()
+    ):
+        return None
+
+    return text
 
 
 # ============================================================================

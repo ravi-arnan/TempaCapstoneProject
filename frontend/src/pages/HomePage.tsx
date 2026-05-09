@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MaterialInputForm } from "@/components/MaterialInputForm";
+import { SourceTypeTabs } from "@/components/SourceTypeTabs";
 import { useQuiz } from "@/hooks/useQuiz";
+import type { SourceType } from "@/types/quiz";
 import {
   HOMEPAGE,
   LOADING_PROGRESS_MESSAGES,
@@ -11,16 +13,23 @@ import {
 const MESSAGE_ROTATION_INTERVAL_MS = 3500;
 
 /**
- * Home page: paste material → generate quiz → navigate to /quiz.
+ * Home page: pick source (text/url/pdf), submit, generate quiz, navigate.
  * Owner: Ravi.
  */
 export function HomePage() {
   const navigate = useNavigate();
-  const { generate, generating, generateError } = useQuiz();
+  const {
+    generateFromText,
+    generateFromUrl,
+    generateFromPdf,
+    generating,
+    generateError,
+  } = useQuiz();
+
+  const [sourceType, setSourceType] = useState<SourceType>("text");
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
 
-  // Rotate loading messages while DL inference runs (~9-15s typically).
-  // Stays on the last message if generation takes longer than expected.
+  // Rotate loading messages while generation runs (~9-25s typically).
   useEffect(() => {
     if (!generating) {
       setLoadingMessageIndex(0);
@@ -34,8 +43,7 @@ export function HomePage() {
     return () => clearInterval(interval);
   }, [generating]);
 
-  async function handleSubmit(materialText: string) {
-    const quiz = await generate(materialText);
+  async function handleSubmit(quiz: Awaited<ReturnType<typeof generateFromText>>) {
     if (quiz) {
       navigate("/quiz", { state: { quiz } });
     }
@@ -52,8 +60,19 @@ export function HomePage() {
         </p>
       </header>
 
+      <div>
+        <SourceTypeTabs
+          value={sourceType}
+          onChange={setSourceType}
+          disabled={generating}
+        />
+      </div>
+
       <MaterialInputForm
-        onSubmit={handleSubmit}
+        sourceType={sourceType}
+        onSubmitText={async (text) => handleSubmit(await generateFromText(text))}
+        onSubmitUrl={async (url) => handleSubmit(await generateFromUrl(url))}
+        onSubmitPdf={async (file) => handleSubmit(await generateFromPdf(file))}
         isSubmitting={generating}
         loadingMessage={
           generating ? LOADING_PROGRESS_MESSAGES[loadingMessageIndex] : undefined

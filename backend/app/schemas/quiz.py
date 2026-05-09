@@ -34,6 +34,12 @@ class QuizGenerateRequest(BaseModel):
     material_text: str = Field(..., min_length=1, max_length=20_000)
 
 
+class QuizGenerateFromUrlRequest(BaseModel):
+    """POST /quiz/generate-from-url request body."""
+
+    url: str = Field(..., min_length=1, max_length=2048)
+
+
 class QuizGenerateResponse(BaseModel):
     """POST /quiz/generate success response."""
 

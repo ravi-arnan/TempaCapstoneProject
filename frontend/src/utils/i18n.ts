@@ -48,8 +48,24 @@ export const EMPTY_STATES = {
   materialPlaceholder: "Tempel materi belajarmu di sini...",
   materialHelp:
     "Minimal 100 karakter. Bisa berupa ringkasan, artikel, atau bab buku.",
+  urlPlaceholder: "https://contoh.com/artikel-pelajaran",
+  urlHelp:
+    "Tempel link artikel pelajaran. Sistem akan mengambil isi artikelnya secara otomatis.",
+  pdfHelp:
+    "Upload file PDF (max 10 MB). Sistem akan ekstrak teks dari PDF — pastikan PDF berisi teks, bukan scan/gambar.",
+  pdfDropzone: "Klik atau seret file PDF ke sini",
   quizLoading: "Sedang menyusun pertanyaan...",
   submitProcessing: "Menganalisis hasil...",
+} as const;
+
+// ============================================================================
+// Source type labels (for HomePage tabs)
+// ============================================================================
+
+export const SOURCE_TYPE_LABELS = {
+  text: "Teks",
+  url: "Tautan Web",
+  pdf: "File PDF",
 } as const;
 
 // ============================================================================
@@ -75,6 +91,23 @@ export const ERROR_MESSAGES: Record<string, string> = {
     "Materinya terlalu panjang. Maksimal 20.000 karakter — coba ringkas dulu bagian intinya.",
   QUIZ_GENERATION_FAILED:
     "Gagal membuat kuis. Coba materi lain atau ulangi sebentar lagi.",
+  PDF_INVALID:
+    "File PDF tidak bisa diproses. Pastikan file PDF valid dan tidak rusak.",
+  PDF_EMPTY:
+    "PDF tidak punya teks yang bisa diekstrak. Mungkin PDF berupa scan/gambar — coba ketik ulang materinya.",
+  PDF_TOO_SHORT:
+    "Teks PDF terlalu pendek. Coba PDF dengan konten lebih banyak.",
+  PDF_TOO_LONG:
+    "PDF terlalu panjang. Sistem ambil 20.000 karakter pertama saja.",
+  URL_INVALID: "URL tidak valid. Pastikan dimulai dengan http:// atau https://",
+  URL_FETCH_FAILED:
+    "Gagal mengambil halaman dari URL. Pastikan URL bisa diakses publik.",
+  URL_EMPTY_CONTENT:
+    "Halaman tidak punya artikel yang bisa diambil. Mungkin butuh login atau isinya kebanyakan gambar.",
+  URL_TOO_SHORT:
+    "Artikel di URL terlalu pendek. Coba artikel yang lebih panjang.",
+  URL_TOO_LONG:
+    "Artikel terlalu panjang. Sistem ambil 20.000 karakter pertama saja.",
   QUIZ_NOT_FOUND:
     "Kuis tidak ditemukan atau sudah kedaluwarsa. Mulai ulang dari halaman utama.",
   ANSWERS_LENGTH_MISMATCH:
