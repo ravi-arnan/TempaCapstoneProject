@@ -218,22 +218,50 @@ _WORD_RE = re.compile(r"[A-Za-zÀ-ÿ]{4,}")
 
 
 def _split_sentences(text: str) -> list[str]:
-    """Split text into sensible-length sentences.
+    """Split text into sensible-length sentences (bulletproof — always returns >= 1 if text is non-trivial).
 
-    First tries proper sentence-terminator splitting. If that yields too few,
-    falls back to line-based splitting (handles list-style / non-narrative text).
+    Fallback chain:
+        1. Sentence terminators (. ! ?)
+        2. Line breaks (handles list-style content)
+        3. Punctuation breaks (commas, semicolons, dashes)
+        4. Sliding window (90-char chunks — last resort for unstructured text)
     """
+    # Path 1: proper sentences
     sentences = [s.strip() for s in _SENTENCE_SPLIT.split(text) if s.strip()]
     sensible = [s for s in sentences if 30 <= len(s) <= 280]
+    if len(sensible) >= FALLBACK_MIN_COUNT:
+        return sensible
 
-    # Fallback: if proper sentences are too few, try line-based splitting
-    # (helpful for content like recipe lists, bullet points, etc.)
-    if len(sensible) < FALLBACK_MIN_COUNT:
-        lines = [l.strip() for l in text.split("\n") if l.strip()]
-        line_sensible = [l for l in lines if 30 <= len(l) <= 280]
-        if len(line_sensible) > len(sensible):
-            sensible = line_sensible
-    return sensible
+    # Path 2: line-based
+    lines = [l.strip() for l in text.split("\n") if l.strip()]
+    line_sensible = [l for l in lines if 30 <= len(l) <= 280]
+    if len(line_sensible) >= FALLBACK_MIN_COUNT:
+        return line_sensible
+
+    # Path 3: punctuation-based (split on commas, semicolons, dashes)
+    chunks = re.split(r"[,;—–-]\s+", text)
+    chunks = [c.strip() for c in chunks if c.strip()]
+    chunk_sensible = [c for c in chunks if 30 <= len(c) <= 280]
+    if len(chunk_sensible) >= FALLBACK_MIN_COUNT:
+        return chunk_sensible
+
+    # Path 4: sliding window — guarantees >= 2 chunks for any text >= 90 chars
+    window_size = 90
+    overlap = 30
+    windowed: list[str] = []
+    text_clean = " ".join(text.split())  # collapse whitespace
+    pos = 0
+    while pos < len(text_clean):
+        chunk = text_clean[pos : pos + window_size]
+        if len(chunk) >= 30:
+            windowed.append(chunk)
+        pos += window_size - overlap
+    if len(windowed) >= 1:
+        return windowed
+
+    # Absolute fallback: return whole text as single chunk
+    cleaned = text.strip()
+    return [cleaned] if cleaned else []
 
 
 def _extract_keywords(text: str) -> list[str]:
@@ -289,20 +317,21 @@ def _build_rule_question(
 def _generate_rule_based(text: str) -> QuizInternal:
     """Rule-based fill-in-the-blank quiz generator. Used as fallback.
 
-    Returns 400 (not 500) when content is unsuitable for quiz generation —
-    this is a USER input issue (e.g., search results page, table of contents),
-    not a system error.
+    Bulletproof: any text >= MIN_MATERIAL_LENGTH (100 chars) should produce
+    at least 2 questions. Returns 400 only when input genuinely can't be
+    used (e.g., < 4 distinct keywords).
     """
     try:
         sentences = _split_sentences(text)
-        if len(sentences) < FALLBACK_MIN_COUNT:
+
+        # If even sliding-window can't produce 2 chunks, content is too thin
+        if len(sentences) < 1:
             raise ApiException(
                 status_code=400,
                 code=QUIZ_GENERATION_FAILED,
                 detail=(
                     "Materi tidak cocok untuk membuat kuis. "
-                    "Sistem butuh teks artikel/penjelasan dengan beberapa kalimat lengkap. "
-                    "Coba materi seperti artikel pelajaran, ringkasan bab, atau penjelasan konsep."
+                    "Sistem butuh teks dengan minimal 100 karakter berisi konten substantif."
                 ),
             )
 
@@ -313,15 +342,17 @@ def _generate_rule_based(text: str) -> QuizInternal:
                 code=QUIZ_GENERATION_FAILED,
                 detail=(
                     "Materi terlalu seragam untuk membuat kuis pilihan ganda. "
-                    "Coba materi dengan kosakata yang lebih beragam."
+                    "Sistem butuh minimal 4 kata bermakna yang berbeda. "
+                    "Coba materi dengan kosakata lebih beragam."
                 ),
             )
 
         rng = random.Random(abs(hash(text)) & 0xFFFFFFFF)
         used_correct_lower: set[str] = set()
         questions: list[QuestionInternal] = []
-        target = min(DEFAULT_QUESTION_COUNT, len(sentences))
+        target = min(DEFAULT_QUESTION_COUNT, max(len(sentences), 2))
 
+        # Try sentences first — generates richest questions
         for sentence in sentences[: DEFAULT_QUESTION_COUNT * 3]:
             if len(questions) >= target:
                 break
@@ -334,14 +365,30 @@ def _generate_rule_based(text: str) -> QuizInternal:
             if q is not None:
                 questions.append(q)
 
-        if len(questions) < FALLBACK_MIN_COUNT:
+        # Last-resort: if still no questions, generate from whole-text passages
+        # using different keywords as the blank
+        if len(questions) < 2 and len(all_keywords) >= 4:
+            whole_text = " ".join(text.split())[:280]  # collapse whitespace + truncate
+            for keyword in all_keywords[:DEFAULT_QUESTION_COUNT]:
+                if len(questions) >= 2:
+                    break
+                if keyword.lower() in used_correct_lower:
+                    continue
+                used_correct_lower.add(keyword.lower())
+                q = _build_rule_question(
+                    len(questions) + 1, whole_text, keyword, all_keywords, rng
+                )
+                if q is not None:
+                    questions.append(q)
+
+        if not questions:
             raise ApiException(
                 status_code=400,
                 code=QUIZ_GENERATION_FAILED,
                 detail=(
-                    "Tidak bisa membuat cukup pertanyaan dari materi ini. "
-                    "Coba materi yang lebih panjang dan beragam — misalnya artikel pelajaran "
-                    "atau penjelasan konsep, bukan daftar/judul-judul pendek."
+                    "Tidak bisa membuat pertanyaan dari materi ini. "
+                    "Coba materi yang lebih panjang dengan konten penjelasan, "
+                    "bukan sekadar daftar atau angka."
                 ),
             )
 
