@@ -35,7 +35,8 @@ from ml.generator import inference as ml_generator
 logger = logging.getLogger(__name__)
 
 DEFAULT_QUESTION_COUNT = 5
-MIN_QUESTION_COUNT = 3
+MIN_QUESTION_COUNT = 3        # for DL path — we expect quality
+FALLBACK_MIN_COUNT = 2        # rule-based fallback — accept fewer if needed
 MIN_MATERIAL_LENGTH = 100
 
 
@@ -217,8 +218,22 @@ _WORD_RE = re.compile(r"[A-Za-zÀ-ÿ]{4,}")
 
 
 def _split_sentences(text: str) -> list[str]:
+    """Split text into sensible-length sentences.
+
+    First tries proper sentence-terminator splitting. If that yields too few,
+    falls back to line-based splitting (handles list-style / non-narrative text).
+    """
     sentences = [s.strip() for s in _SENTENCE_SPLIT.split(text) if s.strip()]
-    return [s for s in sentences if 30 <= len(s) <= 280]
+    sensible = [s for s in sentences if 30 <= len(s) <= 280]
+
+    # Fallback: if proper sentences are too few, try line-based splitting
+    # (helpful for content like recipe lists, bullet points, etc.)
+    if len(sensible) < FALLBACK_MIN_COUNT:
+        lines = [l.strip() for l in text.split("\n") if l.strip()]
+        line_sensible = [l for l in lines if 30 <= len(l) <= 280]
+        if len(line_sensible) > len(sensible):
+            sensible = line_sensible
+    return sensible
 
 
 def _extract_keywords(text: str) -> list[str]:
@@ -272,22 +287,34 @@ def _build_rule_question(
 
 
 def _generate_rule_based(text: str) -> QuizInternal:
-    """Rule-based fill-in-the-blank quiz generator. Used as fallback."""
+    """Rule-based fill-in-the-blank quiz generator. Used as fallback.
+
+    Returns 400 (not 500) when content is unsuitable for quiz generation —
+    this is a USER input issue (e.g., search results page, table of contents),
+    not a system error.
+    """
     try:
         sentences = _split_sentences(text)
-        if len(sentences) < MIN_QUESTION_COUNT:
+        if len(sentences) < FALLBACK_MIN_COUNT:
             raise ApiException(
-                status_code=500,
+                status_code=400,
                 code=QUIZ_GENERATION_FAILED,
-                detail="Materi belum cukup variatif untuk membuat kuis. Coba teks dengan lebih banyak kalimat.",
+                detail=(
+                    "Materi tidak cocok untuk membuat kuis. "
+                    "Sistem butuh teks artikel/penjelasan dengan beberapa kalimat lengkap. "
+                    "Coba materi seperti artikel pelajaran, ringkasan bab, atau penjelasan konsep."
+                ),
             )
 
         all_keywords = _extract_keywords(text)
         if len(all_keywords) < 4:
             raise ApiException(
-                status_code=500,
+                status_code=400,
                 code=QUIZ_GENERATION_FAILED,
-                detail="Materi belum cukup variatif untuk membuat distraktor jawaban.",
+                detail=(
+                    "Materi terlalu seragam untuk membuat kuis pilihan ganda. "
+                    "Coba materi dengan kosakata yang lebih beragam."
+                ),
             )
 
         rng = random.Random(abs(hash(text)) & 0xFFFFFFFF)
@@ -307,11 +334,15 @@ def _generate_rule_based(text: str) -> QuizInternal:
             if q is not None:
                 questions.append(q)
 
-        if len(questions) < MIN_QUESTION_COUNT:
+        if len(questions) < FALLBACK_MIN_COUNT:
             raise ApiException(
-                status_code=500,
+                status_code=400,
                 code=QUIZ_GENERATION_FAILED,
-                detail="Gagal membuat kuis dari materi ini. Coba materi yang lebih panjang dan beragam.",
+                detail=(
+                    "Tidak bisa membuat cukup pertanyaan dari materi ini. "
+                    "Coba materi yang lebih panjang dan beragam — misalnya artikel pelajaran "
+                    "atau penjelasan konsep, bukan daftar/judul-judul pendek."
+                ),
             )
 
         logger.info("quiz_generator: rule-based path produced %d questions", len(questions))
