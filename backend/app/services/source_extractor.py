@@ -29,7 +29,7 @@ MAX_LENGTH = 20_000
 # URL fetch timeout
 URL_FETCH_TIMEOUT_SECONDS = 15.0
 URL_USER_AGENT = (
-    "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Googlebot/2.1; +http://www.google.com/bot.html) Chrome/115.0.0.0 Safari/537.36"
+    "Mozilla/5.0 (compatible; AsahlagiBot/1.0; capstone TP-G005)"
 )
 
 
@@ -184,17 +184,13 @@ def extract_text_from_url(url: str) -> str:
                 finally:
                     browser.close()
                 
-                text = _extract_article_with_trafilatura(html)
+                playwright_text = _extract_article_with_trafilatura(html)
+                if playwright_text:
+                    text = playwright_text
+        except ImportError:
+            logger.warning("source_extractor: Playwright not installed. Skipping SPA fallback for %s", url)
         except Exception as exc:
             logger.warning("source_extractor: Playwright fallback failed for %s: %s", url, exc)
-            raise ApiException(
-                status_code=400,
-                code=URL_FETCH_FAILED,
-                detail=(
-                    "Gagal mengambil konten dari URL. "
-                    "Pastikan URL valid dan halaman bisa diakses publik."
-                ),
-            ) from exc
 
     if not text:
         raise ApiException(

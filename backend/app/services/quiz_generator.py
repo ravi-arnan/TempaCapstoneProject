@@ -330,7 +330,7 @@ def _build_rule_question(
     if blanked == sentence:
         return None
 
-    from ml.generator.inference import _pick_similar_length_distractors
+    from app.services._distractors import _pick_similar_length_distractors
     distractors = _pick_similar_length_distractors(correct, pool, 3)
     if len(distractors) < 3:
         return None
