@@ -22,6 +22,7 @@ import logging
 import random
 import re
 import uuid
+import difflib
 from datetime import datetime, timezone
 
 from app.schemas.internal import QuestionInternal, QuizInternal
@@ -38,6 +39,39 @@ DEFAULT_QUESTION_COUNT = 5
 MIN_QUESTION_COUNT = 3        # for DL path — we expect quality
 FALLBACK_MIN_COUNT = 2        # rule-based fallback — accept fewer if needed
 MIN_MATERIAL_LENGTH = 100
+
+
+# Indonesian question starters.
+_QUESTION_STARTERS = (
+    "Apa", "Apakah", "Bagaimana", "Mengapa", "Kenapa", "Siapa", "Kapan",
+    "Di mana", "Dimana", "Berapa", "Manakah", "Mana yang", "Sebutkan",
+    "Jelaskan", "Tulislah", "Tuliskan", "Tentukan", "Hitunglah",
+)
+
+def _normalize_for_dedup(text: str) -> str:
+    # Remove punctuation and normalize whitespace
+    text = re.sub(r'[^\w\s]', '', text.lower())
+    # Remove common question starters to focus on the core topic
+    for starter in _QUESTION_STARTERS:
+        if text.startswith(starter.lower()):
+            text = text[len(starter):].strip()
+    return " ".join(text.split())
+
+def _is_duplicate(new_q_text: str, existing_questions: list[QuestionInternal], threshold: float = 0.8) -> bool:
+    norm_new = _normalize_for_dedup(new_q_text)
+    for q in existing_questions:
+        norm_existing = _normalize_for_dedup(q.question)
+        # Sequence matching on core text
+        similarity = difflib.SequenceMatcher(None, norm_new, norm_existing).ratio()
+        
+        # Word overlap check (Jaccard similarity)
+        words_new = set(norm_new.split())
+        words_exist = set(norm_existing.split())
+        jaccard = len(words_new & words_exist) / len(words_new | words_exist) if words_new and words_exist else 0.0
+            
+        if similarity > threshold or jaccard > 0.65:
+            return True
+    return False
 
 
 def generate_quiz(material_text: str) -> QuizInternal:
@@ -62,6 +96,11 @@ def generate_quiz(material_text: str) -> QuizInternal:
                 cleaned = _clean_question_text(q["question"])
                 if cleaned is None:
                     continue  # cleanup made it invalid; skip
+                
+                if _is_duplicate(cleaned, questions):
+                    logger.info("quiz_generator: skipping duplicate question from DL")
+                    continue
+                    
                 questions.append(
                     QuestionInternal(
                         id=len(questions) + 1,  # renumber after dropping
@@ -108,13 +147,7 @@ _PROMPT_PREFIX_PATTERNS = (
     "pertanyaan:",
 )
 
-# Indonesian question starters. A clean question SHOULD start with one of these.
-# We scan for them in the text and trim everything before the first occurrence.
-_QUESTION_STARTERS = (
-    "Apa", "Apakah", "Bagaimana", "Mengapa", "Kenapa", "Siapa", "Kapan",
-    "Di mana", "Dimana", "Berapa", "Manakah", "Mana yang", "Sebutkan",
-    "Jelaskan", "Tulislah", "Tuliskan", "Tentukan", "Hitunglah",
-)
+# Indonesian question starters (moved to top for dedup logic)
 
 _MIN_CLEANED_LENGTH = 15  # after cleanup, need at least this much text
 
@@ -297,10 +330,10 @@ def _build_rule_question(
     if blanked == sentence:
         return None
 
-    distractor_candidates = [w for w in pool if w.lower() != correct.lower()]
-    if len(distractor_candidates) < 3:
+    from app.services._distractors import _pick_similar_length_distractors
+    distractors = _pick_similar_length_distractors(correct, pool, 3)
+    if len(distractors) < 3:
         return None
-    distractors = rng.sample(distractor_candidates, 3)
 
     options: list[str] = [correct, *distractors]
     rng.shuffle(options)
@@ -363,6 +396,8 @@ def _generate_rule_based(text: str) -> QuizInternal:
                 len(questions) + 1, sentence, correct, all_keywords, rng
             )
             if q is not None:
+                if _is_duplicate(q.question, questions):
+                    continue
                 questions.append(q)
 
         # Last-resort: if still no questions, generate from whole-text passages
@@ -379,6 +414,8 @@ def _generate_rule_based(text: str) -> QuizInternal:
                     len(questions) + 1, whole_text, keyword, all_keywords, rng
                 )
                 if q is not None:
+                    if _is_duplicate(q.question, questions):
+                        continue
                     questions.append(q)
 
         if not questions:

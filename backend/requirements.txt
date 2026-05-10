@@ -23,8 +23,9 @@ numpy==2.0.2
 pandas==2.2.3
 
 # ===== Source extraction (PDF + URL article) =====
-pypdf==5.1.0           # PDF text extraction (text-PDFs only, no OCR)
+pdfplumber==0.11.4     # PDF text & table extraction (handles multi-column layout well)
 trafilatura==1.12.2    # Article text extraction from URLs
+
 
 # ===== Dev / testing =====
 pytest==8.3.3

@@ -18,6 +18,7 @@ import logging
 import os
 import random
 import re
+import difflib
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -205,6 +206,9 @@ def _extract_keywords(text: str) -> list[str]:
     return words
 
 
+from app.services._distractors import _pick_similar_length_distractors
+
+
 def _split_passages(text: str, n: int = _NUM_QUESTIONS) -> list[str]:
     sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
     if len(sentences) <= n:
@@ -217,7 +221,15 @@ def _generate_local_question(passage: str) -> str:
     if _local_model is None or _local_tokenizer is None:
         raise RuntimeError("Local model not loaded")
 
-    prompt = f"buat pertanyaan: {passage}"
+    # Add prompt variation for local generation
+    prompts = [
+        f"buat pertanyaan dari kalimat berikut: {passage}",
+        f"buatlah soal pilihan ganda berdasarkan teks ini: {passage}",
+        f"pertanyaan untuk teks: {passage}",
+        f"buat pertanyaan: {passage}",
+        f"tuliskan satu pertanyaan dari: {passage}"
+    ]
+    prompt = random.choice(prompts)
     inputs = _local_tokenizer(
         prompt,
         return_tensors="pt",
@@ -298,10 +310,9 @@ def _generate_locally(material_text: str) -> list[dict]:
             continue
         correct = max(passage_keywords, key=len)
 
-        distractor_pool = [k for k in keywords_pool if k.lower() != correct.lower()]
-        if len(distractor_pool) < 3:
+        distractors = _pick_similar_length_distractors(correct, keywords_pool, 3)
+        if len(distractors) < 3:
             continue
-        distractors = rng.sample(distractor_pool, 3)
         options = [correct, *distractors]
         rng.shuffle(options)
         correct_idx = options.index(correct)

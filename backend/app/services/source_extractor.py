@@ -70,16 +70,19 @@ def extract_text_from_pdf(pdf_bytes: bytes) -> str:
         )
 
     try:
-        from pypdf import PdfReader
+        import pdfplumber
 
-        reader = PdfReader(io.BytesIO(pdf_bytes))
         chunks: list[str] = []
-        for page in reader.pages:
-            try:
-                chunks.append(page.extract_text() or "")
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("source_extractor: page extract failed: %s", exc)
-                continue
+        with pdfplumber.open(io.BytesIO(pdf_bytes)) as pdf:
+            for page in pdf.pages:
+                try:
+                    # pdfplumber handles multi-column and basic tables much better
+                    # We extract text, and it usually preserves tabular layout
+                    text_page = page.extract_text() or ""
+                    chunks.append(text_page)
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("source_extractor: page extract failed: %s", exc)
+                    continue
         text = "\n".join(c.strip() for c in chunks if c.strip())
     except ApiException:
         raise
@@ -135,27 +138,60 @@ def extract_text_from_url(url: str) -> str:
             detail="URL harus dimulai dengan http:// atau https://",
         )
 
+    # 1. Try lightweight extraction first (httpx)
+    text = None
+    fallback_to_playwright = False
     try:
-        with httpx.Client(
-            timeout=URL_FETCH_TIMEOUT_SECONDS,
-            follow_redirects=True,
-            headers={"User-Agent": URL_USER_AGENT},
-        ) as client:
-            response = client.get(url)
-            response.raise_for_status()
-            html = response.text
-    except httpx.HTTPError as exc:
-        logger.warning("source_extractor: URL fetch failed for %s: %s", url, exc)
-        raise ApiException(
-            status_code=400,
-            code=URL_FETCH_FAILED,
-            detail=(
-                "Gagal mengambil konten dari URL. "
-                "Pastikan URL valid dan halaman bisa diakses publik."
-            ),
-        ) from exc
+        with httpx.Client(timeout=URL_FETCH_TIMEOUT_SECONDS, headers={"User-Agent": URL_USER_AGENT}) as client:
+            resp = client.get(url, follow_redirects=True)
+            resp.raise_for_status()
+            html = resp.text
+            text = _extract_article_with_trafilatura(html)
+            
+            if not text or len(text) < MIN_LENGTH:
+                logger.info("source_extractor: lightweight extraction insufficient, falling back to Playwright for %s", url)
+                fallback_to_playwright = True
+    except Exception as exc:
+        logger.info("source_extractor: lightweight fetch failed (%s), falling back to Playwright for %s", exc, url)
+        fallback_to_playwright = True
 
-    text = _extract_article_with_trafilatura(html)
+    # 2. Fallback to Playwright if needed
+    if fallback_to_playwright:
+        try:
+            from playwright.sync_api import sync_playwright
+
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                try:
+                    context = browser.new_context(user_agent=URL_USER_AGENT)
+                    page = context.new_page()
+                    page.goto(
+                        url, 
+                        timeout=URL_FETCH_TIMEOUT_SECONDS * 1000,
+                        wait_until="domcontentloaded"
+                    )
+                    # Auto-scroll to trigger lazy-loaded content
+                    page.evaluate("""
+                        var scrollInterval = setInterval(function() {
+                            window.scrollBy(0, window.innerHeight);
+                        }, 200);
+                        window.setTimeout(function() {
+                            clearInterval(scrollInterval);
+                        }, 2000);
+                    """)
+                    page.wait_for_timeout(2500)
+                    html = page.content()
+                finally:
+                    browser.close()
+                
+                playwright_text = _extract_article_with_trafilatura(html)
+                if playwright_text:
+                    text = playwright_text
+        except ImportError:
+            logger.warning("source_extractor: Playwright not installed. Skipping SPA fallback for %s", url)
+        except Exception as exc:
+            logger.warning("source_extractor: Playwright fallback failed for %s: %s", url, exc)
+
     if not text:
         raise ApiException(
             status_code=400,
