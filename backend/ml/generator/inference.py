@@ -18,6 +18,7 @@ import logging
 import os
 import random
 import re
+import difflib
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -205,6 +206,68 @@ def _extract_keywords(text: str) -> list[str]:
     return words
 
 
+def _pick_similar_length_distractors(correct: str, pool: list[str], n: int = 3) -> list[str]:
+    """Pick distractors with similar length to correct answer but ensure they aren't too similar string-wise."""
+    target_len = len(correct)
+    
+    common_suffixes = ('nya', 'kan', 'i', 'an', 'ku', 'mu')
+    common_prefixes = ('me', 'pe', 'di', 'ter', 'ke', 'se', 'ber')
+    
+    def get_affixes(word):
+        w = word.lower()
+        pref = next((p for p in common_prefixes if w.startswith(p)), '')
+        suff = next((s for s in common_suffixes if w.endswith(s)), '')
+        return pref, suff
+
+    correct_pref, correct_suff = get_affixes(correct)
+    is_capitalized = correct[0].isupper() if correct else False
+    
+    def score_candidate(cand):
+        score = abs(len(cand) - target_len) * 2
+        cand_pref, cand_suff = get_affixes(cand)
+        if correct_pref and cand_pref != correct_pref:
+            score += 3
+        if correct_suff and cand_suff != correct_suff:
+            score += 3
+        return score
+
+    # Sort candidates by heuristic score
+    candidates = sorted(
+        [w for w in pool if w.lower() != correct.lower()],
+        key=score_candidate
+    )
+    
+    selected = []
+    for cand in candidates:
+        # Avoid highly similar words (e.g., plurals/singulars like 'proses' vs 'prosesnya')
+        similarity = difflib.SequenceMatcher(None, correct.lower(), cand.lower()).ratio()
+        if similarity < 0.8:
+            if is_capitalized and cand and cand[0].islower():
+                cand = cand[0].upper() + cand[1:]
+            elif not is_capitalized and cand and cand[0].isupper():
+                cand = cand[0].lower() + cand[1:]
+            
+            if not any(cand.lower() == s.lower() for s in selected):
+                selected.append(cand)
+                
+        if len(selected) == n:
+            break
+            
+    # Fallback if not enough distinct candidates found
+    for cand in candidates:
+        if len(selected) == n:
+            break
+        if is_capitalized and cand and cand[0].islower():
+            cand = cand[0].upper() + cand[1:]
+        elif not is_capitalized and cand and cand[0].isupper():
+            cand = cand[0].lower() + cand[1:]
+            
+        if not any(cand.lower() == s.lower() for s in selected):
+            selected.append(cand)
+            
+    return selected
+
+
 def _split_passages(text: str, n: int = _NUM_QUESTIONS) -> list[str]:
     sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
     if len(sentences) <= n:
@@ -217,7 +280,15 @@ def _generate_local_question(passage: str) -> str:
     if _local_model is None or _local_tokenizer is None:
         raise RuntimeError("Local model not loaded")
 
-    prompt = f"buat pertanyaan: {passage}"
+    # Add prompt variation for local generation
+    prompts = [
+        f"buat pertanyaan dari kalimat berikut: {passage}",
+        f"buatlah soal pilihan ganda berdasarkan teks ini: {passage}",
+        f"pertanyaan untuk teks: {passage}",
+        f"buat pertanyaan: {passage}",
+        f"tuliskan satu pertanyaan dari: {passage}"
+    ]
+    prompt = random.choice(prompts)
     inputs = _local_tokenizer(
         prompt,
         return_tensors="pt",
@@ -298,10 +369,9 @@ def _generate_locally(material_text: str) -> list[dict]:
             continue
         correct = max(passage_keywords, key=len)
 
-        distractor_pool = [k for k in keywords_pool if k.lower() != correct.lower()]
-        if len(distractor_pool) < 3:
+        distractors = _pick_similar_length_distractors(correct, keywords_pool, 3)
+        if len(distractors) < 3:
             continue
-        distractors = rng.sample(distractor_pool, 3)
         options = [correct, *distractors]
         rng.shuffle(options)
         correct_idx = options.index(correct)
