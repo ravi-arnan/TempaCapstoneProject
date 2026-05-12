@@ -66,4 +66,5 @@ class EvaluationResult(BaseModel):
     total_questions: int = Field(..., ge=1)
     score_percentage: int = Field(..., ge=0, le=100)
     time_taken_seconds: int = Field(..., ge=0)
+    average_time_per_question: float = Field(..., ge=0)
     question_results: list[QuestionResult]

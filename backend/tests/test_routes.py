@@ -11,6 +11,8 @@ when ready.
 
 import pytest
 
+from app.services import quiz_storage
+
 
 def test_generate_rejects_short_material(client):
     """Short material should return 400 MATERIAL_TOO_SHORT (caught by Pydantic
@@ -44,6 +46,34 @@ def test_submit_unknown_quiz_returns_404(client):
     assert res.status_code == 404
     body = res.json()
     assert body["code"] == "QUIZ_NOT_FOUND"
+
+
+def test_submit_saved_quiz_route(client, sample_quiz):
+    quiz_storage.clear_all()
+    quiz_storage.save_quiz(sample_quiz)
+
+    answers = [
+        {"question_id": q.id, "selected_option_index": q.correct_option_index}
+        for q in sample_quiz.questions
+    ]
+    res = client.post(
+        "/quiz/submit",
+        json={
+            "quiz_id": sample_quiz.quiz_id,
+            "answers": answers,
+            "time_taken_seconds": 100,
+        },
+    )
+
+    assert res.status_code == 200
+    body = res.json()
+    assert body["quiz_id"] == sample_quiz.quiz_id
+    assert body["score"]["score_percentage"] == 100
+    assert body["score"]["wrong_count"] == 0
+    assert body["score"]["unanswered_count"] == 0
+    assert body["understanding_level"] in {"high", "medium", "low"}
+    assert isinstance(body["insight"], str) and body["insight"]
+    assert isinstance(body["recommendation"], str) and body["recommendation"]
 
 
 @pytest.mark.xfail(reason="quiz_generator not yet implemented (Audry)")

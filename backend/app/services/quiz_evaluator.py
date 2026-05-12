@@ -79,6 +79,12 @@ def evaluate(
 
         total = quiz.total_questions
         score_percentage = round((correct / total) * 100) if total > 0 else 0
+        # Bonus analytics: average time per question is useful for downstream
+        # reporting or understanding pacing, but it is not required by the
+        # core scoring contract.
+        average_time_per_question = (
+            round(time_taken_seconds / total, 1) if total > 0 else 0.0
+        )
 
         return EvaluationResult(
             correct_count=correct,
@@ -87,6 +93,7 @@ def evaluate(
             total_questions=total,
             score_percentage=score_percentage,
             time_taken_seconds=time_taken_seconds,
+            average_time_per_question=average_time_per_question,
             question_results=results,
         )
     except ApiException:
