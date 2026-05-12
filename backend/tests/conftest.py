@@ -58,6 +58,7 @@ def sample_eval_result() -> EvaluationResult:
         total_questions=5,
         score_percentage=80,
         time_taken_seconds=240,
+        average_time_per_question=48.0,
         question_results=[
             QuestionResult(
                 question_id=i,
