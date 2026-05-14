@@ -32,7 +32,7 @@ NOISE_RATE = 0.05  # 5% of samples get a randomly-flipped label
 HIGH_SCORE_THRESHOLD = 80
 MEDIUM_SCORE_THRESHOLD = 50
 SECONDS_PER_QUESTION_BASELINE = 60
-HIGH_TIME_MULTIPLIER = 1.5
+HIGH_TIME_MULTIPLIER = 6.0
 
 # Feature ranges (realistic for quiz with 5 questions).
 FEATURE_RANGES = {
