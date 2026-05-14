@@ -14,29 +14,59 @@ Voice rules (BRAND.md §6):
 from app.schemas.internal import EvaluationResult
 from app.schemas.result import UnderstandingLevel
 
-# Base templates from BRAND.md §7.6.
-# Desta can extend with sub-conditions (e.g., high score but slow time → custom variant).
-_BASE_TEMPLATES: dict[UnderstandingLevel, str] = {
-    UnderstandingLevel.HIGH: (
-        "Skor tinggi dengan waktu pengerjaan efisien menunjukkan kamu menguasai konsep utama materi."
-    ),
-    UnderstandingLevel.MEDIUM: (
-        "Kamu memahami sebagian besar materi, tapi ada beberapa konsep yang masih perlu diteguhkan."
-    ),
-    UnderstandingLevel.LOW: (
-        "Banyak konsep dasar yang masih perlu dipelajari ulang sebelum kamu lanjut ke materi berikutnya."
-    ),
-}
-
 
 def generate_insight(
     level: UnderstandingLevel,
     eval_result: EvaluationResult,
 ) -> str:
     """Generate a 1-2 sentence insight in Indonesian."""
-    # TODO(Desta): consider sub-conditions before falling back to base.
-    # Examples of refinements:
-    #   - high score but slow time → "Kamu paham, tapi mungkin masih ragu di beberapa bagian."
-    #   - low score with mostly unanswered → "Kamu belum mengerjakan sebagian besar soal."
-    _ = eval_result  # suppress unused warning until logic is added
-    return _BASE_TEMPLATES[level]
+    score = eval_result.score_percentage
+    time = eval_result.time_taken_seconds
+    unanswered = eval_result.unanswered_count
+    total = eval_result.total_questions
+
+    fast = time <= total * 60
+    slow = time > total * 90
+
+    if level == UnderstandingLevel.HIGH:
+        if fast:
+            return (
+                "Skor tinggi dengan waktu pengerjaan efisien menunjukkan kamu menguasai konsep utama materi."
+            )
+        if slow:
+            return (
+                "Skor kamu tinggi, tapi waktu pengerjaan cukup lama — mungkin masih ada bagian yang bikin kamu ragu."
+            )
+        return (
+            "Kamu memahami materi dengan baik dan mampu menjawab sebagian besar soal dengan benar."
+        )
+
+    if level == UnderstandingLevel.MEDIUM:
+        if unanswered > total * 0.3:
+            return (
+                "Kamu skip beberapa soal — coba lebih percaya diri di pengerjaan berikutnya."
+            )
+        if slow:
+            return (
+                "Kamu memahami sebagian materi, tapi waktu pengerjaan menunjukkan kamu masih sering ragu."
+            )
+        if score >= 65:
+            return (
+                "Pemahaman kamu cukup solid, tapi masih ada beberapa konsep yang perlu diperkuat."
+            )
+        return (
+            "Kamu memahami sebagian besar materi, tapi ada beberapa konsep yang masih perlu diteguhkan."
+        )
+
+    # LOW
+    if unanswered > total * 0.5:
+        return (
+            "Sebagian besar soal tidak kamu jawab — baca ulang materi dulu sebelum mengerjakan kuis lagi."
+        )
+    if score < 30:
+        return (
+            "Skor sangat rendah — konsep dasar materi ini perlu kamu pelajari ulang dari awal."
+        )
+    return (
+        "Banyak konsep dasar yang masih perlu dipelajari ulang sebelum kamu lanjut ke materi berikutnya."
+    )
