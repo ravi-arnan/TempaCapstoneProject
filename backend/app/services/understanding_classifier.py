@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 HIGH_SCORE_THRESHOLD = 80
 MEDIUM_SCORE_THRESHOLD = 50
 SECONDS_PER_QUESTION_BASELINE = 60
-HIGH_TIME_MULTIPLIER = 1.5
+HIGH_TIME_MULTIPLIER = 6.0
 
 
 def classify(eval_result: EvaluationResult) -> UnderstandingLevel:
