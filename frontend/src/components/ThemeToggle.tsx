@@ -1,4 +1,5 @@
 import { useTheme } from "@/hooks/useTheme";
+import { THEME_LABELS } from "@/utils/i18n";
 import { cn } from "@/lib/cn";
 
 /**
@@ -27,7 +28,7 @@ export function ThemeToggle() {
         )}
       >
         <SunIcon />
-        Light
+        {THEME_LABELS.light}
       </button>
       <button
         type="button"
@@ -42,7 +43,7 @@ export function ThemeToggle() {
         )}
       >
         <MoonIcon />
-        Dark
+        {THEME_LABELS.dark}
       </button>
     </div>
   );

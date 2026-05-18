@@ -6,7 +6,7 @@
 
 > *Asah lagi sampai paham.*
 
-**Asahlagi** is a web-based educational tool that converts learning material into an automatic quiz, evaluates the result, then surfaces an understanding level, insight, and learning recommendation — so students can measure their grasp of a topic instead of guessing it. The name itself encodes the loop: read, asah, asah lagi, sampai paham.
+**Asahlagi** is a web-based educational tool that converts learning material into an automatic quiz, evaluates the result, then surfaces an understanding level, insight, and learning recommendation, so students can measure their grasp of a topic instead of guessing it. The name itself encodes the loop: read, asah, asah lagi, sampai paham.
 
 > See [`BRAND.md`](BRAND.md) for the full brand identity (name, voice, copy library) and [`DESIGN.md`](DESIGN.md) for visual design tokens.
 
@@ -18,12 +18,12 @@
 
 ## Team
 
-**Team ID:** TP-G005 — Capstone for the **Tempa** learning program [file:42]
+**Team ID:** TP-G005, Capstone for the **Tempa** learning program [file:42]
 
-- Audry Nabila Anastasya — Backend Quiz Generator [file:42]
-- Ariq Marwan Permana — Backend Data & Analisis [file:42]
-- Desta Anandhika Rajendra Maheswara — Backend Logic, Insight & Recommendation [file:42]
-- Ravi Arnan Irianto — Frontend React & TypeScript [file:42]
+- Audry Nabila Anastasya, Backend Quiz Generator [file:42]
+- Ariq Marwan Permana, Backend Data & Analisis [file:42]
+- Desta Anandhika Rajendra Maheswara, Backend Logic, Insight & Recommendation [file:42]
+- Ravi Arnan Irianto, Frontend React & TypeScript [file:42]
 
 ## Background
 
@@ -56,17 +56,54 @@ Many students consume digital learning materials such as modules and articles bu
 ## Tech Stack
 
 ### Frontend
-- React
-- TypeScript [file:42]
+- React 18 + TypeScript + Vite
+- Tailwind CSS, React Router
 
 ### Backend
-- Python [file:42]
+- Python 3.12 + FastAPI + Pydantic 2
 
-### Libraries / Tools
-- Pandas
-- Scikit-learn (optional)
-- GitHub
-- VS Code [file:42]
+### ML / DL
+- **Quiz Generator** (Audry): IndoT5 base model hosted on a Hugging Face Space, with a rule-based fallback (sliding-window sentence picker + affix-aware distractors) for offline demos.
+- **Understanding Classifier** (Desta): scikit-learn Random Forest trained on ~10k synthetic samples; rule-based fallback baked in.
+- **Insight + Recommendation** (Desta): deterministic template engines (no LLM at runtime).
+- **Quiz Evaluator** (Ariq): pure scoring + analytics, no ML.
+- **Source Extractor** (Audry): `pdfplumber` for PDFs, `trafilatura` (+ optional Playwright) for URLs.
+
+### Tooling
+- GitHub for source control, pytest for backend tests, `tsc --noEmit` for frontend typecheck.
+
+## Run locally
+
+You need Python 3.12 and Node 20+.
+
+### Backend (`http://localhost:8000`)
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate     # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+The classifier `.pkl` is committed in `backend/ml/classifier/artifacts/`, so no separate training step is needed for the demo. Quiz generation will call the public HF Space first and fall back to the rule-based generator if the Space is unreachable.
+
+### Frontend (`http://localhost:5173`)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The frontend reads `VITE_API_BASE_URL` (defaults to `http://localhost:8000`).
+
+### Run tests
+
+```bash
+cd backend && pytest                          # ~43 tests, all green
+cd frontend && npm run typecheck && npm run build
+```
 
 ## Proposed Architecture
 

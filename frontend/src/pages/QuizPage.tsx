@@ -5,7 +5,7 @@ import { QuizTimer } from "@/components/QuizTimer";
 import { useQuiz } from "@/hooks/useQuiz";
 import { useTimer } from "@/hooks/useTimer";
 import type { Answer, QuizGenerateResponse } from "@/types/quiz";
-import { BUTTON_LABELS, getErrorMessage } from "@/utils/i18n";
+import { BUTTON_LABELS, EMPTY_STATES, QUIZ_PAGE, getErrorMessage } from "@/utils/i18n";
 
 interface QuizPageState {
   quiz: QuizGenerateResponse;
@@ -76,7 +76,7 @@ export function QuizPage() {
       <div className="sticky top-0 z-10 -mx-6 bg-bg-page/80 px-6 py-3 backdrop-blur-sm sm:-mx-0 sm:rounded-xl sm:border sm:border-border-standard sm:bg-bg-page sm:px-4 sm:shadow-level-1">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-xl font-medium tracking-tight text-text-primary sm:text-2xl">
-            Kuis sedang berlangsung
+            {QUIZ_PAGE.title}
           </h1>
           <QuizTimer seconds={seconds} />
         </div>
@@ -84,7 +84,7 @@ export function QuizPage() {
         <div className="mt-3 space-y-1.5">
           <div className="flex items-center justify-between text-xs">
             <span className="font-mono uppercase tracking-[1.2px] text-text-muted">
-              {answeredCount} / {quiz.total_questions} terjawab
+              {QUIZ_PAGE.answeredProgressTemplate(answeredCount, quiz.total_questions)}
             </span>
             <span className="font-mono tabular-nums text-text-secondary">
               {Math.round(progressPercent)}%
@@ -123,8 +123,8 @@ export function QuizPage() {
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-text-muted">
             {allAnswered
-              ? "Semua soal sudah terjawab"
-              : `Sisa ${quiz.total_questions - answeredCount} soal`}
+              ? QUIZ_PAGE.allAnswered
+              : QUIZ_PAGE.remainingTemplate(quiz.total_questions - answeredCount)}
           </p>
           <button
             type="button"
@@ -132,7 +132,7 @@ export function QuizPage() {
             disabled={submitting || !allAnswered}
             className="rounded-pill border border-brand-button bg-brand-button px-8 py-2.5 text-sm font-medium text-white shadow-level-1 transition-colors hover:bg-brand-button-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {submitting ? "Menganalisis hasil..." : BUTTON_LABELS.submitQuiz}
+            {submitting ? EMPTY_STATES.submitProcessing : BUTTON_LABELS.submitQuiz}
           </button>
         </div>
       </div>

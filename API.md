@@ -17,7 +17,7 @@ This document is the **single source of truth** for the HTTP contract between th
 - Discovering an API mismatch in Week 5 = demo failure. Locking the contract in Week 1 = predictable integration.
 
 ### Scope
-- 3 endpoints (`/health`, `/quiz/generate`, `/quiz/submit`).
+- 5 endpoints (`/health`, `/quiz/generate`, `/quiz/generate-from-url`, `/quiz/generate-from-pdf`, `/quiz/submit`).
 - All data shapes used in those endpoints.
 - All error codes and validation rules.
 - Side-by-side TypeScript + Pydantic models for shared types.
@@ -231,7 +231,94 @@ curl -X POST http://localhost:8000/quiz/generate \
 
 ---
 
-### 4.3 Submit quiz
+### 4.3 Generate quiz from URL
+
+```
+POST /quiz/generate-from-url
+```
+
+Fetches an article from a public URL, extracts the main text, then generates a quiz the same way as `/quiz/generate`.
+
+#### Request body
+
+```json
+{
+  "url": "https://contoh.com/artikel-pelajaran"
+}
+```
+
+| Field | Type | Required | Validation |
+|---|---|---|---|
+| `url` | string | yes | must start with `http://` or `https://`; publicly reachable; HTML page (not PDF/binary) |
+
+#### Response · 200 OK
+
+Same shape as §4.2 `/quiz/generate` response. The backend extracts the article text via `trafilatura` (with optional Playwright fallback for SPA/lazy-loaded pages), then applies the standard quiz pipeline.
+
+#### Errors
+
+| Status | `code` | Trigger | `detail` (Indonesian) |
+|---|---|---|---|
+| 400 | `URL_INVALID` | not http(s) or malformed | "URL tidak valid. Pastikan dimulai dengan http:// atau https://" |
+| 400 | `URL_FETCH_FAILED` | DNS/connection failure or non-200 status | "Gagal mengambil halaman dari URL." |
+| 400 | `URL_EMPTY_CONTENT` | trafilatura returned nothing extractable | "Halaman tidak punya artikel yang bisa diambil." |
+| 400 | `URL_TOO_SHORT` | extracted text < 100 chars | "Artikel di URL terlalu pendek." |
+| 400 | `URL_TOO_LONG` | extracted text > 20,000 chars (auto-truncated, warning) | "Artikel terlalu panjang." |
+| 500 | `QUIZ_GENERATION_FAILED` | downstream generator failure | "Gagal membuat kuis dari URL." |
+
+#### Example
+
+```bash
+curl -X POST http://localhost:8000/quiz/generate-from-url \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://id.wikipedia.org/wiki/Fotosintesis"}'
+```
+
+> **User-Agent**: backend sends `AsahlagiBot/1.0` when fetching pages, so server logs can identify the source.
+
+---
+
+### 4.4 Generate quiz from PDF
+
+```
+POST /quiz/generate-from-pdf
+```
+
+Accepts a PDF file upload, extracts text via `pdfplumber`, then generates a quiz.
+
+#### Request body
+
+`multipart/form-data` with one part:
+
+| Field | Type | Required | Validation |
+|---|---|---|---|
+| `file` | binary PDF | yes | content-type `application/pdf`; file size ≤ 10 MB; PDF must contain extractable text (not scanned images) |
+
+#### Response · 200 OK
+
+Same shape as §4.2 `/quiz/generate` response.
+
+#### Errors
+
+| Status | `code` | Trigger | `detail` (Indonesian) |
+|---|---|---|---|
+| 400 | `PDF_INVALID` | file is not a valid PDF | "File PDF tidak bisa diproses." |
+| 400 | `PDF_EMPTY` | pdfplumber returns no text (scan or empty) | "PDF tidak punya teks yang bisa diekstrak." |
+| 400 | `PDF_TOO_SHORT` | extracted text < 100 chars | "Teks PDF terlalu pendek." |
+| 400 | `PDF_TOO_LONG` | extracted text > 20,000 chars (auto-truncated, warning) | "PDF terlalu panjang." |
+| 413 | (FastAPI auto) | file > 10 MB | (FastAPI default body) |
+| 500 | `QUIZ_GENERATION_FAILED` | downstream generator failure | "Gagal membuat kuis dari PDF." |
+
+#### Example
+
+```bash
+curl -X POST http://localhost:8000/quiz/generate-from-pdf \
+  -F "file=@/path/to/material.pdf"
+```
+
+---
+
+### 4.5 Submit quiz
 
 ```
 POST /quiz/submit
@@ -596,7 +683,7 @@ Quick reference for both sides to keep validation consistent.
 - `quiz_id`: must exist in server state (in-memory store for MVP)
 
 ### Submit output invariants
-See §4.3 "Invariants" — all 5 must hold for every successful submit response.
+See §4.5 "Invariants" — all 5 must hold for every successful submit response.
 
 ---
 
@@ -734,9 +821,9 @@ These are intentionally **out of scope for v1.0** but worth tracking:
 This contract requires sign-off from all 4 team members before locking. Tick the box and add a date when you have reviewed AND agreed.
 
 - [ ] **Audry** (Backend — Quiz Generator) — produces shapes in §4.2 response, §5.2 `Question`
-- [ ] **Ariq** (Backend — Data & Analysis) — consumes §5.3 `Answer`, produces §4.3 `score`, `chart_data`
-- [ ] **Desta** (Backend — Logic, Insight & Recommendation) — produces §4.3 `understanding_level`, `insight`, `recommendation`
-- [ ] **Ravi** (Frontend) — consumes §4.2 and §4.3 responses, displays per `DESIGN.md`
+- [ ] **Ariq** (Backend — Data & Analysis) — consumes §5.3 `Answer`, produces §4.5 `score`, `chart_data`
+- [ ] **Desta** (Backend — Logic, Insight & Recommendation) — produces §4.5 `understanding_level`, `insight`, `recommendation`
+- [ ] **Ravi** (Frontend) — consumes §4.2 and §4.5 responses, displays per `DESIGN.md`
 
 After all four boxes are ticked, this document moves from "Draft v1.0" to "Locked v1.0". Any subsequent change requires a new minor version + changelog entry at the bottom of this file.
 

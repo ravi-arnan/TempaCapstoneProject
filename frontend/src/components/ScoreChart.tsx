@@ -1,5 +1,5 @@
 import type { ChartData } from "@/types/result";
-import { STAT_LABELS } from "@/utils/i18n";
+import { CARD_LABELS, STAT_LABELS } from "@/utils/i18n";
 
 interface ScoreChartProps {
   data: ChartData;
@@ -20,7 +20,7 @@ export function ScoreChart({ data }: ScoreChartProps) {
   return (
     <div className="rounded-2xl border border-border-standard bg-bg-page p-5 shadow-level-1">
       <div className="mb-3 font-mono text-[11px] uppercase tracking-[1.2px] text-text-muted">
-        Distribusi Jawaban
+        {CARD_LABELS.chartDistribution}
       </div>
       <div className="flex h-3 w-full overflow-hidden rounded-full bg-bg-subtle">
         {data.correct > 0 && (

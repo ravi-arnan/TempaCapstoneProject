@@ -1,4 +1,5 @@
 import type { Question } from "@/types/quiz";
+import { QUIZ_PAGE } from "@/utils/i18n";
 import { cn } from "@/lib/cn";
 
 interface QuizQuestionCardProps {
@@ -23,7 +24,7 @@ export function QuizQuestionCard({
   return (
     <div className="rounded-2xl border border-border-standard bg-bg-page p-6 shadow-level-1">
       <div className="mb-2 font-mono text-[11px] uppercase tracking-[1.2px] text-text-muted">
-        Soal {index + 1} / {total}
+        {QUIZ_PAGE.questionLabelTemplate(index, total)}
       </div>
       <h3 className="mb-6 text-xl font-medium leading-snug text-text-primary">
         {question.question}

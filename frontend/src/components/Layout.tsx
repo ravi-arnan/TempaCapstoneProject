@@ -19,7 +19,7 @@ export function Layout({ children }: LayoutProps) {
           <Link
             to="/"
             className="rounded-md outline-none focus-visible:[box-shadow:var(--focus-ring)]"
-            aria-label="Asahlagi — Beranda"
+            aria-label="Asahlagi, Beranda"
           >
             <Logo variant="full" />
           </Link>

@@ -12,9 +12,9 @@ import type { UnderstandingLevel } from "@/types/result";
 // ============================================================================
 
 export const PAGE_TITLES = {
-  home: "Asahlagi — Asah lagi sampai paham.",
+  home: "Asahlagi. Asah lagi sampai paham.",
   quiz: "Kuis sedang berlangsung",
-  result: "Hasil — Asahlagi",
+  result: "Hasil. Asahlagi",
 } as const;
 
 export const HOMEPAGE = {
@@ -52,10 +52,48 @@ export const EMPTY_STATES = {
   urlHelp:
     "Tempel link artikel pelajaran. Sistem akan mengambil isi artikelnya secara otomatis.",
   pdfHelp:
-    "Upload file PDF (max 10 MB). Sistem akan ekstrak teks dari PDF — pastikan PDF berisi teks, bukan scan/gambar.",
+    "Upload file PDF (maksimal 10 MB). Sistem akan ekstrak teks dari PDF. Pastikan PDF berisi teks, bukan scan atau gambar.",
   pdfDropzone: "Klik atau seret file PDF ke sini",
+  pdfChangeFile: "klik untuk ganti file",
+  pdfMustBePdf: "File harus berformat .pdf",
+  pdfTooLarge: "File terlalu besar. Maksimal 10 MB.",
+  pleaseWait: "Mohon tunggu",
   quizLoading: "Sedang menyusun pertanyaan...",
   submitProcessing: "Menganalisis hasil...",
+} as const;
+
+// ============================================================================
+// Quiz page strings
+// ============================================================================
+
+export const QUIZ_PAGE = {
+  title: "Kuis sedang berlangsung",
+  allAnswered: "Semua soal sudah terjawab",
+  remainingTemplate: (n: number) => `Sisa ${n} soal`,
+  answeredProgressTemplate: (answered: number, total: number) =>
+    `${answered} / ${total} terjawab`,
+  questionLabelTemplate: (index: number, total: number) =>
+    `Soal ${index + 1} / ${total}`,
+  minCharsTemplate: (current: number) => `${current} / 100 karakter (minimal)`,
+} as const;
+
+// ============================================================================
+// Card labels (result page sections)
+// ============================================================================
+
+export const CARD_LABELS = {
+  insight: "Insight",
+  recommendation: "Rekomendasi",
+  chartDistribution: "Distribusi Jawaban",
+} as const;
+
+// ============================================================================
+// Theme toggle labels
+// ============================================================================
+
+export const THEME_LABELS = {
+  light: "Light",
+  dark: "Dark",
 } as const;
 
 // ============================================================================
@@ -88,13 +126,13 @@ export const ERROR_MESSAGES: Record<string, string> = {
   MATERIAL_TOO_SHORT:
     "Materinya terlalu pendek. Tambahkan minimal 100 karakter agar sistem bisa membuat kuis.",
   MATERIAL_TOO_LONG:
-    "Materinya terlalu panjang. Maksimal 20.000 karakter — coba ringkas dulu bagian intinya.",
+    "Materinya terlalu panjang. Maksimal 20.000 karakter, coba ringkas dulu bagian intinya.",
   QUIZ_GENERATION_FAILED:
     "Gagal membuat kuis. Coba materi lain atau ulangi sebentar lagi.",
   PDF_INVALID:
     "File PDF tidak bisa diproses. Pastikan file PDF valid dan tidak rusak.",
   PDF_EMPTY:
-    "PDF tidak punya teks yang bisa diekstrak. Mungkin PDF berupa scan/gambar — coba ketik ulang materinya.",
+    "PDF tidak punya teks yang bisa diekstrak. Mungkin PDF berupa scan atau gambar. Coba ketik ulang materinya.",
   PDF_TOO_SHORT:
     "Teks PDF terlalu pendek. Coba PDF dengan konten lebih banyak.",
   PDF_TOO_LONG:

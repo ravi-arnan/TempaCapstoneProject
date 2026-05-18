@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import type { SourceType } from "@/types/quiz";
-import { EMPTY_STATES, BUTTON_LABELS } from "@/utils/i18n";
+import { EMPTY_STATES, BUTTON_LABELS, QUIZ_PAGE } from "@/utils/i18n";
 import { cn } from "@/lib/cn";
 
 interface MaterialInputFormProps {
@@ -67,12 +67,12 @@ export function MaterialInputForm({
       return;
     }
     if (!file.name.toLowerCase().endsWith(".pdf")) {
-      setPdfError("File harus berformat .pdf");
+      setPdfError(EMPTY_STATES.pdfMustBePdf);
       setPdfFile(null);
       return;
     }
     if (file.size > MAX_PDF_BYTES) {
-      setPdfError("File terlalu besar. Maksimal 10 MB.");
+      setPdfError(EMPTY_STATES.pdfTooLarge);
       setPdfFile(null);
       return;
     }
@@ -96,7 +96,7 @@ export function MaterialInputForm({
           )}
           {textTooShort && !isSubmitting && (
             <p className="text-sm text-text-muted">
-              {trimmedText.length} / 100 karakter (minimal)
+              {QUIZ_PAGE.minCharsTemplate(trimmedText.length)}
             </p>
           )}
         </>
@@ -142,7 +142,7 @@ export function MaterialInputForm({
               <span className="flex flex-col items-center gap-1">
                 <span className="font-medium">{pdfFile.name}</span>
                 <span className="text-xs text-text-muted">
-                  {(pdfFile.size / 1024).toFixed(0)} KB · klik untuk ganti file
+                  {(pdfFile.size / 1024).toFixed(0)} KB · {EMPTY_STATES.pdfChangeFile}
                 </span>
               </span>
             ) : (
@@ -172,7 +172,7 @@ export function MaterialInputForm({
             {loadingMessage}
           </p>
           <span className="font-mono text-[10px] uppercase tracking-[1.2px] text-text-muted">
-            Mohon tunggu
+            {EMPTY_STATES.pleaseWait}
           </span>
         </div>
       )}

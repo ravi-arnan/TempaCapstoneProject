@@ -58,6 +58,11 @@ frontend/out/
 # Vite
 *.local
 
+# TypeScript incremental build artifacts
+*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+
 # Logs
 npm-debug.log*
 yarn-debug.log*

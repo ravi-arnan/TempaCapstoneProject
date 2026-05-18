@@ -59,7 +59,7 @@ function networkErrorToApiException(err: unknown): ApiException {
     return new ApiException(
       {
         detail:
-          "Permintaan terlalu lama. Coba lagi sebentar — sistem sedang menyiapkan model.",
+          "Permintaan terlalu lama. Coba lagi sebentar, sistem sedang menyiapkan model.",
         code: "TIMEOUT",
       },
       408,
