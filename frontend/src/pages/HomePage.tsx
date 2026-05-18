@@ -7,6 +7,7 @@ import type { SourceType } from "@/types/quiz";
 import {
   HOMEPAGE,
   LOADING_PROGRESS_MESSAGES,
+  SAMPLE_MATERIALS,
   getErrorMessage,
 } from "@/utils/i18n";
 
@@ -28,6 +29,18 @@ export function HomePage() {
 
   const [sourceType, setSourceType] = useState<SourceType>("text");
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  const [prefillText, setPrefillText] = useState<string | null>(null);
+  const [prefillUrl, setPrefillUrl] = useState<string | null>(null);
+
+  function handleSampleClick() {
+    setSourceType("text");
+    setPrefillText(SAMPLE_MATERIALS.fotosintesis.text);
+  }
+
+  function handleSmartUrlPaste(url: string) {
+    setSourceType("url");
+    setPrefillUrl(url);
+  }
 
   // Rotate loading messages while generation runs (~9-25s typically).
   useEffect(() => {
@@ -60,12 +73,21 @@ export function HomePage() {
         </p>
       </header>
 
-      <div>
+      <div className="flex flex-wrap items-center gap-3">
         <SourceTypeTabs
           value={sourceType}
           onChange={setSourceType}
           disabled={generating}
         />
+        {sourceType === "text" && !generating && (
+          <button
+            type="button"
+            onClick={handleSampleClick}
+            className="rounded-full border border-border-standard bg-bg-page px-4 py-2 text-sm text-text-secondary shadow-level-1 transition-colors hover:bg-bg-alt hover:text-text-primary"
+          >
+            {SAMPLE_MATERIALS.fotosintesis.label}
+          </button>
+        )}
       </div>
 
       <MaterialInputForm
@@ -82,6 +104,9 @@ export function HomePage() {
             ? getErrorMessage(generateError.code, generateError.message)
             : null
         }
+        prefillText={prefillText}
+        prefillUrl={prefillUrl}
+        onSmartUrlPaste={handleSmartUrlPaste}
       />
     </div>
   );

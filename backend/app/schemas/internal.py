@@ -35,7 +35,9 @@ class QuizInternal(BaseModel):
     quiz_id: str
     questions: list[QuestionInternal]
     generated_at: datetime
-    source_material_excerpt: str = Field(default="", max_length=500)
+    # Full source material (capped at MAX_LENGTH in source_extractor = 20k chars).
+    # Kept verbatim so "Asah Lagi" can regenerate a fresh quiz from the same input.
+    source_material: str = Field(default="", max_length=20_000)
 
     @property
     def total_questions(self) -> int:

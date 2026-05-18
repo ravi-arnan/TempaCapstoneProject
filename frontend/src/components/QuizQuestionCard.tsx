@@ -7,22 +7,36 @@ interface QuizQuestionCardProps {
   index: number;
   total: number;
   selectedOptionIndex: number | null;
+  isCurrent?: boolean;
   onSelect: (optionIndex: number) => void;
+  onFocus?: () => void;
 }
 
 /**
  * Single-question card with 4 selectable options.
- * Owner: Ravi. Wired up by QuizPage.
+ * `isCurrent` adds a subtle highlight to indicate this card is the target
+ * for keyboard shortcuts (1-4 keys).
  */
 export function QuizQuestionCard({
   question,
   index,
   total,
   selectedOptionIndex,
+  isCurrent,
   onSelect,
+  onFocus,
 }: QuizQuestionCardProps) {
   return (
-    <div className="rounded-2xl border border-border-standard bg-bg-page p-6 shadow-level-1">
+    <div
+      data-question-index={index}
+      onClick={onFocus}
+      className={cn(
+        "rounded-2xl border bg-bg-page p-6 shadow-level-1 transition-colors",
+        isCurrent
+          ? "border-brand-accent ring-1 ring-brand-accent/40"
+          : "border-border-standard",
+      )}
+    >
       <div className="mb-2 font-mono text-[11px] uppercase tracking-[1.2px] text-text-muted">
         {QUIZ_PAGE.questionLabelTemplate(index, total)}
       </div>

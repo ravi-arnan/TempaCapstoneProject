@@ -13,6 +13,11 @@ import logging
 import os
 import traceback
 
+from dotenv import load_dotenv
+
+# Load .env before any module reads os.getenv (e.g. ml.generator reads HF_SPACE_URL at import).
+load_dotenv()
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse

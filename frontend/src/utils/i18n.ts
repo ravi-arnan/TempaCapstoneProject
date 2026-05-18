@@ -35,7 +35,9 @@ export const BUTTON_LABELS = {
   skipQuestion: "Lewati",
   prevQuestion: "Sebelumnya",
   nextQuestion: "Lanjut",
+  jumpToUnanswered: "Lihat soal yang belum",
   resultRetry: "Asah Lagi",
+  resultRetryLoading: "Menyusun pertanyaan baru...",
   resetAll: "Mulai Ulang",
   backToHome: "Kembali ke Beranda",
 } as const;
@@ -75,6 +77,25 @@ export const QUIZ_PAGE = {
   questionLabelTemplate: (index: number, total: number) =>
     `Soal ${index + 1} / ${total}`,
   minCharsTemplate: (current: number) => `${current} / 100 karakter (minimal)`,
+  progressRestored: "Progres dari sesi sebelumnya dipulihkan.",
+  shortcutHint: "Tekan ? untuk shortcut keyboard",
+} as const;
+
+// ============================================================================
+// Keyboard shortcut help overlay
+// ============================================================================
+
+export const SHORTCUT_HELP = {
+  title: "Shortcut Keyboard",
+  closeHint: "Tekan Esc atau klik di luar untuk tutup",
+  shortcuts: [
+    { keys: ["1", "2", "3", "4"], action: "Pilih opsi A, B, C, atau D" },
+    { keys: ["Enter"], action: "Lanjut ke soal berikutnya" },
+    { keys: ["J", "↓"], action: "Soal berikutnya" },
+    { keys: ["K", "↑"], action: "Soal sebelumnya" },
+    { keys: ["?"], action: "Buka / tutup bantuan shortcut" },
+    { keys: ["Esc"], action: "Tutup overlay" },
+  ],
 } as const;
 
 // ============================================================================
@@ -85,6 +106,20 @@ export const CARD_LABELS = {
   insight: "Insight",
   recommendation: "Rekomendasi",
   chartDistribution: "Distribusi Jawaban",
+  reviewSection: "Tinjau Jawaban",
+} as const;
+
+// ============================================================================
+// Per-question review badges & helper strings
+// ============================================================================
+
+export const REVIEW_LABELS = {
+  correct: "BENAR",
+  wrong: "SALAH",
+  unanswered: "TIDAK DIJAWAB",
+  yourAnswer: "Pilihanmu",
+  correctAnswer: "Jawaban benar",
+  noAnswer: "Tidak dijawab",
 } as const;
 
 // ============================================================================
@@ -116,6 +151,23 @@ export const LOADING_PROGRESS_MESSAGES = [
   "Memeriksa kualitas pertanyaan...",
   "Hampir selesai...",
 ] as const;
+
+// ============================================================================
+// Sample materials (one-click "try a demo" on the homepage)
+// ============================================================================
+
+export const SAMPLE_MATERIALS = {
+  fotosintesis: {
+    label: "Coba contoh: Fotosintesis",
+    text:
+      "Fotosintesis adalah proses pembentukan glukosa oleh tumbuhan hijau " +
+      "dengan bantuan cahaya matahari dan klorofil. Proses ini terjadi di " +
+      "kloroplas dan menghasilkan oksigen sebagai produk samping. Reaksi " +
+      "terang berlangsung di tilakoid, sedangkan reaksi gelap berlangsung " +
+      "di stroma. Klorofil berperan menyerap cahaya pada panjang gelombang " +
+      "biru dan merah, sementara karotenoid membantu menangkap cahaya hijau.",
+  },
+} as const;
 
 // ============================================================================
 // Error messages (BRAND.md §7.4 + API.md §6)
@@ -158,7 +210,18 @@ export const ERROR_MESSAGES: Record<string, string> = {
   INTERNAL_ERROR: "Ada hambatan dari sisi kami. Coba lagi sebentar.",
 };
 
+// Codes where the backend's `detail` is more context-aware than our canned
+// copy (e.g. QUIZ_GENERATION_FAILED has several distinct failure modes, each
+// with its own actionable detail). For these, prefer the backend message.
+const PREFER_BACKEND_DETAIL = new Set([
+  "QUIZ_GENERATION_FAILED",
+  "PDF_INVALID",
+  "URL_FETCH_FAILED",
+  "URL_EMPTY_CONTENT",
+]);
+
 export function getErrorMessage(code: string | undefined, fallback?: string) {
+  if (code && PREFER_BACKEND_DETAIL.has(code) && fallback) return fallback;
   if (code && ERROR_MESSAGES[code]) return ERROR_MESSAGES[code];
   return fallback ?? ERROR_MESSAGES.INTERNAL_ERROR!;
 }

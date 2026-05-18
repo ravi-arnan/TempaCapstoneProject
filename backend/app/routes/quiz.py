@@ -16,6 +16,7 @@ from app.schemas.quiz import (
     QuizGenerateFromUrlRequest,
     QuizGenerateRequest,
     QuizGenerateResponse,
+    QuizRegenerateRequest,
     QuizSubmitRequest,
 )
 from app.schemas.result import QuizSubmitResponse
@@ -25,7 +26,7 @@ from app.services import (
     source_extractor,
     submit_coordinator,
 )
-from app.utils.errors import ApiException, MATERIAL_TOO_LONG
+from app.utils.errors import ApiException, MATERIAL_TOO_LONG, QUIZ_NOT_FOUND
 
 router = APIRouter(prefix="/quiz", tags=["quiz"])
 
@@ -99,6 +100,27 @@ async def generate_from_pdf_endpoint(
 
     material_text = source_extractor.extract_text_from_pdf(pdf_bytes)
     quiz_internal = quiz_generator.generate_quiz(material_text)
+    quiz_storage.save_quiz(quiz_internal)
+    return _quiz_internal_to_response(quiz_internal)
+
+
+# ============================================================================
+# Regenerate — produces a fresh quiz from the same source material as a
+# previously generated quiz_id. Powers the "Asah Lagi" button on ResultPage.
+# ============================================================================
+
+
+@router.post("/regenerate", response_model=QuizGenerateResponse)
+def regenerate_quiz_endpoint(req: QuizRegenerateRequest) -> QuizGenerateResponse:
+    """POST /quiz/regenerate — regenerate a quiz from a prior quiz_id's source."""
+    previous = quiz_storage.get_quiz(req.quiz_id)
+    if previous is None or not previous.source_material:
+        raise ApiException(
+            status_code=404,
+            code=QUIZ_NOT_FOUND,
+            detail="Materi sumber tidak ditemukan. Mulai ulang dari halaman utama.",
+        )
+    quiz_internal = quiz_generator.generate_quiz(previous.source_material)
     quiz_storage.save_quiz(quiz_internal)
     return _quiz_internal_to_response(quiz_internal)
 

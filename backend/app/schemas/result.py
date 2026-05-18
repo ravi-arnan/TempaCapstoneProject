@@ -8,6 +8,7 @@ reflected in:
 
 from datetime import datetime
 from enum import Enum
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -35,6 +36,22 @@ class ChartData(BaseModel):
     unanswered: int = Field(..., ge=0)
 
 
+class QuestionReview(BaseModel):
+    """Per-question review row shown on the result page.
+
+    Includes the original question + options so the frontend can render a
+    "what you got right / wrong" breakdown without re-fetching the quiz.
+    """
+
+    question_id: int
+    question: str
+    options: list[str]
+    selected_option_index: Optional[int]
+    correct_option_index: int
+    is_correct: bool
+    is_unanswered: bool
+
+
 class QuizSubmitResponse(BaseModel):
     """POST /quiz/submit success response."""
 
@@ -46,3 +63,4 @@ class QuizSubmitResponse(BaseModel):
     recommendation: str
     chart_data: ChartData
     submitted_at: datetime
+    question_reviews: list[QuestionReview]

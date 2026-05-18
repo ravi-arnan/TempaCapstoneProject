@@ -55,3 +55,9 @@ class QuizSubmitRequest(BaseModel):
     quiz_id: str
     answers: list[Answer]
     time_taken_seconds: int = Field(..., ge=0, le=7200)
+
+
+class QuizRegenerateRequest(BaseModel):
+    """POST /quiz/regenerate request body."""
+
+    quiz_id: str

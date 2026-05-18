@@ -1,4 +1,5 @@
 import type { ScoreSummary } from "@/types/result";
+import { useCountUp } from "@/hooks/useCountUp";
 import { STAT_LABELS, formatSeconds } from "@/utils/i18n";
 
 interface ResultSummaryProps {
@@ -8,16 +9,19 @@ interface ResultSummaryProps {
 
 /**
  * Three-stat summary block: SKOR / WAKTU / BENAR.
- * Used at the top of the result page.
+ * Score and correct count animate up on mount for a small reveal moment.
  */
 export function ResultSummary({ score, timeTakenSeconds }: ResultSummaryProps) {
+  const animatedScore = useCountUp(score.score_percentage);
+  const animatedCorrect = useCountUp(score.correct_count, { durationMs: 600 });
+
   return (
     <div className="flex flex-wrap gap-8 border-t border-border-subtle pt-4">
-      <Stat label={STAT_LABELS.score} value={`${score.score_percentage}%`} />
+      <Stat label={STAT_LABELS.score} value={`${animatedScore}%`} />
       <Stat label={STAT_LABELS.time} value={formatSeconds(timeTakenSeconds)} />
       <Stat
         label={STAT_LABELS.correct}
-        value={`${score.correct_count}/${score.total_questions}`}
+        value={`${animatedCorrect}/${score.total_questions}`}
       />
     </div>
   );

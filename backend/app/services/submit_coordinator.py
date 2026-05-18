@@ -15,6 +15,7 @@ from app.schemas.internal import EvaluationResult
 from app.schemas.quiz import Answer
 from app.schemas.result import (
     ChartData,
+    QuestionReview,
     QuizSubmitResponse,
     ScoreSummary,
 )
@@ -56,6 +57,22 @@ def process_submission(
     insight = insight_engine.generate_insight(level, eval_result)
     recommendation = recommendation_engine.generate_recommendation(level, eval_result)
 
+    # Build per-question review by zipping evaluator output with stored question text.
+    questions_by_id = {q.id: q for q in quiz.questions}
+    question_reviews = [
+        QuestionReview(
+            question_id=r.question_id,
+            question=questions_by_id[r.question_id].question,
+            options=list(questions_by_id[r.question_id].options),
+            selected_option_index=r.selected_option_index,
+            correct_option_index=r.correct_option_index,
+            is_correct=r.is_correct,
+            is_unanswered=r.is_unanswered,
+        )
+        for r in eval_result.question_results
+        if r.question_id in questions_by_id
+    ]
+
     return QuizSubmitResponse(
         quiz_id=quiz_id,
         score=ScoreSummary(
@@ -75,4 +92,5 @@ def process_submission(
             unanswered=eval_result.unanswered_count,
         ),
         submitted_at=datetime.now(timezone.utc),
+        question_reviews=question_reviews,
     )

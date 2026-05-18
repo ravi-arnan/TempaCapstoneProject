@@ -32,7 +32,7 @@ def make_quiz() -> QuizInternal:
             ),
         ],
         generated_at=datetime.datetime.now(datetime.timezone.utc),
-        source_material_excerpt="",
+        source_material="",
     )
 
 

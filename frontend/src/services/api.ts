@@ -163,3 +163,13 @@ export function submitQuiz(
 ): Promise<QuizSubmitResponse> {
   return postJson<QuizSubmitRequest, QuizSubmitResponse>("/quiz/submit", req);
 }
+
+export function regenerateQuiz(
+  quizId: string,
+): Promise<QuizGenerateResponse> {
+  return postJson<{ quiz_id: string }, QuizGenerateResponse>(
+    "/quiz/regenerate",
+    { quiz_id: quizId },
+    QUIZ_GENERATE_TIMEOUT_MS,
+  );
+}

@@ -19,6 +19,16 @@ export interface ChartData {
   unanswered: number;
 }
 
+export interface QuestionReview {
+  question_id: number;
+  question: string;
+  options: string[];
+  selected_option_index: number | null;
+  correct_option_index: number;
+  is_correct: boolean;
+  is_unanswered: boolean;
+}
+
 export interface QuizSubmitResponse {
   quiz_id: string;
   score: ScoreSummary;
@@ -28,4 +38,5 @@ export interface QuizSubmitResponse {
   recommendation: string;
   chart_data: ChartData;
   submitted_at: string;
+  question_reviews: QuestionReview[];
 }

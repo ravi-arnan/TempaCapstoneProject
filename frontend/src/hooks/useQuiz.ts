@@ -3,6 +3,7 @@ import {
   generateQuiz,
   generateQuizFromPdf,
   generateQuizFromUrl,
+  regenerateQuiz,
   submitQuiz,
 } from "@/services/api";
 import type {
@@ -94,6 +95,25 @@ export function useQuiz() {
     [],
   );
 
+  const regenerate = useCallback(
+    async (quizId: string): Promise<QuizGenerateResponse | null> => {
+      setState((s) => ({ ...s, generating: true, generateError: null }));
+      try {
+        const res = await regenerateQuiz(quizId);
+        setState((s) => ({ ...s, generating: false }));
+        return res;
+      } catch (err) {
+        setState((s) => ({
+          ...s,
+          generating: false,
+          generateError: toApiException(err),
+        }));
+        return null;
+      }
+    },
+    [],
+  );
+
   const submit = useCallback(
     async (req: QuizSubmitRequest): Promise<QuizSubmitResponse | null> => {
       setState((s) => ({ ...s, submitting: true, submitError: null }));
@@ -118,6 +138,7 @@ export function useQuiz() {
     generateFromText,
     generateFromUrl,
     generateFromPdf,
+    regenerate,
     submit,
   };
 }

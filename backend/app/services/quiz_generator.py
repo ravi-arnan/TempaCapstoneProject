@@ -74,10 +74,34 @@ def _is_duplicate(new_q_text: str, existing_questions: list[QuestionInternal], t
     return False
 
 
+def _wrap_quiz(questions: list[QuestionInternal], text: str) -> QuizInternal:
+    """Build a QuizInternal from a list of questions, renumbering IDs."""
+    renumbered = [
+        QuestionInternal(
+            id=i + 1,
+            question=q.question,
+            options=q.options,
+            correct_option_index=q.correct_option_index,
+        )
+        for i, q in enumerate(questions)
+    ]
+    return QuizInternal(
+        quiz_id=str(uuid.uuid4()),
+        questions=renumbered,
+        generated_at=datetime.now(timezone.utc),
+        source_material=text[:20_000],
+    )
+
+
 def generate_quiz(material_text: str) -> QuizInternal:
     """Generate a multiple-choice quiz from raw material text.
 
-    Tries DL first; falls back to rule-based on failure.
+    Strategy:
+        1. Try DL (HF Space → local). Collect questions that pass cleanup.
+        2. If DL yields >= DEFAULT_QUESTION_COUNT, ship DL only.
+        3. If DL yields 1..N-1, supplement with rule-based questions to top up.
+        4. If DL yields 0 (or fails), use rule-based alone.
+        5. If everything fails, raise a friendly 400.
     """
     text = material_text.strip()
     if len(text) < MIN_MATERIAL_LENGTH:
@@ -88,47 +112,82 @@ def generate_quiz(material_text: str) -> QuizInternal:
         )
 
     # === Path 1: DL via ml/generator (preferred) ===
+    dl_questions: list[QuestionInternal] = []
     if ml_generator.is_available():
         try:
             raw_questions = ml_generator.generate(text)
-            questions: list[QuestionInternal] = []
-            for i, q in enumerate(raw_questions, start=1):
+            for q in raw_questions:
                 cleaned = _clean_question_text(q["question"])
                 if cleaned is None:
-                    continue  # cleanup made it invalid; skip
-                
-                if _is_duplicate(cleaned, questions):
+                    continue
+                if _is_duplicate(cleaned, dl_questions):
                     logger.info("quiz_generator: skipping duplicate question from DL")
                     continue
-                    
-                questions.append(
+                dl_questions.append(
                     QuestionInternal(
-                        id=len(questions) + 1,  # renumber after dropping
+                        id=len(dl_questions) + 1,
                         question=cleaned,
                         options=q["options"],
                         correct_option_index=q["correct_option_index"],
                     )
                 )
-            if len(questions) >= MIN_QUESTION_COUNT:
-                logger.info("quiz_generator: DL path produced %d questions", len(questions))
-                return QuizInternal(
-                    quiz_id=str(uuid.uuid4()),
-                    questions=questions,
-                    generated_at=datetime.now(timezone.utc),
-                    source_material_excerpt=text[:500],
+
+            if len(dl_questions) >= DEFAULT_QUESTION_COUNT:
+                logger.info(
+                    "quiz_generator: DL path produced %d questions",
+                    len(dl_questions),
                 )
-            logger.warning(
-                "quiz_generator: DL path produced only %d questions (need %d), falling back",
-                len(questions),
-                MIN_QUESTION_COUNT,
-            )
+                return _wrap_quiz(dl_questions, text)
+
+            if dl_questions:
+                logger.info(
+                    "quiz_generator: DL produced %d, supplementing with rule-based",
+                    len(dl_questions),
+                )
+                try:
+                    rule_quiz = _generate_rule_based(text)
+                    combined: list[QuestionInternal] = list(dl_questions)
+                    for rq in rule_quiz.questions:
+                        if len(combined) >= DEFAULT_QUESTION_COUNT:
+                            break
+                        if _is_duplicate(rq.question, combined):
+                            continue
+                        combined.append(
+                            QuestionInternal(
+                                id=len(combined) + 1,
+                                question=rq.question,
+                                options=rq.options,
+                                correct_option_index=rq.correct_option_index,
+                            )
+                        )
+                    if len(combined) >= FALLBACK_MIN_COUNT:
+                        logger.info(
+                            "quiz_generator: mixed DL+rule produced %d questions",
+                            len(combined),
+                        )
+                        return _wrap_quiz(combined, text)
+                except ApiException as exc:
+                    logger.info(
+                        "quiz_generator: rule-based supplement failed (%s), "
+                        "checking if DL alone is enough",
+                        exc.code,
+                    )
+
+                # Rule-based couldn't help; ship DL alone if it meets the floor.
+                if len(dl_questions) >= FALLBACK_MIN_COUNT:
+                    logger.warning(
+                        "quiz_generator: shipping %d DL questions (below DEFAULT=%d)",
+                        len(dl_questions),
+                        DEFAULT_QUESTION_COUNT,
+                    )
+                    return _wrap_quiz(dl_questions, text)
         except Exception as exc:  # noqa: BLE001
             logger.warning(
                 "quiz_generator: DL path failed (%s), falling back to rule-based",
                 exc,
             )
 
-    # === Path 2: rule-based fallback ===
+    # === Path 2: rule-based fallback (DL unavailable, empty, or below floor) ===
     return _generate_rule_based(text)
 
 
@@ -239,6 +298,13 @@ _STOP_WORDS: frozenset[str] = frozenset(
         "lebih", "secara", "menjadi", "sangat", "harus", "bahwa", "hanya",
         "kita", "mereka", "kami", "kamu", "saya", "anda", "tetapi", "sehingga",
         "sudah", "belum", "masih", "bisa", "tersebut", "ialah", "ada", "tiap",
+        # Common functional/filler words that aren't great quiz answers.
+        "beberapa", "kemudian", "berbagai", "seperti", "biasanya", "umumnya",
+        "selalu", "sering", "kadang", "bahkan", "sekitar", "sebagian",
+        "banyak", "sedikit", "semua", "setiap", "selain", "termasuk", "antara",
+        "sebelum", "setelah", "sesudah", "ketika", "sementara", "selama",
+        "begitu", "demikian", "meskipun", "walaupun", "sambil",
+        "sebenarnya", "ternyata", "kemudian", "lalu", "akhirnya", "akhir",
         "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
         "and", "or", "but", "of", "in", "on", "at", "to", "for", "with",
         "this", "that", "these", "those", "it", "its", "they", "them",
@@ -246,8 +312,100 @@ _STOP_WORDS: frozenset[str] = frozenset(
     }
 )
 
+# Attribution / parenthetical patterns that signal a sentence is not educational.
+_NON_EDUCATIONAL_PATTERNS = (
+    "dalam bahasa ", "menurut ", "dilansir ", "dikutip ", "dilaporkan ",
+    "ditulis oleh", "ditulis pada", "diunggah ", "diposting ",
+    " ujar ", " kata ", " tutur ", " ucap ", " sebut ",
+    "baca juga", "lihat juga", "sumber:",
+)
+
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 _WORD_RE = re.compile(r"[A-Za-zÀ-ÿ]{4,}")
+
+# Pattern matching brand/proper-noun-like tokens that aren't good fill-in targets,
+# e.g. "detikcom", "iPhone", "BBC", "WhatsApp". A 4+ letter token that mixes
+# upper and lower case in the middle (not just title case) tends to be a brand.
+_BRAND_LIKE_RE = re.compile(r"^[a-z]+[A-Z][a-zA-Z]*$|^[A-Z]{2,}[a-z]+$")
+
+
+def _sanitize_sentence(s: str) -> str:
+    """Strip outer quotes and collapse internal whitespace/newlines.
+
+    Multi-line "sentences" (e.g. table cells joined by a single \\n) get
+    collapsed to a single line so quality filtering can judge them properly
+    and so the cloze prompt doesn't render with embedded newlines.
+    """
+    s = " ".join(s.split())  # collapse all whitespace including newlines/tabs
+    # Repeatedly strip leading/trailing quote-like chars.
+    quote_chars = '"\'“”‘’«»'
+    while s and (s[0] in quote_chars or s[-1] in quote_chars):
+        if s[0] in quote_chars:
+            s = s[1:].strip()
+        if s and s[-1] in quote_chars:
+            s = s[:-1].strip()
+    return s
+
+
+# Chars that signal non-prose content (tables, citations, list markers).
+_STRUCTURAL_NOISE_CHARS = '|↑↓→←↳·•►▪'
+
+
+def _is_quality_sentence(s: str) -> bool:
+    """Return True if a sentence is suitable for cloze question generation.
+
+    Strict tier: also enforces length/word-count/attribution checks. Used
+    as the first pass; if no sentence passes, we fall back to the relaxed
+    `_is_safe_sentence` filter.
+    """
+    if not _is_safe_sentence(s):
+        return False
+    if len(s) < 50 or len(s) > 280:
+        return False
+    # Need at least 7 word-like tokens.
+    words = [w for w in s.split() if any(c.isalpha() for c in w)]
+    if len(words) < 7:
+        return False
+    # Must have at least one content word with 6+ letters.
+    if not any(len("".join(c for c in w if c.isalpha())) >= 6 for w in words):
+        return False
+    # Reject attribution / parenthetical patterns at the strict tier.
+    if any(pat in s.lower() for pat in _NON_EDUCATIONAL_PATTERNS):
+        return False
+    return True
+
+
+def _is_safe_sentence(s: str) -> bool:
+    """Relaxed filter: rejects only obviously non-prose junk.
+
+    Used as the safety net so we never emit table cells, citations,
+    or punctuation-dominated fragments as quiz questions, even when
+    the strict filter would leave us with zero candidates.
+    """
+    if not s or len(s) < 40 or len(s) > 280:
+        return False
+    # Any structural-noise char (e.g. table pipe, citation arrow) → reject.
+    if any(c in s for c in _STRUCTURAL_NOISE_CHARS):
+        return False
+    # High alpha ratio. Punctuation-heavy junk fails this.
+    alpha = sum(1 for c in s if c.isalpha())
+    if alpha / len(s) < 0.65:
+        return False
+    # Reject quote- or exclamation-dominated content.
+    if s.count('"') >= 2 or s.count("'") >= 2 or "!" in s or "..." in s:
+        return False
+    # Need at least 6 word-like tokens — short citations / archive notes fail.
+    words = [w for w in s.split() if any(c.isalpha() for c in w)]
+    if len(words) < 6:
+        return False
+    # Reject parenthetical-only content (e.g. "detikcom (dalam bahasa X)").
+    paren_chars = s.count("(") + s.count(")")
+    if paren_chars >= 2 and len(words) < 8:
+        return False
+    # Attribution patterns disqualify even at the safe tier.
+    if any(pat in s.lower() for pat in _NON_EDUCATIONAL_PATTERNS):
+        return False
+    return True
 
 
 def _split_sentences(text: str) -> list[str]:
@@ -304,6 +462,9 @@ def _extract_keywords(text: str) -> list[str]:
         w = m.group(0)
         wl = w.lower()
         if wl in _STOP_WORDS or wl in seen:
+            continue
+        # Skip brand-like tokens (e.g. detikcom, iPhone) — never a good answer.
+        if _BRAND_LIKE_RE.match(w):
             continue
         seen.add(wl)
         words.append(w)
@@ -380,13 +541,26 @@ def _generate_rule_based(text: str) -> QuizInternal:
                 ),
             )
 
+        # Two-tier quality filter:
+        #   1. Strict: prefer proper prose sentences for the best questions.
+        #   2. Safe (relaxed): if strict yields none, accept anything that
+        #      isn't table-cell / citation / punctuation-only junk.
+        # This way we never emit obvious noise even when the source material
+        # is mostly tables (e.g. some Wikipedia articles).
+        sentences = [_sanitize_sentence(s) for s in sentences]
+        quality_sentences = [s for s in sentences if _is_quality_sentence(s)]
+        if quality_sentences:
+            candidate_sentences = quality_sentences
+        else:
+            candidate_sentences = [s for s in sentences if _is_safe_sentence(s)]
+
         rng = random.Random(abs(hash(text)) & 0xFFFFFFFF)
         used_correct_lower: set[str] = set()
         questions: list[QuestionInternal] = []
-        target = min(DEFAULT_QUESTION_COUNT, max(len(sentences), 2))
+        target = min(DEFAULT_QUESTION_COUNT, max(len(candidate_sentences), 2))
 
         # Try sentences first — generates richest questions
-        for sentence in sentences[: DEFAULT_QUESTION_COUNT * 3]:
+        for sentence in candidate_sentences[: DEFAULT_QUESTION_COUNT * 3]:
             if len(questions) >= target:
                 break
             correct = _pick_keyword_from(sentence, used_correct_lower)
@@ -434,7 +608,7 @@ def _generate_rule_based(text: str) -> QuizInternal:
             quiz_id=str(uuid.uuid4()),
             questions=questions,
             generated_at=datetime.now(timezone.utc),
-            source_material_excerpt=text[:500],
+            source_material=text,
         )
     except ApiException:
         raise

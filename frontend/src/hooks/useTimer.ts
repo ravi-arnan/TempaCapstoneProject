@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 interface UseTimerOptions {
   autoStart?: boolean;
+  initialSeconds?: number;
 }
 
 /**
@@ -10,8 +11,11 @@ interface UseTimerOptions {
  * Usage:
  *   const { seconds, start, stop, reset } = useTimer({ autoStart: true });
  */
-export function useTimer({ autoStart = false }: UseTimerOptions = {}) {
-  const [seconds, setSeconds] = useState(0);
+export function useTimer({
+  autoStart = false,
+  initialSeconds = 0,
+}: UseTimerOptions = {}) {
+  const [seconds, setSeconds] = useState(initialSeconds);
   const [running, setRunning] = useState(autoStart);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 

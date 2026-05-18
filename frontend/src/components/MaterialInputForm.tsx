@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { SourceType } from "@/types/quiz";
 import { EMPTY_STATES, BUTTON_LABELS, QUIZ_PAGE } from "@/utils/i18n";
 import { cn } from "@/lib/cn";
@@ -11,7 +11,16 @@ interface MaterialInputFormProps {
   isSubmitting?: boolean;
   loadingMessage?: string;
   error?: string | null;
+  /** External source can push a value into the text input (e.g. sample button). */
+  prefillText?: string | null;
+  /** External source can push a value into the URL input (e.g. smart paste). */
+  prefillUrl?: string | null;
+  /** Called when the user pastes a URL into the text textarea. Caller should
+   * switch to the URL tab and populate the URL field via `prefillUrl`. */
+  onSmartUrlPaste?: (url: string) => void;
 }
+
+const URL_PASTE_RE = /^https?:\/\/\S+$/i;
 
 const MAX_PDF_BYTES = 10 * 1024 * 1024; // 10 MB
 
@@ -27,12 +36,37 @@ export function MaterialInputForm({
   isSubmitting,
   loadingMessage,
   error,
+  prefillText,
+  prefillUrl,
+  onSmartUrlPaste,
 }: MaterialInputFormProps) {
   const [text, setText] = useState("");
   const [url, setUrl] = useState("");
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Pull in externally-supplied text (e.g. when user clicks a sample button).
+  useEffect(() => {
+    if (prefillText) setText(prefillText);
+  }, [prefillText]);
+
+  // Pull in externally-supplied URL (e.g. smart paste detection switched tabs).
+  useEffect(() => {
+    if (prefillUrl) setUrl(prefillUrl);
+  }, [prefillUrl]);
+
+  function handleTextPaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
+    if (!onSmartUrlPaste) return;
+    // Only intercept when textarea is empty AND the paste is a single URL.
+    // Anything else (mixed content, partial URL, follow-on paste) flows through normally.
+    if (text.trim().length > 0) return;
+    const pasted = e.clipboardData.getData("text/plain").trim();
+    if (URL_PASTE_RE.test(pasted)) {
+      e.preventDefault();
+      onSmartUrlPaste(pasted);
+    }
+  }
 
   // Per-source validation
   const trimmedText = text.trim();
@@ -86,6 +120,7 @@ export function MaterialInputForm({
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
+            onPaste={handleTextPaste}
             placeholder={EMPTY_STATES.materialPlaceholder}
             rows={10}
             className="w-full resize-y rounded-xl border border-border-standard bg-bg-page p-4 text-base text-text-primary shadow-level-1 placeholder:text-text-muted focus:border-border-prominent focus:outline-none focus-visible:[box-shadow:var(--focus-ring)] disabled:opacity-70"
@@ -191,8 +226,8 @@ export function MaterialInputForm({
 function PulsingDot() {
   return (
     <span className="relative inline-flex h-3 w-3 flex-shrink-0">
-      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-button opacity-60" />
-      <span className="relative inline-flex h-3 w-3 rounded-full bg-brand-button" />
+      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand-green opacity-60" />
+      <span className="relative inline-flex h-3 w-3 rounded-full bg-brand-green" />
     </span>
   );
 }

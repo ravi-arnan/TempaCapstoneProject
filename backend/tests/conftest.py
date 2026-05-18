@@ -43,7 +43,7 @@ def sample_quiz() -> QuizInternal:
             ),
         ],
         generated_at=datetime.now(timezone.utc),
-        source_material_excerpt="Fotosintesis adalah proses...",
+        source_material="Fotosintesis adalah proses...",
     )
 
 
