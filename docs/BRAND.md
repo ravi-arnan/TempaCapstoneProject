@@ -484,7 +484,10 @@ This brand requires sign-off from the team before being locked.
 
 ## 12. Mascot
 
-**Status**: Concept. Art not finalized. Tied to the gamification layer (see `GAMIFICATION.md`).
+**Status**: Base art done (v1) — `assets/mascot/asahi-base.png`. Expression set + transparent
+cutout still pending. Tied to the gamification layer (see `GAMIFICATION.md`).
+
+![Asahi base art](../assets/mascot/asahi-base.png)
 
 ### Name: **Asahi**
 
@@ -557,6 +560,6 @@ Build a character sheet with consistent expressions for these moments:
 
 ## Changelog
 
-- **v1.2 (2026-05-25)** — Added §12 Mascot: "Asahi", a soft-anime study-companion mascot tied to the gamification layer. Defined personality (brand-voice-aligned), brand-tied visuals (emerald eyes, logo hairclip), expression set for result states, usage rules, and AI generation reference. Art not yet finalized.
+- **v1.2 (2026-05-25)** — Added §12 Mascot: "Asahi", a soft-anime study-companion mascot tied to the gamification layer. Defined personality (brand-voice-aligned), brand-tied visuals (emerald eyes, logo hairclip), expression set for result states, usage rules, and AI generation reference. Base art v1 added (`assets/mascot/asahi-base.png`); expressions + transparent cutout pending.
 - **v1.1 (2026-05-04)** — Renamed brand from "Asah" to "Asahlagi" (compound: asah + lagi = "sharpen again"). Updated tagline to "Asah lagi sampai paham." Etymology rewritten to highlight the iterative-learning loop encoded in the name. Logo files updated (wordmark only — icon mark unchanged since first letter is still "A"). Copy templates in §7 updated to use "asah lagi" as a brand-as-action callback in result page headers and recommendations.
 - **v1.0 (2026-05-04)** — Initial draft as "Asah".
