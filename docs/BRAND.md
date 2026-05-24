@@ -484,10 +484,20 @@ This brand requires sign-off from the team before being locked.
 
 ## 12. Mascot
 
-**Status**: Base art done (v1). Files in `assets/mascot/`:
-`asahi-base.png` (with background, for hero/preview) and
-`asahi-base-transparent.png` (RGBA cutout, app-ready). Expression set still pending.
+**Status**: Art done (v1) — base + full expression set, all transparent (RGBA), app-ready.
 Tied to the gamification layer (see `GAMIFICATION.md`).
+
+Files in `assets/mascot/`:
+
+| File | Use |
+|---|---|
+| `asahi-base.png` | base, with background (hero/preview) |
+| `asahi-base-transparent.png` | base, transparent (neutral default) |
+| `asahi-high.png` | result: high score (happy) |
+| `asahi-medium.png` | result: medium score (encouraging) |
+| `asahi-low.png` | result: low score (reassuring) |
+| `asahi-wave.png` | greeting / streak / empty state |
+| `asahi-thinking.png` | loading / thinking |
 
 ![Asahi base art](../assets/mascot/asahi-base.png)
 
@@ -562,6 +572,7 @@ Build a character sheet with consistent expressions for these moments:
 
 ## Changelog
 
+- **v1.3 (2026-05-25)** — Mascot art v1 complete: base + 5 expressions (high/medium/low/wave/thinking), all transparent RGBA cutouts in `assets/mascot/`. Base regenerated for consistent quality.
 - **v1.2 (2026-05-25)** — Added §12 Mascot: "Asahi", a soft-anime study-companion mascot tied to the gamification layer. Defined personality (brand-voice-aligned), brand-tied visuals (emerald eyes, logo hairclip), expression set for result states, usage rules, and AI generation reference. Base art v1 added (`assets/mascot/asahi-base.png`); expressions + transparent cutout pending.
 - **v1.1 (2026-05-04)** — Renamed brand from "Asah" to "Asahlagi" (compound: asah + lagi = "sharpen again"). Updated tagline to "Asah lagi sampai paham." Etymology rewritten to highlight the iterative-learning loop encoded in the name. Logo files updated (wordmark only — icon mark unchanged since first letter is still "A"). Copy templates in §7 updated to use "asah lagi" as a brand-as-action callback in result page headers and recommendations.
 - **v1.0 (2026-05-04)** — Initial draft as "Asah".
