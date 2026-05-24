@@ -42,8 +42,8 @@ Acuan: `GAMIFICATION.md` (keputusan jalur), `backend/app/db/README.md` (setup DB
 | Task | Owner | Detail | Status |
 |---|---|---|---|
 | CORS: izinkan header `X-Device-Id` | Ravi | Tanpa ini browser preflight memblokir semua call gamifikasi (curl lolos, browser tidak) | Selesai |
-| Classifier guardrail: skor rendah tidak boleh "high" | Ravi (tambal) | ML sempat klasifikasi 20% sebagai "high" untuk waktu cepat (29s) | Selesai (tambalan) |
-| **Retrain classifier dengan range waktu realistis** | **Desta** | Root cause: `data_generation.py` melatih `time_taken_seconds` di range (60, 1800). User sekarang bisa selesai <60s (flow cepat + keyboard). Ubah ke `(10, 1800)`, retrain, commit ulang `classifier.pkl`. Guardrail bisa tetap dipertahankan sebagai sabuk pengaman. | **TODO** |
+| Classifier guardrail: skor rendah tidak boleh "high" | Ravi (tambal) | ML sempat klasifikasi 20% sebagai "high" untuk waktu cepat (29s) | Selesai (sabuk pengaman, dipertahankan) |
+| Retrain classifier dengan range waktu realistis | Ravi (ambil alih) | Root cause: `data_generation.py` melatih `time_taken_seconds` di range (60, 1800). Diubah ke `(10, 1800)` dan di-retrain. Model sekarang benar tanpa perlu guardrail (akurasi 94.1%, sklearn 1.8.0, tidak ada version mismatch lagi). | Selesai |
 
 ---
 

@@ -37,7 +37,8 @@ HIGH_TIME_MULTIPLIER = 6.0
 # Feature ranges (realistic for quiz with 5 questions).
 FEATURE_RANGES = {
     "score_percentage": (0, 100),
-    "time_taken_seconds": (60, 1800),  # 1-30 minutes
+    "time_taken_seconds": (10, 1800),  # 10s-30min: covers fast completions
+    # (one-question flow + keyboard shortcuts let users finish well under 60s)
     "wrong_count": (0, 11),
     "unanswered_count": (0, 6),
 }
