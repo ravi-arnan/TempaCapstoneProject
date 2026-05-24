@@ -23,10 +23,10 @@ Dokumen ini menangkap arah pengembangan setelah batch hari ini, supaya keputusan
 
 ### 1.1 Deploy public URL (lihat `DEPLOY.md`)
 - Frontend: Vercel (auto-deploy dari GitHub branch `main`)
-- Backend: **Render** (free tier; config di `render.yaml`). Perlu kartu di akun, tanpa charge di free plan. HTTPS otomatis (`*.onrender.com`).
+- Backend: **Hugging Face Spaces (Docker)** — tanpa kartu kredit; config di `huggingface-space-backend/`. HTTPS otomatis (`*.hf.space`). Render disimpan sebagai alternatif (`render.yaml`).
 - HF Space quiz-gen: sudah live di `https://raviarnan-asahlagi-quizgen.hf.space`
-- Secrets di Render: `HF_SPACE_URL`, `DATABASE_URL`, `CORS_ALLOWED_ORIGINS` (point ke Vercel + origin Capacitor `https://localhost`)
-- Frontend env: `VITE_API_BASE_URL` (point ke URL Render)
+- Secrets di Space backend: `HF_SPACE_URL`, `DATABASE_URL`, `CORS_ALLOWED_ORIGINS` (point ke Vercel + origin Capacitor `https://localhost`)
+- Frontend env: `VITE_API_BASE_URL` (point ke URL Space backend)
 
 **Hasil**: link publik yang bisa di-share ke pembimbing/audience, sekaligus prasyarat untuk app Android (lihat #6.4 + `MOBILE.md`).
 

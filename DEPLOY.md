@@ -5,7 +5,7 @@
 
 Three pieces:
 1. **Quiz generator** — Hugging Face Space (already live)
-2. **Backend (FastAPI)** — Render
+2. **Backend (FastAPI)** — Hugging Face Space (chosen; no credit card needed)
 3. **Frontend (React)** — Vercel
 
 Deploying the backend to a public HTTPS URL is also the **prerequisite for the
@@ -21,30 +21,40 @@ changes.
 
 ---
 
-## 2. Backend — Render
+## 2. Backend — Hugging Face Space (Docker)
 
-The repo includes `render.yaml` (a Render Blueprint), so most config is
-codified. Render free tier requires a payment method on file (no charge on the
-free plan), and the service spins down after ~15 min idle (cold start ~30s).
+Chosen because it needs **no credit card** (unlike Render/Railway), provides
+HTTPS automatically, and the team already uses HF Spaces. Config lives in
+`huggingface-space-backend/` (Dockerfile + README). The Dockerfile clones the
+`backend/` folder from GitHub at build time, so no code is duplicated and no
+`.env` is ever exposed (it is gitignored).
 
 ### Steps
-1. Push the repo to GitHub (done).
-2. Render dashboard, New, Blueprint, connect the repo. Render reads `render.yaml`.
-3. Add billing (card) to the account if prompted, then keep the **free** plan.
-4. Set the secret env vars in the dashboard (they are `sync: false` in the blueprint):
-   - `HF_SPACE_URL` = `https://raviarnan-asahlagi-quizgen.hf.space`
+1. Create a new Space: huggingface.co, New, Space. SDK = **Docker**, name e.g.
+   `asahlagi-backend`, hardware = CPU basic (free).
+2. Push the two files from `huggingface-space-backend/` (Dockerfile + README.md)
+   to the Space repo root. (Same flow as the quiz-gen Space:
+   `huggingface-cli login`, then git push.)
+3. In the Space, Settings, Variables and secrets, add **secrets**:
    - `DATABASE_URL` = the Neon connection string
+   - `HF_SPACE_URL` = `https://raviarnan-asahlagi-quizgen.hf.space`
    - `CORS_ALLOWED_ORIGINS` = `https://<your-vercel-app>.vercel.app,https://localhost`
-     (the `https://localhost` entry is for the Capacitor Android app)
-5. Deploy. Verify: `curl https://asahlagi-backend.onrender.com/health` returns
-   `{"status":"ok",...}`.
+     (`https://localhost` is for the Capacitor Android app)
+4. The Space builds automatically. Verify:
+   `curl https://<user>-asahlagi-backend.hf.space/health` returns `{"status":"ok",...}`.
 
 ### Notes
-- `render.yaml` sets `rootDir: backend`, build `pip install -r requirements.txt`,
-  start `uvicorn app.main:app --host 0.0.0.0 --port $PORT`, health check `/health`.
-- Free tier RAM is 512 MB. scikit-learn + numpy + pandas fit, but if the build
-  is memory-tight, upgrade the plan or trim deps.
-- The classifier `.pkl` is committed, so no training runs on Render.
+- To deploy a newer backend commit: Settings, **Factory rebuild** (re-clones fresh).
+- HF free CPU is generous (2 vCPU, 16 GB RAM) — fits scikit-learn + pandas easily.
+- Free Spaces sleep after 48h idle; first request wakes it (~30-60s). Warm up
+  before a demo by hitting `/health`.
+- The classifier `.pkl` is committed in the repo, so no training runs on build.
+
+### Alternative: Render (needs a card)
+The repo also includes `render.yaml` (a Render Blueprint) if you ever prefer
+Render. Render free tier requires a payment method on file (no charge on free).
+Steps: Render dashboard, New, Blueprint, connect repo, add card + keep free plan,
+set the same three secrets, deploy.
 
 ---
 
@@ -53,8 +63,8 @@ free plan), and the service spins down after ~15 min idle (cold start ~30s).
 1. Vercel dashboard, New Project, import the repo.
 2. Set **Root Directory** to `frontend`.
 3. Framework preset: Vite. Build command `npm run build`, output `dist`.
-4. Set env var `VITE_API_BASE_URL` = the Render backend URL
-   (e.g. `https://asahlagi-backend.onrender.com`).
+4. Set env var `VITE_API_BASE_URL` = the backend Space URL
+   (e.g. `https://<user>-asahlagi-backend.hf.space`).
 5. Deploy. Update the backend `CORS_ALLOWED_ORIGINS` to include the resulting
    Vercel URL, then redeploy the backend if needed.
 
@@ -62,7 +72,7 @@ free plan), and the service spins down after ~15 min idle (cold start ~30s).
 
 ## Post-deploy checklist
 
-- [ ] `GET /health` on the Render URL returns ok
+- [ ] `GET /health` on the backend Space URL returns ok
 - [ ] Frontend on Vercel can generate a quiz (text)
 - [ ] Submit works end-to-end (score, level, insight, recommendation)
 - [ ] Gamification: `GET /gamification/stats` works with `X-Device-Id` header

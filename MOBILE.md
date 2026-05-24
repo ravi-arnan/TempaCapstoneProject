@@ -35,8 +35,8 @@ Karena UI React-web sudah matang, Capacitor = jalur paling efisien menuju native
 ## 3. Prasyarat (HARUS beres dulu)
 
 1. **Backend deploy ke URL publik HTTPS.** App mobile tidak bisa pakai `localhost:8000`. Item deploy di ROADMAP berubah dari opsional jadi **prasyarat mobile**.
-   - **Keputusan: Render** (free tier). Perlu kartu di akun (tidak ada charge di plan free). HTTPS otomatis (`*.onrender.com`) memenuhi syarat Android. Config sudah ada di `render.yaml`; langkah lengkap di `DEPLOY.md`.
-   - Catatan: free tier spin-down ~15 menit idle (cold start ~30s).
+   - **Keputusan: Hugging Face Spaces (Docker)** — tanpa kartu kredit. HTTPS otomatis (`*.hf.space`) memenuhi syarat Android. Config di `huggingface-space-backend/`; langkah lengkap di `DEPLOY.md`.
+   - Catatan: free Space sleep ~48 jam idle (wake ~30-60s). Render tetap jadi alternatif (butuh kartu) lewat `render.yaml`.
 2. **`VITE_API_BASE_URL`** di build mobile diarahkan ke backend HTTPS publik (bukan localhost).
 3. **CORS**: backend harus mengizinkan origin Capacitor. Android default pakai `https://localhost` (androidScheme https). Tambahkan ke `CORS_ALLOWED_ORIGINS`.
 4. **HTTPS wajib**: Android memblokir cleartext (HTTP) traffic secara default. Backend produksi harus HTTPS.
@@ -120,4 +120,5 @@ Mobile via Capacitor = ekspansi scope dari proposal awal (yang fokus web). **Ang
 |---|---|---|
 | 2026-05-25 | Android-first, Capacitor, push notification ditunda | Android cukup untuk demo; push butuh setup FCM terpisah |
 | 2026-05-25 | iOS dibatalkan | Tim tidak punya Mac (Xcode wajib Mac) + Apple Developer $99/tahun |
-| 2026-05-25 | Hosting backend: Render (free tier) | Dipilih meski perlu kartu (tidak ada charge di free plan); config di `render.yaml`, langkah di `DEPLOY.md` |
+| 2026-05-25 | Hosting backend: Render (free tier) | Sempat dipilih, lalu dibatalkan karena tetap minta kartu |
+| 2026-05-25 | Hosting backend: HF Spaces (Docker) | Final. Tanpa kartu, HTTPS otomatis, tim familiar. Config di `huggingface-space-backend/`. Render disimpan sebagai alternatif (`render.yaml`) |
