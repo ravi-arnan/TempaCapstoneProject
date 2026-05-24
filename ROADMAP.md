@@ -23,7 +23,7 @@ Dokumen ini menangkap arah pengembangan setelah batch hari ini, supaya keputusan
 
 ### 1.1 Deploy public URL (lihat `DEPLOY.md`)
 - Frontend: Vercel (auto-deploy dari GitHub branch `main`)
-- Backend: **Hugging Face Spaces (Docker)** — tanpa kartu kredit; config di `huggingface-space-backend/`. HTTPS otomatis (`*.hf.space`). Render disimpan sebagai alternatif (`render.yaml`).
+- Backend: **Hugging Face Spaces (Docker)** — tanpa kartu kredit; config di `huggingface/backend/`. HTTPS otomatis (`*.hf.space`). Render disimpan sebagai alternatif (`render.yaml`).
 - HF Space quiz-gen: sudah live di `https://raviarnan-asahlagi-quizgen.hf.space`
 - Secrets di Space backend: `HF_SPACE_URL`, `DATABASE_URL`, `CORS_ALLOWED_ORIGINS` (point ke Vercel + origin Capacitor `https://localhost`)
 - Frontend env: `VITE_API_BASE_URL` (point ke URL Space backend)

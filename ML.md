@@ -161,7 +161,7 @@ First load downloads ~1GB to `~/.cache/huggingface/`; subsequent runs use cache.
 
 ### 3.5 HF Spaces deployment
 
-We deploy the same DL inference logic as a **Hugging Face Space** at `huggingface-space/` to get cloud-hosted inference. The local backend calls this Space; if it's down, backend falls back to local CPU.
+We deploy the same DL inference logic as a **Hugging Face Space** at `huggingface/quizgen/` to get cloud-hosted inference. The local backend calls this Space; if it's down, backend falls back to local CPU.
 
 **Why HF Space (not Inference API or Colab)?**
 
@@ -171,13 +171,13 @@ We deploy the same DL inference logic as a **Hugging Face Space** at `huggingfac
 | HF Inference API | Zero setup | Rate-limited (~50 req/h), shared infra |
 | Colab + tunnel | Free GPU | Disconnect every 90min, not designed for serving — too brittle for demo |
 
-**Files in `huggingface-space/`:**
+**Files in `huggingface/quizgen/`:**
 - `app.py` — FastAPI app with `/generate` endpoint
 - `Dockerfile` — image build for Space
 - `requirements.txt` — Space-specific deps
 - `README.md` — HF Space metadata (title, emoji, SDK config)
 
-**Deployment**: see [`huggingface-space/README.md`](huggingface-space/README.md) and walkthrough in `docs/tugas/ravi.md`.
+**Deployment**: see [`huggingface/quizgen/README.md`](huggingface/quizgen/README.md) and walkthrough in `docs/tugas/ravi.md`.
 
 **Endpoints exposed by Space**:
 - `GET /` — health check returning `{"status": "ready"}`

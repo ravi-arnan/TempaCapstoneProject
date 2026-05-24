@@ -153,7 +153,7 @@ cd frontend && npm run typecheck && npm run build
 │  │  ├─ generator/          IndoT5 inference + rule-based fallback
 │  │  └─ classifier/         Random Forest training, inference, artifacts
 │  └─ tests/
-├─ huggingface-space/        Dockerized quiz-generator Space
+├─ huggingface/             Dockerized HF Spaces (quizgen + backend)
 └─ docs + *.md               PRD, ARCHITECTURE, API, DESIGN, BRAND, ML, GAMIFICATION, MOBILE, ROADMAP
 ```
 

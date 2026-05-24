@@ -16,7 +16,7 @@ Android app** (see `MOBILE.md`).
 ## 1. Quiz generator (Hugging Face Space)
 
 Already deployed: `https://raviarnan-asahlagi-quizgen.hf.space`
-(Dockerized, in `huggingface-space/`.) No action needed unless the model
+(Dockerized, in `huggingface/quizgen/`.) No action needed unless the model
 changes.
 
 ---
@@ -25,14 +25,14 @@ changes.
 
 Chosen because it needs **no credit card** (unlike Render/Railway), provides
 HTTPS automatically, and the team already uses HF Spaces. Config lives in
-`huggingface-space-backend/` (Dockerfile + README). The Dockerfile clones the
+`huggingface/backend/` (Dockerfile + README). The Dockerfile clones the
 `backend/` folder from GitHub at build time, so no code is duplicated and no
 `.env` is ever exposed (it is gitignored).
 
 ### Steps
 1. Create a new Space: huggingface.co, New, Space. SDK = **Docker**, name e.g.
    `asahlagi-backend`, hardware = CPU basic (free).
-2. Push the two files from `huggingface-space-backend/` (Dockerfile + README.md)
+2. Push the two files from `huggingface/backend/` (Dockerfile + README.md)
    to the Space repo root. (Same flow as the quiz-gen Space:
    `huggingface-cli login`, then git push.)
 3. In the Space, Settings, Variables and secrets, add **secrets**:
