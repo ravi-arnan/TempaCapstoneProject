@@ -482,7 +482,81 @@ This brand requires sign-off from the team before being locked.
 
 ---
 
+## 12. Mascot
+
+**Status**: Concept. Art not finalized. Tied to the gamification layer (see `GAMIFICATION.md`).
+
+### Name: **Asahi**
+
+Derived from **Asah** (sharpen) + a soft, anime-friendly ending. Reads as a character
+name while keeping the brand root. Alternative considered: **Asa** (Indonesian for "hope",
+also from Asahlagi) — kept on the table; final pick pending.
+
+### Role
+
+A friendly companion shown at key moments to make learning feel warmer and to reinforce
+the gamification loop (XP, streak, level). She is a **companion, not the product** — the app
+works fully without her.
+
+### Personality
+
+Matches the brand voice (§6): **calm, honest, encouraging but not cheesy**. Asahi is a
+supportive study buddy, not a hype machine. She celebrates real progress and stays kind
+(never patronizing) on a low score. No "GREAT JOB!!!", no excessive excitement.
+
+### Visual design
+
+- **Art style**: soft modern anime / VTuber style — clean lineart, soft cel shading,
+  bright pastel, semi-realistic. Flat/vector-friendly so it scales and reads in light/dark mode.
+- **Coloring (ties to brand)**:
+  - **Eyes**: emerald green (`#3ecf8e`), not the usual anime blue — the single strongest brand tie.
+  - **Hairclip**: the Asahlagi chevron "A" logo, emerald.
+  - **Outfit**: clean white collared shirt with an emerald accent (tie or trim).
+  - **Hair**: soft cream/pastel, optional mint-green gradient tips.
+  - Keep the overall palette emerald + white + soft neutrals, consistent with §4.
+- **Vibe**: an approachable Indonesian student.
+
+### Expressions (for gamification states)
+
+Build a character sheet with consistent expressions for these moments:
+
+| Moment | Expression |
+|---|---|
+| High score | proud, happy |
+| Medium score | warm, encouraging "keep going" |
+| Low score | kind, reassuring (never pitying) |
+| Streak reminder / empty state | waving, inviting |
+| Loading / thinking | focused |
+
+### Usage rules
+
+- Show Asahi at **specific moments**, not on every screen: result reward, onboarding,
+  empty/loading states, and (later) mobile push notifications.
+- Keep the core UI minimal (Supabase-ish aesthetic per `DESIGN.md`). Asahi is a layer on
+  top of the calm UI, not a replacement for it.
+
+### Don'ts
+
+- ❌ Don't plaster the mascot across the whole interface — it breaks the clean aesthetic.
+- ❌ Don't give her cheesy/hype dialogue — keep §6 voice.
+- ❌ Don't use off-brand colors; emerald eyes + logo hairclip are the brand anchors.
+- ❌ Don't make her the thing the product is "about" — Asahlagi is a measurement tool first.
+
+### AI generation reference
+
+- **Tools**: Midjourney `--niji 6`, NovelAI, or free SD anime models (Illustrious-XL /
+  Animagine-XL via SeaArt or Tensor.art).
+- **Consistency**: generate one approved reference, then reuse seed / character reference
+  (`--cref`) for the expression set.
+- **Base prompt (SD anime tags)**:
+  > masterpiece, best quality, 1girl, solo, gentle smile, long cream hair with mint-green
+  > gradient tips, emerald green eyes, white collared shirt, emerald necktie, green chevron
+  > hairclip, soft cel shading, clean lineart, bright soft lighting, pastel palette, upper body
+
+---
+
 ## Changelog
 
+- **v1.2 (2026-05-25)** — Added §12 Mascot: "Asahi", a soft-anime study-companion mascot tied to the gamification layer. Defined personality (brand-voice-aligned), brand-tied visuals (emerald eyes, logo hairclip), expression set for result states, usage rules, and AI generation reference. Art not yet finalized.
 - **v1.1 (2026-05-04)** — Renamed brand from "Asah" to "Asahlagi" (compound: asah + lagi = "sharpen again"). Updated tagline to "Asah lagi sampai paham." Etymology rewritten to highlight the iterative-learning loop encoded in the name. Logo files updated (wordmark only — icon mark unchanged since first letter is still "A"). Copy templates in §7 updated to use "asah lagi" as a brand-as-action callback in result page headers and recommendations.
 - **v1.0 (2026-05-04)** — Initial draft as "Asah".
