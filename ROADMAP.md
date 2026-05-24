@@ -21,14 +21,14 @@ Dokumen ini menangkap arah pengembangan setelah batch hari ini, supaya keputusan
 
 ## 1. Buat orang lain bisa coba (high ROI untuk capstone)
 
-### 1.1 Deploy public URL
+### 1.1 Deploy public URL (lihat `DEPLOY.md`)
 - Frontend: Vercel (auto-deploy dari GitHub branch `main`)
-- Backend: Render atau Railway (FastAPI, scikit-learn pickle, pdfplumber, trafilatura — semua compatible)
-- HF Space: sudah live di `https://raviarnan-asahlagi-quizgen.hf.space`
-- ENV vars yang perlu di-set di Render: `HF_SPACE_URL`, `CORS_ALLOWED_ORIGINS` (point ke Vercel URL)
-- Frontend env: `VITE_API_BASE_URL` (point ke Render URL)
+- Backend: **Render** (free tier; config di `render.yaml`). Perlu kartu di akun, tanpa charge di free plan. HTTPS otomatis (`*.onrender.com`).
+- HF Space quiz-gen: sudah live di `https://raviarnan-asahlagi-quizgen.hf.space`
+- Secrets di Render: `HF_SPACE_URL`, `DATABASE_URL`, `CORS_ALLOWED_ORIGINS` (point ke Vercel + origin Capacitor `https://localhost`)
+- Frontend env: `VITE_API_BASE_URL` (point ke URL Render)
 
-**Hasil**: link `asahlagi.vercel.app` yang bisa di-share ke pembimbing, audience, teman.
+**Hasil**: link publik yang bisa di-share ke pembimbing/audience, sekaligus prasyarat untuk app Android (lihat #6.4 + `MOBILE.md`).
 
 **Effort**: ~2-3 jam (setup awal + debugging CORS + healthcheck)
 
@@ -185,8 +185,23 @@ Backend evaluator + UI both perlu refactor untuk handle question type variant.
 **Effort**: 3-5 hari
 
 ### 6.3 Gamification (lihat `GAMIFICATION.md`)
-3 jalur opsi sudah didokumentasikan: A (demo polish), B (hybrid product), C (Duolingo pivot).
-**Decision**: still open. Sebaiknya post-capstone.
+Jalur B (hybrid) disetujui tim. Fase 1 (XP/streak/level) sudah selesai.
+Pembagian Fase 2-4 ada di `GAMIFICATION_TASKS.md`.
+
+### 6.4 Mobile app — Capacitor, Android-first (lihat `MOBILE.md`)
+Bungkus React web yang ada jadi APK Android via Capacitor. **Keputusan**: Android dulu,
+iOS ditunda. **Prasyarat**: backend deploy ke HTTPS publik (lihat #1.1).
+
+Roadmap mobile (ditunda, urut prioritas):
+- **Push notification** (Capacitor Push + Firebase Cloud Messaging) — reminder streak,
+  daily goal, level-up nudge. Nyambung ke Fase 4 (Desta) nudge logic. Nilai jual mobile
+  terbesar untuk gamifikasi.
+- iOS support — dibatalkan (tim tidak punya Mac); tinjau ulang jika ada akses Mac nanti
+- Native storage + file picker (`@capacitor/preferences`, `@capacitor/filesystem`)
+- Publish Play Store ($25 sekali bayar)
+- Offline mode (rule-based generator + cache)
+
+**Effort wrap dasar**: ~0.5-1 hari (setelah backend ter-deploy). Push notification: +1-2 hari.
 
 ---
 

@@ -17,7 +17,7 @@ Acuan: `GAMIFICATION.md` (keputusan jalur), `backend/app/db/README.md` (setup DB
 - `app/routes/gamification.py` — endpoint
 - `app/db/` — models, session, schema, init
 
-**Sisa**: wiring frontend (Fase 1) + fitur Fase 2 & 3.
+**Sisa**: Fase 2 (Audry), Fase 3 (Ariq), Fase 4 (Desta). Ravi mengerjakan frontend di tiap fase.
 
 ---
 
@@ -47,27 +47,45 @@ Acuan: `GAMIFICATION.md` (keputusan jalur), `backend/app/db/README.md` (setup DB
 
 ---
 
-## Fase 2 — Daily goal + Achievements UI
+## Fase 2 — Audry (Quiz Generator): Tingkat Kesulitan Adaptif + Riwayat Kuis
+
+Owner utama: **Audry**. Frontend pendukung: Ravi.
+Tema: gamifikasi yang menyentuh generator kuis (domain Audry).
 
 | Task | Owner | Acceptance Criteria |
 |---|---|---|
-| Backend: daily goal logic (target XP harian + progress) | Desta | Endpoint/`stats` memuat progress harian; logika deterministik |
-| Backend: tambah badge baju baru sesuai kebutuhan | Desta | Badge baru di `achievements.py`, ada test |
-| Frontend: daily goal ring/progress di home atau nav | Ravi | Progress harian terlihat, reset tiap hari |
-| Frontend: achievements list + unlock animation | Ravi | Semua badge tampil (locked/unlocked), Lucide icon, badge baru kasih notifikasi |
-| Analitik: agregasi data attempt (rata-rata skor, tren) | Ariq | Query agregasi tersedia untuk dashboard |
+| Generator: tingkat kesulitan adaptif berdasarkan level user | Audry | Makin tinggi level, kuis makin menantang (jumlah soal / kompleksitas naik). Generator menerima parameter difficulty |
+| Generator: integrasi riwayat (regenerate dari kuis lama) | Audry | `quiz_id` konsisten; kuis bisa di-regenerate dari halaman riwayat |
+| Generator: daily challenge (opsional) | Audry | Satu kuis spesial per hari dengan bonus XP |
+| Frontend: indikator difficulty + tombol regenerate dari riwayat | Ravi | Difficulty terlihat di UI; regenerate dari riwayat berfungsi |
 
 ---
 
-## Fase 3 — Profil + Riwayat
+## Fase 3 — Ariq (Data & Analisis): Analitik + Mastery per Topik
+
+Owner utama: **Ariq**. Frontend pendukung: Ravi.
+Tema: analisis data (domain Ariq). Selaras dengan judul capstone "Deteksi Tingkat Pemahaman".
 
 | Task | Owner | Acceptance Criteria |
 |---|---|---|
-| Backend: endpoint history sudah ada; tambah agregat ringkasan | Ariq | `GET /gamification/history` + ringkasan (total kuis, rata-rata skor) |
-| Frontend: ProfilePage (dashboard XP/level/streak/badges) | Ravi | Halaman profil menampilkan semua stat + badge |
-| Frontend: HistoryPage (10 kuis terakhir + skor) | Ravi | Daftar riwayat, klik untuk lihat detail/asah ulang |
-| Frontend: "Bandingkan dengan attempt sebelumnya" di result | Ravi | Tampilkan delta skor vs attempt sebelumnya pada materi sama |
-| Integrasi riwayat dengan quiz generator | Audry | Quiz_id tersimpan konsisten, bisa di-regenerate dari riwayat |
+| Endpoint analitik (rata-rata skor, tren skor over time, jumlah kuis) | Ariq | Endpoint balikin agregat siap pakai untuk dashboard |
+| Per-topic mastery: tag topik per kuis + agregasi pemahaman per topik | Ariq | Skor per topik terlacak; topik lemah teridentifikasi (butuh sumber tag topik, koordinasi dgn Audry) |
+| Ringkasan di history endpoint | Ariq | `GET /gamification/history` + ringkasan (total kuis, rata-rata skor) |
+| Frontend: dashboard tren + halaman mastery per topik | Ravi | Grafik tren skor; daftar pemahaman per topik |
+
+---
+
+## Fase 4 — Desta (Logic, Insight, Recommendation): Achievements + Daily Goal + Nudge
+
+Owner utama: **Desta**. Frontend pendukung: Ravi.
+Tema: aturan & logika deterministik (domain Desta, sama seperti insight/recommendation/classifier).
+
+| Task | Owner | Acceptance Criteria |
+|---|---|---|
+| Perluas achievement rules (lebih banyak badge deterministik) | Desta | Badge baru di `achievements.py` + unit test |
+| Daily goal logic (target XP harian + progress + reset harian) | Desta | Logika deterministik; progress harian tersedia di `/stats` |
+| Gamified nudges (rekomendasi berbasis state gamifikasi) | Desta | Contoh: "tinggal 50 XP ke level berikutnya", "jaga streak-mu hari ini" |
+| Frontend: daily goal ring, achievements page, nudge display | Ravi | UI progress harian + halaman badge (locked/unlocked) + nudge |
 
 ---
 
