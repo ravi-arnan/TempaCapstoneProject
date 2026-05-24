@@ -6,7 +6,7 @@ Halo Audry! Tugasmu adalah **integrate Ravi's trained DL model** ke backend, **i
 >
 > Fine-tuning juga **di-skip** untuk MVP karena fp16 NaN issue di T5. Space pakai base pretrained `Wikidepia/IndoT5-base`. Backend wrapper sudah punya 3-tier fallback (HF Space → Local CPU → Rule-based).
 >
-> Detail rationale: lihat [`/ML.md` §3 "MVP decision: SKIP fine-tuning"](../../ML.md) dan [`/ML.md` §3.5 "HF Spaces deployment"](../../ML.md).
+> Detail rationale: lihat [`/ML.md` §3 "MVP decision: SKIP fine-tuning"](../ML.md) dan [`/ML.md` §3.5 "HF Spaces deployment"](../ML.md).
 
 ## 📌 Big picture
 

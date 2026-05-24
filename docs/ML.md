@@ -85,7 +85,7 @@ With fine-tuning: model reliably produces interrogative sentences relevant to th
 - Hybrid DL + ML requirement is satisfied.
 - Quality is acceptable for demo: when DL output is poor, the wrapper falls back to rule-based questions (still functional, just not as varied).
 
-**To revisit fine-tuning post-MVP**: see [`backend/ml/generator/notebooks/train_quiz_generator.ipynb`](backend/ml/generator/notebooks/train_quiz_generator.ipynb) and:
+**To revisit fine-tuning post-MVP**: see [`backend/ml/generator/notebooks/train_quiz_generator.ipynb`](../backend/ml/generator/notebooks/train_quiz_generator.ipynb) and:
 1. Change `fp16=True` to `bf16=True` (T4 supports bf16 stably for T5)
 2. If bf16 still fails, use full fp32 (slower but always stable): `fp16=False, bf16=False`
 3. Retrain (~2-3 hours), push to HF Hub, update `_MODEL_NAME` in `ml/generator/inference.py`
@@ -177,7 +177,7 @@ We deploy the same DL inference logic as a **Hugging Face Space** at `huggingfac
 - `requirements.txt` — Space-specific deps
 - `README.md` — HF Space metadata (title, emoji, SDK config)
 
-**Deployment**: see [`huggingface/quizgen/README.md`](huggingface/quizgen/README.md) and walkthrough in `docs/tugas/ravi.md`.
+**Deployment**: see [`huggingface/quizgen/README.md`](../huggingface/quizgen/README.md) and walkthrough in `docs/tugas/ravi.md`.
 
 **Endpoints exposed by Space**:
 - `GET /` — health check returning `{"status": "ready"}`

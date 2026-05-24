@@ -17,7 +17,7 @@ Halo tim! 👋 Folder ini berisi tugas masing-masing anggota dalam format step-b
 >
 > Ravi sudah deploy Space di `https://raviarnan-asahlagi-quizgen.hf.space`. Audry tinggal set `HF_SPACE_URL` di `.env` dan focus ke integration + quality improvement (distractor logic dll).
 >
-> Fine-tuning di-skip untuk MVP (fp16 NaN issue). Detail di [`/ML.md`](../../ML.md).
+> Fine-tuning di-skip untuk MVP (fp16 NaN issue). Detail di [`/ML.md`](../ML.md).
 
 ---
 
@@ -75,7 +75,7 @@ Kalau stuck:
 | 4 | Insight & Recommendation + integration | **Desta** ⭐ |
 | 5 | Polish + demo | Semua |
 
-Detail timeline lengkap: [TASKS.md](../../TASKS.md)
+Detail timeline lengkap: [TASKS.md](../TASKS.md)
 
 ---
 

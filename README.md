@@ -42,7 +42,7 @@ Berdasarkan Hasil Kuis Berbasis Data*
 - **Focused quiz experience** — one question at a time, keyboard shortcuts, progress pills,
   auto-saved answers, and a per-question review on the result page.
 - **Gamification** — XP, streaks, levels, and achievement badges persisted to a cloud database,
-  to keep learners coming back. See [`GAMIFICATION.md`](GAMIFICATION.md).
+  to keep learners coming back. See [`GAMIFICATION.md`](docs/GAMIFICATION.md).
 - **Light and dark mode**, motion-respecting animations, and an Indonesian-first interface.
 
 ## How It Works
@@ -154,12 +154,15 @@ cd frontend && npm run typecheck && npm run build
 │  │  └─ classifier/         Random Forest training, inference, artifacts
 │  └─ tests/
 ├─ huggingface/             Dockerized HF Spaces (quizgen + backend)
-└─ docs + *.md               PRD, ARCHITECTURE, API, DESIGN, BRAND, ML, GAMIFICATION, MOBILE, ROADMAP
+├─ docs/                    all specs: PRD, ARCHITECTURE, API, ML, DESIGN, BRAND,
+│                           GAMIFICATION(+_TASKS), MOBILE, DEPLOY, ROADMAP, TASKS, tugas/
+├─ README.md                this file
+└─ CLAUDE.md                project instructions
 ```
 
 ## API
 
-The HTTP contract is defined in [`API.md`](API.md). Endpoints:
+The HTTP contract is defined in [`API.md`](docs/API.md). Endpoints:
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -178,10 +181,10 @@ submit time.
 ## Roadmap
 
 - **Gamification** Fase 2-4 (adaptive difficulty, analytics + per-topic mastery, achievements +
-  daily goals + nudges) — see [`GAMIFICATION_TASKS.md`](GAMIFICATION_TASKS.md).
+  daily goals + nudges) — see [`GAMIFICATION_TASKS.md`](docs/GAMIFICATION_TASKS.md).
 - **Android app** via Capacitor, with push-notification reminders on the roadmap — see
-  [`MOBILE.md`](MOBILE.md).
-- **Public deployment**, frontend tests, and analytics — see [`ROADMAP.md`](ROADMAP.md).
+  [`MOBILE.md`](docs/MOBILE.md).
+- **Public deployment**, frontend tests, and analytics — see [`ROADMAP.md`](docs/ROADMAP.md).
 
 ## Team
 
@@ -196,16 +199,16 @@ submit time.
 
 | Document | Contents |
 |---|---|
-| [PRD.md](PRD.md) | product requirements |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | internal system structure |
-| [API.md](API.md) | HTTP contract |
-| [ML.md](ML.md) | ML/DL strategy, datasets, models |
-| [DESIGN.md](DESIGN.md) | visual design tokens |
-| [BRAND.md](BRAND.md) | brand identity, voice, copy library |
-| [GAMIFICATION.md](GAMIFICATION.md) · [GAMIFICATION_TASKS.md](GAMIFICATION_TASKS.md) | gamification direction + team tasks |
-| [MOBILE.md](MOBILE.md) | mobile (Capacitor) strategy |
-| [DEPLOY.md](DEPLOY.md) | deployment steps (Render + Vercel) |
-| [ROADMAP.md](ROADMAP.md) | prioritized backlog |
+| [PRD.md](docs/PRD.md) | product requirements |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | internal system structure |
+| [API.md](docs/API.md) | HTTP contract |
+| [ML.md](docs/ML.md) | ML/DL strategy, datasets, models |
+| [DESIGN.md](docs/DESIGN.md) | visual design tokens |
+| [BRAND.md](docs/BRAND.md) | brand identity, voice, copy library |
+| [GAMIFICATION.md](docs/GAMIFICATION.md) · [GAMIFICATION_TASKS.md](docs/GAMIFICATION_TASKS.md) | gamification direction + team tasks |
+| [MOBILE.md](docs/MOBILE.md) | mobile (Capacitor) strategy |
+| [DEPLOY.md](docs/DEPLOY.md) | deployment steps (Render + Vercel) |
+| [ROADMAP.md](docs/ROADMAP.md) | prioritized backlog |
 
 ---
 

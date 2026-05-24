@@ -152,7 +152,7 @@ Sekarang button submit di bawah list — kalau quiz panjang user harus scroll. M
 
 > **Update 2026-05-08**: fine-tuning attempt gagal karena fp16 NaN issue (T5 known instability). Decision: ship MVP dengan base pretrained `Wikidepia/IndoT5-base` (tanpa fine-tune), dengan quality check di wrapper yang fall back ke rule-based saat DL output garbage.
 >
-> Detail di [`/ML.md` §3 "MVP decision: SKIP fine-tuning"](../../ML.md).
+> Detail di [`/ML.md` §3 "MVP decision: SKIP fine-tuning"](../ML.md).
 
 ### Yang perlu dilakukan untuk DL setup (sekarang minimal)
 
