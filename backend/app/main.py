@@ -23,7 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app import __version__
-from app.routes import health, quiz
+from app.routes import gamification, health, quiz
 from app.utils.errors import ApiException, INTERNAL_ERROR
 
 
@@ -49,7 +49,9 @@ app.add_middleware(
     allow_origins=_parse_origins(os.getenv("CORS_ALLOWED_ORIGINS")),
     allow_credentials=False,
     allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    # X-Device-Id is required by gamification endpoints; without it the browser
+    # preflight blocks those requests (curl works because it skips preflight).
+    allow_headers=["Content-Type", "X-Device-Id"],
 )
 
 
@@ -84,3 +86,4 @@ async def unhandled_exception_handler(_: Request, exc: Exception) -> JSONRespons
 
 app.include_router(health.router)
 app.include_router(quiz.router)
+app.include_router(gamification.router)

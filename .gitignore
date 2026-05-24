@@ -15,6 +15,11 @@ lib64/
 parts/
 sdist/
 var/
+
+# The Python "lib/" rule above is too broad — it also matches the frontend's
+# source folder frontend/src/lib/ (cn.ts, deviceId.ts). Un-ignore it.
+!frontend/src/lib/
+!frontend/src/lib/**
 wheels/
 *.egg-info/
 .installed.cfg

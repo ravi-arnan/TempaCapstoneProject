@@ -132,6 +132,18 @@ export const THEME_LABELS = {
 } as const;
 
 // ============================================================================
+// Gamification (XP, streak, level, badges)
+// ============================================================================
+
+export const GAMIFICATION = {
+  levelShort: "Lv",
+  xpEarnedTemplate: (n: number) => `+${n} XP`,
+  levelUpTemplate: (level: number) => `Naik ke level ${level}!`,
+  streakTemplate: (n: number) => `Streak ${n} hari`,
+  newBadgeTitle: "Badge baru terbuka",
+} as const;
+
+// ============================================================================
 // Source type labels (for HomePage tabs)
 // ============================================================================
 

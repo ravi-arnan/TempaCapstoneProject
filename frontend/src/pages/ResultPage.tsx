@@ -4,10 +4,12 @@ import { InsightCard } from "@/components/InsightCard";
 import { QuestionBreakdown } from "@/components/QuestionBreakdown";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { ResultSummary } from "@/components/ResultSummary";
+import { RewardBanner } from "@/components/RewardBanner";
 import { ScoreChart } from "@/components/ScoreChart";
 import { UnderstandingBadge } from "@/components/UnderstandingBadge";
 import { useConfetti } from "@/hooks/useConfetti";
 import { useQuiz } from "@/hooks/useQuiz";
+import type { RecordAttemptResult } from "@/types/gamification";
 import type { QuizSubmitResponse } from "@/types/result";
 import { BUTTON_LABELS, RESULT_HEADERS, getErrorMessage } from "@/utils/i18n";
 
@@ -15,6 +17,7 @@ const CONFETTI_SCORE_THRESHOLD = 80;
 
 interface ResultPageState {
   result: QuizSubmitResponse;
+  reward?: RecordAttemptResult | null;
 }
 
 /**
@@ -26,6 +29,7 @@ export function ResultPage() {
   const navigate = useNavigate();
   const state = location.state as ResultPageState | null;
   const result = state?.result;
+  const reward = state?.reward ?? null;
 
   const { regenerate, generating: regenerating, generateError } = useQuiz();
 
@@ -60,6 +64,8 @@ export function ResultPage() {
         </h1>
         <p className="text-lg text-text-secondary">{headers.subhead}</p>
       </header>
+
+      <RewardBanner reward={reward} />
 
       <ResultSummary
         score={result.score}

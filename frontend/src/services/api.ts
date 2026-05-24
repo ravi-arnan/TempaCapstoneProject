@@ -14,6 +14,13 @@ import type {
 import type { QuizSubmitResponse } from "@/types/result";
 import type { ApiError } from "@/types/api";
 import { ApiException } from "@/types/api";
+import type {
+  Badge,
+  GamificationStats,
+  HistoryItem,
+  RecordAttemptResult,
+} from "@/types/gamification";
+import { getDeviceId } from "@/lib/deviceId";
 
 const BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
@@ -162,6 +169,66 @@ export function submitQuiz(
   req: QuizSubmitRequest,
 ): Promise<QuizSubmitResponse> {
   return postJson<QuizSubmitRequest, QuizSubmitResponse>("/quiz/submit", req);
+}
+
+// ============================================================================
+// Gamification — non-blocking. All methods return null on any failure
+// (including 503 when DATABASE_URL is unset) so quiz UX is never blocked.
+// ============================================================================
+
+async function gamificationFetch<T>(
+  path: string,
+  init: RequestInit,
+): Promise<T | null> {
+  try {
+    const res = await fetchWithTimeout(
+      `${BASE_URL}${path}`,
+      {
+        ...init,
+        headers: { ...init.headers, "X-Device-Id": getDeviceId() },
+      },
+      DEFAULT_TIMEOUT_MS,
+    );
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+export function getGamificationStats(): Promise<GamificationStats | null> {
+  return gamificationFetch<GamificationStats>("/gamification/stats", {
+    method: "GET",
+  });
+}
+
+export function recordQuizAttempt(body: {
+  quiz_id: string;
+  score: number;
+  understanding_level: string;
+}): Promise<RecordAttemptResult | null> {
+  return gamificationFetch<RecordAttemptResult>("/gamification/record-attempt", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function getGamificationHistory(
+  limit = 10,
+): Promise<HistoryItem[]> {
+  const res = await gamificationFetch<{ items: HistoryItem[] }>(
+    `/gamification/history?limit=${limit}`,
+    { method: "GET" },
+  );
+  return res?.items ?? [];
+}
+
+export async function getAchievements(): Promise<Badge[]> {
+  const res = await gamificationFetch<Badge[]>("/gamification/achievements", {
+    method: "GET",
+  });
+  return res ?? [];
 }
 
 export function regenerateQuiz(

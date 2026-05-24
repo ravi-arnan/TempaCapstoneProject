@@ -11,6 +11,7 @@ import {
   useQuizPersistence,
 } from "@/hooks/useQuizPersistence";
 import { useTimer } from "@/hooks/useTimer";
+import { recordQuizAttempt } from "@/services/api";
 import type { Answer, QuizGenerateResponse } from "@/types/quiz";
 import {
   BUTTON_LABELS,
@@ -131,7 +132,15 @@ export function QuizPage() {
     });
     if (result) {
       clearQuizState(quiz.quiz_id);
-      navigate("/result", { state: { result } });
+      // Record gamification before navigating so the nav widget refetches
+      // fresh stats on the /result route change. Non-blocking: reward is null
+      // if gamification is unavailable.
+      const reward = await recordQuizAttempt({
+        quiz_id: result.quiz_id,
+        score: result.score.score_percentage,
+        understanding_level: result.understanding_level,
+      });
+      navigate("/result", { state: { result, reward } });
     } else {
       start();
     }
