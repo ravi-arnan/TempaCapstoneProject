@@ -14,6 +14,12 @@
   <img alt="Tests" src="https://img.shields.io/badge/tests-52%20passing-brightgreen">
 </p>
 
+<p align="center">
+  <strong><a href="https://tempa-capstone-project.vercel.app">Live demo</a></strong>
+</p>
+
+> First request may take ~30-60s while the Hugging Face Spaces wake from sleep.
+
 ---
 
 **Asahlagi** turns any learning material into an automatic quiz, evaluates the result, and
