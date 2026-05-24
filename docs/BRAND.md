@@ -484,8 +484,10 @@ This brand requires sign-off from the team before being locked.
 
 ## 12. Mascot
 
-**Status**: Base art done (v1) — `assets/mascot/asahi-base.png`. Expression set + transparent
-cutout still pending. Tied to the gamification layer (see `GAMIFICATION.md`).
+**Status**: Base art done (v1). Files in `assets/mascot/`:
+`asahi-base.png` (with background, for hero/preview) and
+`asahi-base-transparent.png` (RGBA cutout, app-ready). Expression set still pending.
+Tied to the gamification layer (see `GAMIFICATION.md`).
 
 ![Asahi base art](../assets/mascot/asahi-base.png)
 
