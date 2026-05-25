@@ -71,13 +71,15 @@ Pretrained IndoT5 understands Indonesian text but isn't tuned for question gener
 Without fine-tuning: model might output summaries, paraphrases, or generic text — not questions.
 With fine-tuning: model reliably produces interrogative sentences relevant to the input.
 
-### 🚧 MVP decision (2026-05-08): SKIP fine-tuning
+### Fine-tuning: postponed (2026-05-08), then completed (2026-05-26)
 
-**Status**: fine-tuning attempted, postponed.
+**Status**: DONE. Fine-tuned `Wikidepia/IndoT5-base` on TyDiQA-id and deployed as
+`raviarnan/indot5-quizgen-asahlagi`. The quiz-gen HF Space and the backend now use it.
+The notes below keep the original postponement history for context.
 
-**What happened**: first training attempt in Colab used `fp16=True` (default in our notebook template). T5 has known fp16 instability — gradients overflowed to NaN, training loss collapsed to 0, and model produced garbage output ("aaaaaaaaa..." for any input).
+**What happened (2026-05-08)**: first training attempt in Colab used `fp16=True` (default in our notebook template). T5 has known fp16 instability — gradients overflowed to NaN, training loss collapsed to 0, and model produced garbage output ("aaaaaaaaa..." for any input).
 
-**Decision**: ship MVP with base pretrained `Wikidepia/IndoT5-base` (no fine-tuning) plus a per-question quality check that falls back to rule-based generation when DL output is unusable.
+**Interim decision**: shipped the MVP with base pretrained `Wikidepia/IndoT5-base` (no fine-tuning) plus a per-question quality check that falls back to rule-based generation when DL output is unusable.
 
 **Justification for capstone scope**:
 - T5 IS a deep learning model (220M parameters, transformer architecture). Inference IS deep learning.
@@ -85,9 +87,7 @@ With fine-tuning: model reliably produces interrogative sentences relevant to th
 - Hybrid DL + ML requirement is satisfied.
 - Quality is acceptable for demo: when DL output is poor, the wrapper falls back to rule-based questions (still functional, just not as varied).
 
-**To revisit fine-tuning post-MVP**: see [`backend/ml/generator/notebooks/train_quiz_generator.ipynb`](../backend/ml/generator/notebooks/train_quiz_generator.ipynb) and:
-1. Change `fp16=True` to `bf16=True` (or full fp32 if bf16 is unstable on the GPU: `fp16=False, bf16=False`)
-2. Retrain (~2-3 hours), push to HF Hub, point the HF Space / `inference.py` at the new model
+**Resolution (2026-05-26)**: fine-tuning completed via [`backend/ml/generator/notebooks/train_quiz_generator.ipynb`](../backend/ml/generator/notebooks/train_quiz_generator.ipynb). The fix was `fp16=False` (full fp32 on the T4). Trained to 8 epochs with a per-epoch checkpoint sweep; eval loss bottomed at epoch 3 and rose afterward (overfitting), so **epoch 4** was selected (verified good generations + near-minimum eval loss). Pushed to `raviarnan/indot5-quizgen-asahlagi`; the quiz-gen Space (`huggingface/quizgen/app.py`) and backend now use it. Result: DL questions are far more natural than the base model (e.g. "Kapan proklamasi kemerdekaan Indonesia dilakukan?").
 
 **Data prepared (2026-05-25)**: `backend/ml/generator/data/prepare_tydiqa.py` downloads TyDiQA
 (Gold Passage), filters the Indonesian subset, and emits question-generation pairs:
