@@ -86,9 +86,17 @@ With fine-tuning: model reliably produces interrogative sentences relevant to th
 - Quality is acceptable for demo: when DL output is poor, the wrapper falls back to rule-based questions (still functional, just not as varied).
 
 **To revisit fine-tuning post-MVP**: see [`backend/ml/generator/notebooks/train_quiz_generator.ipynb`](../backend/ml/generator/notebooks/train_quiz_generator.ipynb) and:
-1. Change `fp16=True` to `bf16=True` (T4 supports bf16 stably for T5)
-2. If bf16 still fails, use full fp32 (slower but always stable): `fp16=False, bf16=False`
-3. Retrain (~2-3 hours), push to HF Hub, update `_MODEL_NAME` in `ml/generator/inference.py`
+1. Change `fp16=True` to `bf16=True` (or full fp32 if bf16 is unstable on the GPU: `fp16=False, bf16=False`)
+2. Retrain (~2-3 hours), push to HF Hub, point the HF Space / `inference.py` at the new model
+
+**Data prepared (2026-05-25)**: `backend/ml/generator/data/prepare_tydiqa.py` downloads TyDiQA
+(Gold Passage), filters the Indonesian subset, and emits question-generation pairs:
+**5,702 train / 565 val**. Output JSONL is gitignored (regenerate with
+`python -m ml.generator.data.prepare_tydiqa`). Each row provides two input templates:
+`input_plain` (`"buat pertanyaan: {answer sentence}"`, matches current inference) and
+`input_hl` (answer-aware, answer wrapped in `<hl> ... <hl>`); `target` is the question.
+Distractors stay out of the model (handled by `app/services/_distractors.py`), so the model
+only learns passage to question.
 
 ### Quality gate for non-fine-tuned inference
 

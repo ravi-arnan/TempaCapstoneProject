@@ -68,6 +68,9 @@ frontend/out/
 frontend/vite.config.js
 frontend/vite.config.d.ts
 
+# Prepared training data (regenerate via prepare_tydiqa.py; too large for git)
+backend/ml/generator/data/*.jsonl
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
