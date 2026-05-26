@@ -38,6 +38,7 @@ class QuizInternal(BaseModel):
     # Full source material (capped at MAX_LENGTH in source_extractor = 20k chars).
     # Kept verbatim so "Asah Lagi" can regenerate a fresh quiz from the same input.
     source_material: str = Field(default="", max_length=20_000)
+    difficulty: str = "medium"
 
     @property
     def total_questions(self) -> int:

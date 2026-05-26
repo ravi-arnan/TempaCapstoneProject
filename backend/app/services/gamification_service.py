@@ -56,7 +56,9 @@ def record_attempt(
     understanding_level: str,
     today: date | None = None,
 ) -> dict:
-    """Record a completed quiz: update XP/streak/level, unlock achievements."""
+    """Record a completed quiz: update XP/streak/level, unlock achievements.
+    Grants +50 XP bonus for the first successful Daily Challenge of the day.
+    """
     today = today or date.today()
     with get_session() as session:
         user = _get_or_create_user(session, device_id)
@@ -65,7 +67,23 @@ def record_attempt(
         new_streak = xp_engine.next_streak(
             stats.current_streak, stats.last_active_date, today
         )
-        xp_earned = xp_engine.compute_xp(score, new_streak)
+        xp_base = xp_engine.compute_xp(score, new_streak)
+        xp_earned = xp_base
+
+        # Daily Challenge bonus XP logic
+        is_daily = quiz_id.startswith("daily-")
+        daily_bonus_earned = 0
+        if is_daily:
+            # Check if this exact daily quiz has already been attempted by this user
+            already_attempted = session.scalar(
+                select(func.count(QuizAttempt.id))
+                .where(QuizAttempt.user_id == user.id)
+                .where(QuizAttempt.quiz_id == quiz_id)
+            ) > 0
+            
+            if not already_attempted:
+                daily_bonus_earned = 50
+                xp_earned += daily_bonus_earned
 
         old_level = stats.level
         stats.total_xp += xp_earned
@@ -122,6 +140,7 @@ def record_attempt(
 
         return {
             "xp_earned": xp_earned,
+            "daily_bonus_earned": daily_bonus_earned,
             "leveled_up": stats.level > old_level,
             "new_level": stats.level,
             "stats": _stats_payload(stats),

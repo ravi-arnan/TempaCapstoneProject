@@ -74,7 +74,12 @@ def _is_duplicate(new_q_text: str, existing_questions: list[QuestionInternal], t
     return False
 
 
-def _wrap_quiz(questions: list[QuestionInternal], text: str) -> QuizInternal:
+def _wrap_quiz(
+    questions: list[QuestionInternal],
+    text: str,
+    difficulty: str = "medium",
+    quiz_id: str | None = None,
+) -> QuizInternal:
     """Build a QuizInternal from a list of questions, renumbering IDs."""
     renumbered = [
         QuestionInternal(
@@ -86,23 +91,39 @@ def _wrap_quiz(questions: list[QuestionInternal], text: str) -> QuizInternal:
         for i, q in enumerate(questions)
     ]
     return QuizInternal(
-        quiz_id=str(uuid.uuid4()),
+        quiz_id=quiz_id or str(uuid.uuid4()),
         questions=renumbered,
         generated_at=datetime.now(timezone.utc),
         source_material=text[:20_000],
+        difficulty=difficulty,
     )
 
 
-def generate_quiz(material_text: str) -> QuizInternal:
-    """Generate a multiple-choice quiz from raw material text.
+def generate_quiz(
+    material_text: str,
+    difficulty: str | None = None,
+    quiz_id: str | None = None,
+) -> QuizInternal:
+    """Generate a multiple-choice quiz from raw material text with difficulty support.
 
     Strategy:
         1. Try DL (HF Space → local). Collect questions that pass cleanup.
-        2. If DL yields >= DEFAULT_QUESTION_COUNT, ship DL only.
+        2. If DL yields >= target_count, ship DL only.
         3. If DL yields 1..N-1, supplement with rule-based questions to top up.
         4. If DL yields 0 (or fails), use rule-based alone.
         5. If everything fails, raise a friendly 400.
     """
+    diff = difficulty or "medium"
+    if diff == "easy":
+        target_count = 3
+        fallback_floor = 2
+    elif diff == "hard":
+        target_count = 7
+        fallback_floor = 4
+    else:
+        target_count = 5
+        fallback_floor = 3
+
     text = material_text.strip()
     if len(text) < MIN_MATERIAL_LENGTH:
         raise ApiException(
@@ -132,12 +153,12 @@ def generate_quiz(material_text: str) -> QuizInternal:
                     )
                 )
 
-            if len(dl_questions) >= DEFAULT_QUESTION_COUNT:
+            if len(dl_questions) >= target_count:
                 logger.info(
                     "quiz_generator: DL path produced %d questions",
                     len(dl_questions),
                 )
-                return _wrap_quiz(dl_questions, text)
+                return _wrap_quiz(dl_questions[:target_count], text, diff, quiz_id)
 
             if dl_questions:
                 logger.info(
@@ -145,10 +166,10 @@ def generate_quiz(material_text: str) -> QuizInternal:
                     len(dl_questions),
                 )
                 try:
-                    rule_quiz = _generate_rule_based(text)
+                    rule_quiz = _generate_rule_based(text, diff)
                     combined: list[QuestionInternal] = list(dl_questions)
                     for rq in rule_quiz.questions:
-                        if len(combined) >= DEFAULT_QUESTION_COUNT:
+                        if len(combined) >= target_count:
                             break
                         if _is_duplicate(rq.question, combined):
                             continue
@@ -160,12 +181,12 @@ def generate_quiz(material_text: str) -> QuizInternal:
                                 correct_option_index=rq.correct_option_index,
                             )
                         )
-                    if len(combined) >= FALLBACK_MIN_COUNT:
+                    if len(combined) >= fallback_floor:
                         logger.info(
                             "quiz_generator: mixed DL+rule produced %d questions",
                             len(combined),
                         )
-                        return _wrap_quiz(combined, text)
+                        return _wrap_quiz(combined, text, diff, quiz_id)
                 except ApiException as exc:
                     logger.info(
                         "quiz_generator: rule-based supplement failed (%s), "
@@ -174,13 +195,13 @@ def generate_quiz(material_text: str) -> QuizInternal:
                     )
 
                 # Rule-based couldn't help; ship DL alone if it meets the floor.
-                if len(dl_questions) >= FALLBACK_MIN_COUNT:
+                if len(dl_questions) >= fallback_floor:
                     logger.warning(
-                        "quiz_generator: shipping %d DL questions (below DEFAULT=%d)",
+                        "quiz_generator: shipping %d DL questions (below target=%d)",
                         len(dl_questions),
-                        DEFAULT_QUESTION_COUNT,
+                        target_count,
                     )
-                    return _wrap_quiz(dl_questions, text)
+                    return _wrap_quiz(dl_questions, text, diff, quiz_id)
         except Exception as exc:  # noqa: BLE001
             logger.warning(
                 "quiz_generator: DL path failed (%s), falling back to rule-based",
@@ -188,7 +209,7 @@ def generate_quiz(material_text: str) -> QuizInternal:
             )
 
     # === Path 2: rule-based fallback (DL unavailable, empty, or below floor) ===
-    return _generate_rule_based(text)
+    return _generate_rule_based(text, diff, quiz_id)
 
 
 # ============================================================================
@@ -471,10 +492,28 @@ def _extract_keywords(text: str) -> list[str]:
     return sorted(words, key=len, reverse=True)
 
 
-def _pick_keyword_from(sentence: str, used_lower: set[str]) -> str | None:
+def _pick_keyword_from_by_difficulty(
+    sentence: str,
+    used_lower: set[str],
+    difficulty: str,
+) -> str | None:
     for w in _extract_keywords(sentence):
-        if w.lower() not in used_lower:
-            used_lower.add(w.lower())
+        wl = w.lower()
+        if wl not in used_lower:
+            if difficulty == "easy" and 4 <= len(w) <= 8:
+                used_lower.add(wl)
+                return w
+            elif difficulty == "hard" and len(w) >= 6:
+                used_lower.add(wl)
+                return w
+            elif difficulty == "medium" and len(w) >= 4:
+                used_lower.add(wl)
+                return w
+    # Fallback if no matching keyword met the specific criteria
+    for w in _extract_keywords(sentence):
+        wl = w.lower()
+        if wl not in used_lower:
+            used_lower.add(wl)
             return w
     return None
 
@@ -508,7 +547,11 @@ def _build_rule_question(
     )
 
 
-def _generate_rule_based(text: str) -> QuizInternal:
+def _generate_rule_based(
+    text: str,
+    difficulty: str = "medium",
+    quiz_id: str | None = None,
+) -> QuizInternal:
     """Rule-based fill-in-the-blank quiz generator. Used as fallback.
 
     Bulletproof: any text >= MIN_MATERIAL_LENGTH (100 chars) should produce
@@ -545,8 +588,6 @@ def _generate_rule_based(text: str) -> QuizInternal:
         #   1. Strict: prefer proper prose sentences for the best questions.
         #   2. Safe (relaxed): if strict yields none, accept anything that
         #      isn't table-cell / citation / punctuation-only junk.
-        # This way we never emit obvious noise even when the source material
-        # is mostly tables (e.g. some Wikipedia articles).
         sentences = [_sanitize_sentence(s) for s in sentences]
         quality_sentences = [s for s in sentences if _is_quality_sentence(s)]
         if quality_sentences:
@@ -554,16 +595,35 @@ def _generate_rule_based(text: str) -> QuizInternal:
         else:
             candidate_sentences = [s for s in sentences if _is_safe_sentence(s)]
 
+        if difficulty == "easy":
+            target = 3
+        elif difficulty == "hard":
+            target = 7
+        else:
+            target = 5
+
+        # Apply sentence length filter based on difficulty
+        filtered_sentences = []
+        if difficulty == "easy":
+            filtered_sentences = [s for s in candidate_sentences if 40 <= len(s) <= 120]
+        elif difficulty == "hard":
+            filtered_sentences = [s for s in candidate_sentences if 80 <= len(s) <= 280]
+        else:  # medium
+            filtered_sentences = [s for s in candidate_sentences if 50 <= len(s) <= 200]
+
+        # Graceful fallback if difficulty filtering yields too few sentences than target
+        if len(filtered_sentences) < target:
+            filtered_sentences = candidate_sentences
+
         rng = random.Random(abs(hash(text)) & 0xFFFFFFFF)
         used_correct_lower: set[str] = set()
         questions: list[QuestionInternal] = []
-        target = min(DEFAULT_QUESTION_COUNT, max(len(candidate_sentences), 2))
 
         # Try sentences first — generates richest questions
-        for sentence in candidate_sentences[: DEFAULT_QUESTION_COUNT * 3]:
+        for sentence in filtered_sentences[: target * 3]:
             if len(questions) >= target:
                 break
-            correct = _pick_keyword_from(sentence, used_correct_lower)
+            correct = _pick_keyword_from_by_difficulty(sentence, used_correct_lower, difficulty)
             if not correct:
                 continue
             q = _build_rule_question(
@@ -578,7 +638,7 @@ def _generate_rule_based(text: str) -> QuizInternal:
         # using different keywords as the blank
         if len(questions) < 2 and len(all_keywords) >= 4:
             whole_text = " ".join(text.split())[:280]  # collapse whitespace + truncate
-            for keyword in all_keywords[:DEFAULT_QUESTION_COUNT]:
+            for keyword in all_keywords[:target]:
                 if len(questions) >= 2:
                     break
                 if keyword.lower() in used_correct_lower:
@@ -604,12 +664,7 @@ def _generate_rule_based(text: str) -> QuizInternal:
             )
 
         logger.info("quiz_generator: rule-based path produced %d questions", len(questions))
-        return QuizInternal(
-            quiz_id=str(uuid.uuid4()),
-            questions=questions,
-            generated_at=datetime.now(timezone.utc),
-            source_material=text,
-        )
+        return _wrap_quiz(questions, text, difficulty, quiz_id)
     except ApiException:
         raise
     except Exception as exc:  # noqa: BLE001

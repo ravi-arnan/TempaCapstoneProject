@@ -32,12 +32,14 @@ class QuizGenerateRequest(BaseModel):
     """POST /quiz/generate request body."""
 
     material_text: str = Field(..., min_length=1, max_length=20_000)
+    difficulty: Optional[str] = Field(default=None, pattern="^(easy|medium|hard)$")
 
 
 class QuizGenerateFromUrlRequest(BaseModel):
     """POST /quiz/generate-from-url request body."""
 
     url: str = Field(..., min_length=1, max_length=2048)
+    difficulty: Optional[str] = Field(default=None, pattern="^(easy|medium|hard)$")
 
 
 class QuizGenerateResponse(BaseModel):
@@ -47,6 +49,7 @@ class QuizGenerateResponse(BaseModel):
     questions: list[Question]
     total_questions: int = Field(..., ge=1)
     generated_at: datetime
+    difficulty: str = Field(default="medium")
 
 
 class QuizSubmitRequest(BaseModel):
@@ -61,3 +64,4 @@ class QuizRegenerateRequest(BaseModel):
     """POST /quiz/regenerate request body."""
 
     quiz_id: str
+    difficulty: Optional[str] = Field(default=None, pattern="^(easy|medium|hard)$")

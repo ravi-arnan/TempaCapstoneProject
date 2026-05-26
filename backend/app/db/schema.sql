@@ -44,3 +44,12 @@ CREATE TABLE IF NOT EXISTS achievements (
 );
 
 CREATE INDEX IF NOT EXISTS idx_achievements_user ON achievements(user_id);
+
+CREATE TABLE IF NOT EXISTS persistent_quizzes (
+    quiz_id         VARCHAR(64) PRIMARY KEY,
+    source_material TEXT NOT NULL,
+    questions_json  TEXT NOT NULL,
+    difficulty      VARCHAR(16) NOT NULL DEFAULT 'medium',
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
