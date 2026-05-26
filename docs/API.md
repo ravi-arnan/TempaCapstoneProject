@@ -2,8 +2,8 @@
 
 **Project**: Sistem Deteksi Tingkat Pemahaman Mahasiswa Berdasarkan Hasil Kuis Berbasis Data
 **Team**: TP-G005
-**Status**: Draft v1.0 — needs team review before lock-in
-**Last updated**: 2026-05-04
+**Status**: v1.1 — core contract locked; gamification + adaptive difficulty added
+**Last updated**: 2026-05-26
 
 ---
 
@@ -17,10 +17,16 @@ This document is the **single source of truth** for the HTTP contract between th
 - Discovering an API mismatch in Week 5 = demo failure. Locking the contract in Week 1 = predictable integration.
 
 ### Scope
-- 5 endpoints (`/health`, `/quiz/generate`, `/quiz/generate-from-url`, `/quiz/generate-from-pdf`, `/quiz/submit`).
+- Quiz endpoints: `/health`, `/quiz/generate`, `/quiz/generate-from-url`, `/quiz/generate-from-pdf`, `/quiz/submit`, `/quiz/regenerate`, `/quiz/daily-challenge`.
+- Gamification endpoints: `/gamification/record-attempt`, `/gamification/stats`, `/gamification/history`, `/gamification/achievements`.
 - All data shapes used in those endpoints.
 - All error codes and validation rules.
 - Side-by-side TypeScript + Pydantic models for shared types.
+
+> **v1.1 additions** (gamification phase, merged 2026-05-26): adaptive `difficulty`
+> param on all generate endpoints, `/quiz/regenerate` + `/quiz/daily-challenge`,
+> `question_reviews[]` in the submit response, and the four `/gamification/*`
+> endpoints (anonymous `X-Device-Id` identity). See §4.6–§4.9 and the changelog.
 
 ### Out of scope (NOT this document)
 - Internal classification / insight / recommendation rule logic → see `CLASSIFICATION_RULES.md` (TBD).
@@ -104,9 +110,19 @@ If the team prefers the original sketches, raise it in the §12 sign-off discuss
 
 ## 3. Authentication
 
-**MVP: no authentication.** All endpoints are open. This is consistent with the project scope — no user accounts, no persistent storage of user data.
+**No login / no accounts.** All endpoints are open. This is consistent with the
+project scope — no passwords, no PII.
 
-If auth is added post-MVP, the convention will be: `Authorization: Bearer <token>` header. Reserve this header now; do not use it for other purposes.
+**Anonymous device identity (`X-Device-Id`).** Gamification (§4.8–§4.9) and
+adaptive difficulty (§4.10) identify a returning user by an `X-Device-Id`
+request header: a UUID the frontend generates once on first visit and persists
+in `localStorage`. It is optional on the quiz endpoints (only enables adaptive
+difficulty) and **required** on `/gamification/*` (missing → `400
+DEVICE_ID_REQUIRED`). Clearing browser storage resets the identity — acceptable
+for this scope.
+
+If real auth is added post-MVP, the convention will be: `Authorization: Bearer
+<token>` header. Reserve this header now; do not use it for other purposes.
 
 ---
 
@@ -151,13 +167,22 @@ Generates a multiple-choice quiz from learning material.
 
 ```json
 {
-  "material_text": "Fotosintesis adalah proses pembentukan glukosa..."
+  "material_text": "Fotosintesis adalah proses pembentukan glukosa...",
+  "difficulty": "medium"
 }
 ```
 
 | Field | Type | Required | Validation |
 |---|---|---|---|
 | `material_text` | string | yes | min 100 chars, max 20,000 chars; non-empty after trimming |
+| `difficulty` | string | no | one of `"easy"` \| `"medium"` \| `"hard"`. Omit to let the backend choose adaptively — see §4.10 |
+
+> **Adaptive difficulty**: when `difficulty` is omitted, the backend picks one
+> based on the caller's gamification level (via the `X-Device-Id` header, if sent
+> and the DB is configured): level ≤3 → `easy`, ≤8 → `medium`, else `hard`.
+> Falls back to `medium` when there is no device id or no DB. An explicit
+> `difficulty` always wins. `difficulty` controls question count:
+> `easy` = 3, `medium` = 5, `hard` = 7.
 
 #### Response · 200 OK
 
@@ -177,19 +202,21 @@ Generates a multiple-choice quiz from learning material.
     }
   ],
   "total_questions": 5,
-  "generated_at": "2026-05-04T15:30:00Z"
+  "generated_at": "2026-05-04T15:30:00Z",
+  "difficulty": "medium"
 }
 ```
 
 | Field | Type | Notes |
 |---|---|---|
 | `quiz_id` | string (UUID) | Use this when calling `/quiz/submit` |
-| `questions[]` | Question[] | 5–10 items in MVP |
+| `questions[]` | Question[] | 3 / 5 / 7 items per `easy` / `medium` / `hard` |
 | `questions[].id` | int | 1-based, sequential within this quiz |
 | `questions[].question` | string | Question prompt in Indonesian |
 | `questions[].options` | string[] | Always 4 options (A, B, C, D positions) |
 | `total_questions` | int | Convenience count, equals `questions.length` |
 | `generated_at` | string (ISO 8601) | UTC timestamp |
+| `difficulty` | string | the difficulty actually used (`easy` \| `medium` \| `hard`); echoes the resolved value, useful when it was chosen adaptively |
 
 > **IMPORTANT — `correct_answer` is NOT exposed.**
 > The correct answer is stored server-side keyed by `quiz_id`. Returning correct answers to the client would let users inspect the network tab and "win" trivially. This also keeps the request/response payload smaller.
@@ -243,13 +270,15 @@ Fetches an article from a public URL, extracts the main text, then generates a q
 
 ```json
 {
-  "url": "https://contoh.com/artikel-pelajaran"
+  "url": "https://contoh.com/artikel-pelajaran",
+  "difficulty": "medium"
 }
 ```
 
 | Field | Type | Required | Validation |
 |---|---|---|---|
-| `url` | string | yes | must start with `http://` or `https://`; publicly reachable; HTML page (not PDF/binary) |
+| `url` | string | yes | must start with `http://` or `https://`; publicly reachable; HTML page (not PDF/binary); max 2048 chars |
+| `difficulty` | string | no | `"easy"` \| `"medium"` \| `"hard"`; same adaptive behaviour as §4.2 |
 
 #### Response · 200 OK
 
@@ -293,6 +322,9 @@ Accepts a PDF file upload, extracts text via `pdfplumber`, then generates a quiz
 | Field | Type | Required | Validation |
 |---|---|---|---|
 | `file` | binary PDF | yes | content-type `application/pdf`; file size ≤ 10 MB; PDF must contain extractable text (not scanned images) |
+
+Optional `difficulty` query parameter (`?difficulty=easy|medium|hard`) with the
+same adaptive behaviour as §4.2; omit to let the backend choose.
 
 #### Response · 200 OK
 
@@ -372,7 +404,18 @@ Submits user's answers and returns full result analysis.
     "wrong": 1,
     "unanswered": 0
   },
-  "submitted_at": "2026-05-04T15:34:05Z"
+  "submitted_at": "2026-05-04T15:34:05Z",
+  "question_reviews": [
+    {
+      "question_id": 1,
+      "question": "Apa peran utama klorofil dalam fotosintesis?",
+      "options": ["Menyerap cahaya matahari", "Menghasilkan oksigen", "Menyimpan glukosa", "Memecah air"],
+      "selected_option_index": 0,
+      "correct_option_index": 0,
+      "is_correct": true,
+      "is_unanswered": false
+    }
+  ]
 }
 ```
 
@@ -390,6 +433,7 @@ Submits user's answers and returns full result analysis.
 | `recommendation` | string | Indonesian, 1–2 sentences, actionable |
 | `chart_data` | object | numeric fields for direct chart consumption |
 | `submitted_at` | string (ISO 8601) | UTC timestamp |
+| `question_reviews[]` | QuestionReview[] | per-question breakdown (the question, its options, what the user picked, the correct index, and correctness flags) — powers the result-page "what you got right/wrong" view without re-fetching the quiz. Length equals `total_questions`. See §5.5 |
 
 > **Frontend display tip**: map `understanding_level` to localized label using a lookup table:
 > ```ts
@@ -436,6 +480,239 @@ curl -X POST http://localhost:8000/quiz/submit \
     "time_taken_seconds": 245
   }'
 ```
+
+---
+
+### 4.6 Regenerate quiz
+
+```
+POST /quiz/regenerate
+```
+
+Generates a **fresh** quiz from the *same source material* as a previously
+generated quiz, reusing the same `quiz_id`. Powers the "Asah Lagi" button on the
+result page — the user gets a new set of questions on the material they just
+studied, without re-pasting it.
+
+#### Request body
+
+```json
+{
+  "quiz_id": "550e8400-e29b-41d4-a716-446655440000",
+  "difficulty": "medium"
+}
+```
+
+| Field | Type | Required | Validation |
+|---|---|---|---|
+| `quiz_id` | string | yes | must reference a quiz whose source material is still retrievable (in-memory cache or persisted) |
+| `difficulty` | string | no | `"easy"` \| `"medium"` \| `"hard"`; defaults to the previous quiz's difficulty, then adaptive (§4.10) |
+
+#### Response · 200 OK
+
+Same shape as §4.2 `/quiz/generate` response, with the **same `quiz_id`** and new
+questions. Optional `X-Device-Id` header is honoured for adaptive difficulty.
+
+#### Errors
+
+| Status | `code` | Trigger | `detail` (Indonesian) |
+|---|---|---|---|
+| 404 | `QUIZ_NOT_FOUND` | the `quiz_id` (or its source material) is no longer available | "Materi sumber tidak ditemukan. Mulai ulang dari halaman utama." |
+| 500 | `QUIZ_GENERATION_FAILED` | generator failure | "Gagal menghasilkan kuis. Silakan coba lagi." |
+
+#### Example
+
+```bash
+curl -X POST http://localhost:8000/quiz/regenerate \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: 7b1f...c2" \
+  -d '{"quiz_id": "550e8400-e29b-41d4-a716-446655440000"}'
+```
+
+---
+
+### 4.7 Daily challenge
+
+```
+GET /quiz/daily-challenge
+```
+
+Returns today's daily challenge quiz. The quiz id is `daily-YYYY-MM-DD` and the
+source material is deterministically selected from a curated set
+(`MD5(date) % len(materials)`), so everyone gets the same daily quiz and it is
+persisted (generated once per day, then served from storage). Completing a daily
+quiz grants a one-time **+50 XP** bonus (see §4.8 `daily_bonus_earned`).
+
+#### Query parameters
+
+| Param | Type | Required | Notes |
+|---|---|---|---|
+| `difficulty` | string | no | `"easy"` \| `"medium"` \| `"hard"`; adaptive (§4.10) when omitted |
+
+#### Response · 200 OK
+
+Same shape as §4.2 `/quiz/generate` response, with `quiz_id` = `daily-YYYY-MM-DD`.
+Optional `X-Device-Id` header is honoured for adaptive difficulty.
+
+#### Example
+
+```bash
+curl http://localhost:8000/quiz/daily-challenge \
+  -H "X-Device-Id: 7b1f...c2"
+```
+
+---
+
+### 4.8 Record quiz attempt (gamification)
+
+```
+POST /gamification/record-attempt
+```
+
+Records a completed quiz for the calling device and returns the resulting XP /
+level / streak changes plus any newly unlocked achievements. Call this once
+after a successful `/quiz/submit`, with the same `quiz_id`, `score`, and
+`understanding_level` from the submit response.
+
+> **Identity**: all `/gamification/*` endpoints identify the user by an
+> anonymous **`X-Device-Id`** header — a UUID the frontend generates once and
+> keeps in `localStorage`. No login, no PII. See §3.
+
+#### Request body
+
+```json
+{
+  "quiz_id": "550e8400-e29b-41d4-a716-446655440000",
+  "score": 80,
+  "understanding_level": "high"
+}
+```
+
+| Field | Type | Required | Validation |
+|---|---|---|---|
+| `quiz_id` | string | yes | 1–64 chars |
+| `score` | int | yes | 0–100 |
+| `understanding_level` | string | yes | 1–16 chars (`"high"` \| `"medium"` \| `"low"`) |
+
+#### Response · 200 OK
+
+```json
+{
+  "xp_earned": 105,
+  "daily_bonus_earned": 0,
+  "leveled_up": true,
+  "new_level": 2,
+  "stats": {
+    "total_xp": 105,
+    "level": 2,
+    "xp_into_level": 5,
+    "xp_for_next_level": 100,
+    "current_streak": 1,
+    "longest_streak": 1
+  },
+  "newly_unlocked": [
+    {
+      "code": "first_quiz",
+      "label": "Langkah Pertama",
+      "description": "Menyelesaikan kuis pertama.",
+      "icon": "sparkles",
+      "unlocked_at": "2026-05-26T10:59:21Z"
+    }
+  ]
+}
+```
+
+| Field | Type | Notes |
+|---|---|---|
+| `xp_earned` | int | XP from this attempt (score + completion + streak bonus) |
+| `daily_bonus_earned` | int | `50` once per day if `quiz_id` starts with `daily-`, else `0` |
+| `leveled_up` | bool | true if this attempt crossed a level threshold |
+| `new_level` | int | level after applying this attempt |
+| `stats` | StatsResponse | full post-attempt stats (see §4.9 / §5.7) |
+| `newly_unlocked[]` | Badge[] | achievements unlocked by this attempt (often empty) |
+
+#### Errors
+
+| Status | `code` | Trigger | `detail` (Indonesian) |
+|---|---|---|---|
+| 400 | `DEVICE_ID_REQUIRED` | `X-Device-Id` header missing/blank | "Identitas perangkat tidak ditemukan. Muat ulang halaman." |
+| 503 | `GAMIFICATION_UNAVAILABLE` | `DATABASE_URL` not configured | "Fitur progres belum aktif. Hubungi pengelola aplikasi." |
+
+#### Example
+
+```bash
+curl -X POST http://localhost:8000/gamification/record-attempt \
+  -H "Content-Type: application/json" \
+  -H "X-Device-Id: 7b1f...c2" \
+  -d '{"quiz_id": "550e8400-...", "score": 80, "understanding_level": "high"}'
+```
+
+---
+
+### 4.9 Stats, history, achievements (gamification)
+
+All three require the `X-Device-Id` header and return `503 GAMIFICATION_UNAVAILABLE`
+when the DB is not configured (so the core quiz flow keeps working without one).
+
+```
+GET /gamification/stats
+```
+
+Returns the device's current progress. Response (`StatsResponse`):
+
+```json
+{
+  "total_xp": 480,
+  "level": 4,
+  "xp_into_level": 80,
+  "xp_for_next_level": 250,
+  "current_streak": 3,
+  "longest_streak": 5
+}
+```
+
+```
+GET /gamification/history?limit=10
+```
+
+Returns recent attempts, newest first. `limit` is clamped to 1–50 (default 10).
+
+```json
+{
+  "items": [
+    {
+      "quiz_id": "550e8400-...",
+      "score": 80,
+      "understanding_level": "high",
+      "xp_earned": 105,
+      "completed_at": "2026-05-26T10:59:21Z"
+    }
+  ]
+}
+```
+
+```
+GET /gamification/achievements
+```
+
+Returns the full achievement catalogue with unlock state for this device (array
+of `Badge` objects — `code`, `label`, `description`, `icon`, and `unlocked_at`
+which is `null` while still locked).
+
+---
+
+### 4.10 Adaptive difficulty resolution
+
+The generate / regenerate / daily-challenge endpoints resolve `difficulty` in
+this order:
+
+1. **Explicit** `difficulty` in the request → used as-is.
+2. **Adaptive** — if `X-Device-Id` is present *and* `DATABASE_URL` is configured,
+   the backend reads the device's level: `≤3 → easy`, `≤8 → medium`, else `hard`.
+3. **Fallback** → `medium`.
+
+`difficulty` maps to question count: `easy` = 3, `medium` = 5, `hard` = 7. The
+resolved value is echoed back in the response's `difficulty` field.
 
 ---
 
@@ -507,8 +784,16 @@ class Answer(BaseModel):
 
 ```ts
 // frontend/src/types/quiz.ts
+export type Difficulty = "easy" | "medium" | "hard";
+
 export interface QuizGenerateRequest {
   material_text: string;
+  difficulty?: Difficulty; // optional — adaptive when omitted
+}
+
+export interface QuizRegenerateRequest {
+  quiz_id: string;
+  difficulty?: Difficulty;
 }
 
 export interface QuizGenerateResponse {
@@ -516,22 +801,33 @@ export interface QuizGenerateResponse {
   questions: Question[];
   total_questions: number;
   generated_at: string; // ISO 8601 UTC
+  difficulty: Difficulty; // resolved value actually used
 }
 ```
 
 ```python
 # backend/app/schemas/quiz.py
 from datetime import datetime
+from typing import Optional
 
 class QuizGenerateRequest(BaseModel):
     material_text: str = Field(..., min_length=100, max_length=20000)
+    difficulty: Optional[str] = Field(default=None, pattern="^(easy|medium|hard)$")
+
+class QuizRegenerateRequest(BaseModel):
+    quiz_id: str
+    difficulty: Optional[str] = Field(default=None, pattern="^(easy|medium|hard)$")
 
 class QuizGenerateResponse(BaseModel):
     quiz_id: str
     questions: list[Question]
     total_questions: int
     generated_at: datetime
+    difficulty: str = Field(default="medium")
 ```
+
+> `QuizGenerateFromUrlRequest` adds the same optional `difficulty` field to the
+> `{ url }` body. The PDF endpoint takes `difficulty` as a query parameter.
 
 ### 5.5 `QuizSubmitRequest` / `QuizSubmitResponse`
 
@@ -557,6 +853,16 @@ export interface ChartData {
   unanswered: number;
 }
 
+export interface QuestionReview {
+  question_id: number;
+  question: string;
+  options: string[];
+  selected_option_index: number | null;
+  correct_option_index: number;
+  is_correct: boolean;
+  is_unanswered: boolean;
+}
+
 export interface QuizSubmitResponse {
   quiz_id: string;
   score: ScoreSummary;
@@ -566,6 +872,7 @@ export interface QuizSubmitResponse {
   recommendation: string;
   chart_data: ChartData;
   submitted_at: string; // ISO 8601 UTC
+  question_reviews: QuestionReview[];
 }
 ```
 
@@ -588,6 +895,15 @@ class ChartData(BaseModel):
     wrong: int
     unanswered: int
 
+class QuestionReview(BaseModel):
+    question_id: int
+    question: str
+    options: list[str]
+    selected_option_index: Optional[int]
+    correct_option_index: int
+    is_correct: bool
+    is_unanswered: bool
+
 class QuizSubmitResponse(BaseModel):
     quiz_id: str
     score: ScoreSummary
@@ -597,6 +913,7 @@ class QuizSubmitResponse(BaseModel):
     recommendation: str
     chart_data: ChartData
     submitted_at: datetime
+    question_reviews: list[QuestionReview]
 ```
 
 ### 5.6 `ApiError` (error response shape)
@@ -615,6 +932,94 @@ class ApiError(BaseModel):
     detail: str
     code: Optional[str] = None
 ```
+
+### 5.7 Gamification types
+
+```ts
+// frontend/src/types/gamification.ts
+export interface RecordAttemptRequest {
+  quiz_id: string;
+  score: number;              // 0-100
+  understanding_level: string; // "high" | "medium" | "low"
+}
+
+export interface StatsResponse {
+  total_xp: number;
+  level: number;
+  xp_into_level: number;
+  xp_for_next_level: number;
+  current_streak: number;
+  longest_streak: number;
+}
+
+export interface Badge {
+  code: string;
+  label: string;
+  description: string;
+  icon: string;
+  unlocked_at: string | null; // ISO 8601 UTC, null while locked
+}
+
+export interface RecordAttemptResponse {
+  xp_earned: number;
+  daily_bonus_earned: number; // 0 unless a daily-* quiz, then 50
+  leveled_up: boolean;
+  new_level: number;
+  stats: StatsResponse;
+  newly_unlocked: Badge[];
+}
+
+export interface HistoryItem {
+  quiz_id: string;
+  score: number;
+  understanding_level: string;
+  xp_earned: number;
+  completed_at: string; // ISO 8601 UTC
+}
+```
+
+```python
+# backend/app/schemas/gamification.py
+class RecordAttemptRequest(BaseModel):
+    quiz_id: str = Field(..., min_length=1, max_length=64)
+    score: int = Field(..., ge=0, le=100)
+    understanding_level: str = Field(..., min_length=1, max_length=16)
+
+class StatsResponse(BaseModel):
+    total_xp: int
+    level: int
+    xp_into_level: int
+    xp_for_next_level: int
+    current_streak: int
+    longest_streak: int
+
+class BadgeResponse(BaseModel):
+    code: str
+    label: str
+    description: str
+    icon: str
+    unlocked_at: datetime | None = None
+
+class RecordAttemptResponse(BaseModel):
+    xp_earned: int
+    daily_bonus_earned: int = 0
+    leveled_up: bool
+    new_level: int
+    stats: StatsResponse
+    newly_unlocked: list[BadgeResponse]
+
+class HistoryItem(BaseModel):
+    quiz_id: str
+    score: int
+    understanding_level: str
+    xp_earned: int
+    completed_at: datetime
+```
+
+> **XP / level model**: XP per attempt = `score` (0–100) + `20` completion bonus
+> + `5 × current_streak` (capped at `50`). Level thresholds are
+> `total_xp ≥ 50·L·(L+1)`. The streak increments on consecutive-day activity and
+> resets after a missed day. This lives in `backend/app/services/xp_engine.py`.
 
 ---
 
@@ -638,6 +1043,14 @@ Centralized list of all error codes for frontend handling. Match the `code` fiel
 - `INVALID_OPTION_INDEX` (400)
 - `INVALID_TIME` (400)
 - `EVALUATION_FAILED` (500)
+
+### Regenerate (POST /quiz/regenerate)
+- `QUIZ_NOT_FOUND` (404) — source material no longer available
+- `QUIZ_GENERATION_FAILED` (500)
+
+### Gamification (POST /gamification/*, GET /gamification/*)
+- `DEVICE_ID_REQUIRED` (400) — `X-Device-Id` header missing/blank
+- `GAMIFICATION_UNAVAILABLE` (503) — `DATABASE_URL` not configured; core quiz flow still works
 
 ### Frontend handling pattern
 
@@ -672,7 +1085,7 @@ Quick reference for both sides to keep validation consistent.
 - Empty string after trim → `MATERIAL_EMPTY`
 
 ### Quiz generation output
-- Generate **5–10 questions** (configurable, default 5 for MVP)
+- Question count is driven by `difficulty`: **easy = 3, medium = 5, hard = 7**
 - Every question has **exactly 4 options**
 - Every question has **exactly 1 correct option index** stored server-side
 
@@ -680,7 +1093,7 @@ Quick reference for both sides to keep validation consistent.
 - `answers.length` MUST equal `total_questions` from generate
 - `selected_option_index`: integer 0–3 or `null` (no other types)
 - `time_taken_seconds`: integer 0–7200
-- `quiz_id`: must exist in server state (in-memory store for MVP)
+- `quiz_id`: must exist in server state (in-memory cache, with Neon persistence when `DATABASE_URL` is set — see §8)
 
 ### Submit output invariants
 See §4.5 "Invariants" — all 5 must hold for every successful submit response.
@@ -691,20 +1104,19 @@ See §4.5 "Invariants" — all 5 must hold for every successful submit response.
 
 > This section documents the **expected internal behavior**, not part of the public contract. Backend implementers (Audry) should follow this approach unless explicitly changed.
 
-### Quiz storage strategy
-- **MVP**: in-memory dict keyed by `quiz_id` → full quiz object (including `correct_option_index` per question)
-- Stored on `/quiz/generate`, read on `/quiz/submit`
-- Eviction: keep last N quizzes (e.g., 100) or evict on app restart — acceptable for demo
-- **Trade-off**: server restart loses all quizzes. For MVP single-session demo, this is fine.
+### Quiz storage strategy (hybrid, v1.1)
+- In-memory `OrderedDict` keyed by `quiz_id` → full quiz object (including `correct_option_index` per question), FIFO-evicted at 100 entries. This is the hot cache, read on `/quiz/submit` and `/quiz/regenerate`.
+- When `DATABASE_URL` is set, `save_quiz` **also** upserts the quiz into the Neon `persistent_quizzes` table (`session.merge`), and `get_quiz` falls back to the DB on a cache miss (then re-warms the cache). This lets `/quiz/regenerate` and the daily challenge survive a Space restart.
+- Graceful degradation: every DB call is wrapped in try/except — if the DB is unreachable, the app silently falls back to memory-only and keeps serving.
+- Persisted columns: `quiz_id`, `source_material`, `questions_json`, `difficulty`, `created_at`.
 
 ### Why not return correct_answer to the client?
 1. **Security**: any user can open browser DevTools → Network tab → see correct answers before submitting
 2. **Cleaner contract**: submit endpoint doesn't need to be told the correct answers (server already knows)
 3. **Future-proof**: enables features like "view explanation after submit" without contract changes
 
-### Post-MVP migration path
-- Replace in-memory dict with SQLite (`sqlite3` in stdlib, no install) → persistent across restarts
-- Add `expires_at` field → auto-evict quizzes older than 24h
+### Further work
+- Add `expires_at` → auto-evict persisted quizzes older than 24h (table currently keeps rows indefinitely)
 - Optional: add `GET /quiz/{quiz_id}` to retrieve a previously generated quiz
 
 ---
@@ -725,11 +1137,17 @@ app.add_middleware(
     ],
     allow_credentials=False,
     allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_headers=["Content-Type", "X-Device-Id"],
 )
 ```
 
-For demo deployment, add the deployed frontend URL to `allow_origins`.
+> **`X-Device-Id` must be in `allow_headers`** — gamification requests send it, and
+> the browser's CORS preflight rejects the request otherwise (curl bypasses
+> preflight, so this surfaces only in the browser).
+
+For demo deployment, the deployed frontend origin is supplied via the
+`CORS_ALLOWED_ORIGINS` env/secret (comma-separated) and appended to
+`allow_origins`.
 
 ---
 
@@ -807,9 +1225,9 @@ VITE_API_BASE_URL=http://localhost:8000
 
 These are intentionally **out of scope for v1.0** but worth tracking:
 
-- [ ] Should `total_questions` be configurable via generate request (e.g., `?count=10`)? Currently fixed.
+- [x] ~~Should `total_questions` be configurable?~~ **Resolved (v1.1)**: driven by the `difficulty` param (easy=3 / medium=5 / hard=7), chosen explicitly or adaptively.
 - [ ] Should we support multi-language insight/recommendation via `?lang=en`? Currently Indonesian-only.
-- [ ] Should generated quizzes persist across server restarts? Currently in-memory only.
+- [x] ~~Should generated quizzes persist across server restarts?~~ **Resolved (v1.1)**: hybrid in-memory + Neon persistence when `DATABASE_URL` is set (§8). Falls back to memory-only otherwise.
 - [ ] Should we add `GET /quiz/{quiz_id}` for resuming an in-progress quiz? Not needed for single-session demo.
 - [ ] Should we add per-question explanation in submit response (`why_correct: string`)? Useful but not MVP.
 - [ ] Rate limiting? Not needed for capstone scope.
@@ -831,4 +1249,12 @@ After all four boxes are ticked, this document moves from "Draft v1.0" to "Locke
 
 ## Changelog
 
+- **v1.1 (2026-05-26)** — Gamification + adaptive difficulty phase. Added optional
+  `difficulty` param (and resolved-`difficulty` in responses) to all generate
+  endpoints (§4.2–§4.4, §4.10); new `POST /quiz/regenerate` (§4.6) and
+  `GET /quiz/daily-challenge` (§4.7); `question_reviews[]` in the submit response
+  (§4.5, §5.5); four `/gamification/*` endpoints with anonymous `X-Device-Id`
+  identity (§4.8–§4.9, §3); gamification shared types (§5.7); new error codes
+  `DEVICE_ID_REQUIRED`, `GAMIFICATION_UNAVAILABLE` (§6); `X-Device-Id` added to CORS
+  `allow_headers` (§9).
 - **v1.0 (2026-05-04)** — Initial draft: 3 endpoints, error codes, shared types, validation rules, implementation notes. Awaiting team review.
