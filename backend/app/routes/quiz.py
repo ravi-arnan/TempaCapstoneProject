@@ -10,8 +10,10 @@ the global exception handler in main.py catches ApiException and
 unhandled exceptions.
 """
 
-from fastapi import APIRouter, File, UploadFile
+from datetime import date
+from fastapi import APIRouter, File, UploadFile, Header
 
+from app.db.session import is_db_configured
 from app.schemas.quiz import (
     QuizGenerateFromUrlRequest,
     QuizGenerateRequest,
@@ -25,6 +27,8 @@ from app.services import (
     quiz_storage,
     source_extractor,
     submit_coordinator,
+    gamification_service,
+    daily_challenge,
 )
 from app.utils.errors import ApiException, MATERIAL_TOO_LONG, QUIZ_NOT_FOUND
 
@@ -34,6 +38,34 @@ router = APIRouter(prefix="/quiz", tags=["quiz"])
 MAX_PDF_BYTES = 10 * 1024 * 1024  # 10 MB
 
 
+def _determine_adaptive_difficulty(
+    x_device_id: str | None,
+    requested_difficulty: str | None,
+) -> str:
+    """Determine difficulty: use explicit requested if provided.
+    Otherwise, if device_id is provided and DB is configured, use user's level.
+    Fallback to 'medium'.
+    """
+    if requested_difficulty:
+        return requested_difficulty
+
+    if x_device_id and x_device_id.strip() and is_db_configured():
+        try:
+            stats = gamification_service.get_stats(x_device_id.strip())
+            level = stats.get("level", 1)
+            if level <= 3:
+                return "easy"
+            elif level <= 8:
+                return "medium"
+            else:
+                return "hard"
+        except Exception:
+            # Fallback gracefully on DB error
+            pass
+
+    return "medium"
+
+
 def _quiz_internal_to_response(quiz_internal) -> QuizGenerateResponse:
     """Strip correct_option_index for client transport."""
     return QuizGenerateResponse(
@@ -41,6 +73,7 @@ def _quiz_internal_to_response(quiz_internal) -> QuizGenerateResponse:
         questions=[q.to_public() for q in quiz_internal.questions],
         total_questions=quiz_internal.total_questions,
         generated_at=quiz_internal.generated_at,
+        difficulty=quiz_internal.difficulty,
     )
 
 
@@ -50,9 +83,13 @@ def _quiz_internal_to_response(quiz_internal) -> QuizGenerateResponse:
 
 
 @router.post("/generate", response_model=QuizGenerateResponse)
-def generate_quiz_endpoint(req: QuizGenerateRequest) -> QuizGenerateResponse:
+def generate_quiz_endpoint(
+    req: QuizGenerateRequest,
+    x_device_id: str | None = Header(default=None),
+) -> QuizGenerateResponse:
     """POST /quiz/generate — see API.md §4.2."""
-    quiz_internal = quiz_generator.generate_quiz(req.material_text)
+    difficulty = _determine_adaptive_difficulty(x_device_id, req.difficulty)
+    quiz_internal = quiz_generator.generate_quiz(req.material_text, difficulty=difficulty)
     quiz_storage.save_quiz(quiz_internal)
     return _quiz_internal_to_response(quiz_internal)
 
@@ -65,13 +102,15 @@ def generate_quiz_endpoint(req: QuizGenerateRequest) -> QuizGenerateResponse:
 @router.post("/generate-from-url", response_model=QuizGenerateResponse)
 def generate_from_url_endpoint(
     req: QuizGenerateFromUrlRequest,
+    x_device_id: str | None = Header(default=None),
 ) -> QuizGenerateResponse:
     """POST /quiz/generate-from-url — fetch article from URL, generate quiz.
 
     See API.md §4.4.
     """
     material_text = source_extractor.extract_text_from_url(req.url)
-    quiz_internal = quiz_generator.generate_quiz(material_text)
+    difficulty = _determine_adaptive_difficulty(x_device_id, req.difficulty)
+    quiz_internal = quiz_generator.generate_quiz(material_text, difficulty=difficulty)
     quiz_storage.save_quiz(quiz_internal)
     return _quiz_internal_to_response(quiz_internal)
 
@@ -84,6 +123,8 @@ def generate_from_url_endpoint(
 @router.post("/generate-from-pdf", response_model=QuizGenerateResponse)
 async def generate_from_pdf_endpoint(
     file: UploadFile = File(...),
+    difficulty: str | None = None,
+    x_device_id: str | None = Header(default=None),
 ) -> QuizGenerateResponse:
     """POST /quiz/generate-from-pdf — multipart PDF upload, generate quiz.
 
@@ -99,7 +140,8 @@ async def generate_from_pdf_endpoint(
         )
 
     material_text = source_extractor.extract_text_from_pdf(pdf_bytes)
-    quiz_internal = quiz_generator.generate_quiz(material_text)
+    diff = _determine_adaptive_difficulty(x_device_id, difficulty)
+    quiz_internal = quiz_generator.generate_quiz(material_text, difficulty=diff)
     quiz_storage.save_quiz(quiz_internal)
     return _quiz_internal_to_response(quiz_internal)
 
@@ -111,7 +153,10 @@ async def generate_from_pdf_endpoint(
 
 
 @router.post("/regenerate", response_model=QuizGenerateResponse)
-def regenerate_quiz_endpoint(req: QuizRegenerateRequest) -> QuizGenerateResponse:
+def regenerate_quiz_endpoint(
+    req: QuizRegenerateRequest,
+    x_device_id: str | None = Header(default=None),
+) -> QuizGenerateResponse:
     """POST /quiz/regenerate — regenerate a quiz from a prior quiz_id's source."""
     previous = quiz_storage.get_quiz(req.quiz_id)
     if previous is None or not previous.source_material:
@@ -120,8 +165,30 @@ def regenerate_quiz_endpoint(req: QuizRegenerateRequest) -> QuizGenerateResponse
             code=QUIZ_NOT_FOUND,
             detail="Materi sumber tidak ditemukan. Mulai ulang dari halaman utama.",
         )
-    quiz_internal = quiz_generator.generate_quiz(previous.source_material)
+    difficulty = _determine_adaptive_difficulty(x_device_id, req.difficulty or previous.difficulty)
+    quiz_internal = quiz_generator.generate_quiz(
+        previous.source_material,
+        difficulty=difficulty,
+        quiz_id=req.quiz_id,
+    )
     quiz_storage.save_quiz(quiz_internal)
+    return _quiz_internal_to_response(quiz_internal)
+
+
+# ============================================================================
+# Daily Challenge — special persistent locked daily quiz
+# ============================================================================
+
+
+@router.get("/daily-challenge", response_model=QuizGenerateResponse)
+def get_daily_challenge_endpoint(
+    difficulty: str | None = None,
+    x_device_id: str | None = Header(default=None),
+) -> QuizGenerateResponse:
+    """GET /quiz/daily-challenge — get today's daily challenge quiz."""
+    diff = _determine_adaptive_difficulty(x_device_id, difficulty)
+    today_date = date.today()
+    quiz_internal = daily_challenge.get_or_create_daily_quiz(today_date, difficulty=diff)
     return _quiz_internal_to_response(quiz_internal)
 
 
@@ -138,3 +205,4 @@ def submit_quiz_endpoint(req: QuizSubmitRequest) -> QuizSubmitResponse:
         answers=req.answers,
         time_taken_seconds=req.time_taken_seconds,
     )
+

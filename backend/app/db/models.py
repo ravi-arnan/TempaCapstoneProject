@@ -103,3 +103,16 @@ class Achievement(Base):
     __table_args__ = (
         UniqueConstraint("user_id", "badge_code", name="uq_user_badge"),
     )
+
+
+class PersistentQuiz(Base):
+    __tablename__ = "persistent_quizzes"
+
+    quiz_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    source_material: Mapped[str] = mapped_column(String(20000))
+    questions_json: Mapped[str] = mapped_column(String)  # stored as JSON string
+    difficulty: Mapped[str] = mapped_column(String(16), default="medium", server_default="medium")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+

@@ -37,6 +37,7 @@ class BadgeResponse(BaseModel):
 
 class RecordAttemptResponse(BaseModel):
     xp_earned: int
+    daily_bonus_earned: int = 0
     leveled_up: bool
     new_level: int
     stats: StatsResponse
