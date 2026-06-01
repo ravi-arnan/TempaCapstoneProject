@@ -74,6 +74,21 @@ def _is_duplicate(new_q_text: str, existing_questions: list[QuestionInternal], t
     return False
 
 
+def _extract_quiz_topic(text: str) -> str:
+    """Extract a lightweight topic tag from source material."""
+    cleaned = text.strip().replace("\n", " ")
+    if not cleaned:
+        return "Umum"
+
+    sentence = re.split(r"(?<=[.!?])\s+", cleaned, maxsplit=1)[0].strip()
+    if not sentence:
+        sentence = cleaned
+
+    if len(sentence) > 80:
+        sentence = sentence[:80].rsplit(" ", 1)[0]
+    return sentence or "Umum"
+
+
 def _wrap_quiz(
     questions: list[QuestionInternal],
     text: str,
@@ -96,6 +111,7 @@ def _wrap_quiz(
         generated_at=datetime.now(timezone.utc),
         source_material=text[:20_000],
         difficulty=difficulty,
+        topic=_extract_quiz_topic(text),
     )
 
 

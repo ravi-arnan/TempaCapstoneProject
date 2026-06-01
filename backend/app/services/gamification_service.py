@@ -15,6 +15,7 @@ from sqlalchemy import func, select
 from app.db.models import Achievement, QuizAttempt, User, UserStats
 from app.db.session import get_session
 from app.services import achievements as ach
+from app.services import quiz_storage
 from app.services import xp_engine
 
 
@@ -92,6 +93,9 @@ def record_attempt(
         stats.longest_streak = max(stats.longest_streak, new_streak)
         stats.last_active_date = today
 
+        quiz = quiz_storage.get_quiz(quiz_id)
+        topic = quiz.topic if quiz is not None else "Umum"
+
         session.add(
             QuizAttempt(
                 user_id=user.id,
@@ -99,6 +103,7 @@ def record_attempt(
                 score=score,
                 understanding_level=understanding_level,
                 xp_earned=xp_earned,
+                topic=topic,
             )
         )
         session.flush()
@@ -174,9 +179,118 @@ def get_history(device_id: str, limit: int = 10) -> list[dict]:
                 "understanding_level": r.understanding_level,
                 "xp_earned": r.xp_earned,
                 "completed_at": r.completed_at,
+                "topic": r.topic,
             }
             for r in rows
         ]
+
+
+def get_history_summary(device_id: str) -> dict:
+    with get_session() as session:
+        user = session.scalar(select(User).where(User.device_id == device_id))
+        if user is None:
+            return {
+                "total_quizzes": 0,
+                "average_score": 0,
+                "total_xp": 0,
+                "best_score": 0,
+                "worst_score": 0,
+                "most_recent_topic": None,
+            }
+
+        stats = _get_or_create_stats(session, user.id)
+        attempts = session.scalars(
+            select(QuizAttempt)
+            .where(QuizAttempt.user_id == user.id)
+            .order_by(QuizAttempt.completed_at.desc())
+            .limit(50)
+        ).all()
+
+        if not attempts:
+            return {
+                "total_quizzes": 0,
+                "average_score": 0,
+                "total_xp": stats.total_xp,
+                "best_score": 0,
+                "worst_score": 0,
+                "most_recent_topic": None,
+            }
+
+        scores = [r.score for r in attempts]
+        return {
+            "total_quizzes": len(scores),
+            "average_score": round(sum(scores) / len(scores)),
+            "total_xp": stats.total_xp,
+            "best_score": max(scores),
+            "worst_score": min(scores),
+            "most_recent_topic": attempts[0].topic if attempts[0].topic else None,
+        }
+
+
+def get_analytics(device_id: str, days: int = 30) -> dict:
+    with get_session() as session:
+        user = session.scalar(select(User).where(User.device_id == device_id))
+        if user is None:
+            return {
+                "quiz_count": 0,
+                "average_score": 0,
+                "total_xp": 0,
+                "score_trend": [],
+                "topic_mastery": [],
+            }
+
+        stats = _get_or_create_stats(session, user.id)
+
+        trend_rows = session.execute(
+            select(
+                func.date(QuizAttempt.completed_at).label("date"),
+                func.round(func.avg(QuizAttempt.score)).label("average_score"),
+                func.count(QuizAttempt.id).label("attempt_count"),
+            )
+            .where(QuizAttempt.user_id == user.id)
+            .group_by(func.date(QuizAttempt.completed_at))
+            .order_by(func.date(QuizAttempt.completed_at).desc())
+            .limit(days)
+        ).all()
+
+        topic_rows = session.execute(
+            select(
+                QuizAttempt.topic,
+                func.round(func.avg(QuizAttempt.score)).label("average_score"),
+                func.count(QuizAttempt.id).label("attempt_count"),
+            )
+            .where(QuizAttempt.user_id == user.id)
+            .group_by(QuizAttempt.topic)
+            .order_by(func.count(QuizAttempt.id).desc())
+        ).all()
+
+        return {
+            "quiz_count": session.scalar(
+                select(func.count(QuizAttempt.id)).where(QuizAttempt.user_id == user.id)
+            )
+            or 0,
+            "average_score": session.scalar(
+                select(func.round(func.avg(QuizAttempt.score))).where(QuizAttempt.user_id == user.id)
+            )
+            or 0,
+            "total_xp": stats.total_xp,
+            "score_trend": [
+                {
+                    "date": row.date,
+                    "average_score": int(row.average_score or 0),
+                    "attempt_count": int(row.attempt_count or 0),
+                }
+                for row in reversed(trend_rows)
+            ],
+            "topic_mastery": [
+                {
+                    "topic": row.topic or "Umum",
+                    "average_score": int(row.average_score or 0),
+                    "attempt_count": int(row.attempt_count or 0),
+                }
+                for row in topic_rows
+            ],
+        }
 
 
 def get_achievements(device_id: str) -> list[dict]:

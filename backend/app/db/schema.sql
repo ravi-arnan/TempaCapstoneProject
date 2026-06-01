@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS quiz_attempts (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id             UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     quiz_id             VARCHAR(64) NOT NULL,
+    topic               VARCHAR(80) NOT NULL DEFAULT 'Umum',
     score               INTEGER NOT NULL,
     understanding_level VARCHAR(16) NOT NULL,
     xp_earned           INTEGER NOT NULL,
@@ -50,6 +51,7 @@ CREATE TABLE IF NOT EXISTS persistent_quizzes (
     source_material TEXT NOT NULL,
     questions_json  TEXT NOT NULL,
     difficulty      VARCHAR(16) NOT NULL DEFAULT 'medium',
+    topic           VARCHAR(80) NOT NULL DEFAULT 'Umum',
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

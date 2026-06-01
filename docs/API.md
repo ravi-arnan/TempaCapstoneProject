@@ -675,18 +675,50 @@ Returns the device's current progress. Response (`StatsResponse`):
 GET /gamification/history?limit=10
 ```
 
-Returns recent attempts, newest first. `limit` is clamped to 1–50 (default 10).
+Returns recent attempts, newest first, plus a summary of the user's recent quiz history.
+`limit` is clamped to 1–50 (default 10).
 
 ```json
 {
+  "summary": {
+    "total_quizzes": 12,
+    "average_score": 78,
+    "total_xp": 1200,
+    "best_score": 95,
+    "worst_score": 45,
+    "most_recent_topic": "Fotosintesis"
+  },
   "items": [
     {
       "quiz_id": "550e8400-...",
       "score": 80,
       "understanding_level": "high",
       "xp_earned": 105,
-      "completed_at": "2026-05-26T10:59:21Z"
+      "completed_at": "2026-05-26T10:59:21Z",
+      "topic": "Fotosintesis"
     }
+  ]
+}
+```
+
+```
+GET /gamification/analytics
+```
+
+Returns analytics-ready aggregates and topic mastery for the device.
+
+```json
+{
+  "quiz_count": 12,
+  "average_score": 78,
+  "total_xp": 1200,
+  "score_trend": [
+    { "date": "2026-05-20", "average_score": 71, "attempt_count": 2 },
+    { "date": "2026-05-21", "average_score": 85, "attempt_count": 1 }
+  ],
+  "topic_mastery": [
+    { "topic": "Fotosintesis", "average_score": 85, "attempt_count": 3 },
+    { "topic": "Tata Surya", "average_score": 70, "attempt_count": 2 }
   ]
 }
 ```
