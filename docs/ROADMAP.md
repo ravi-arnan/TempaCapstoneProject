@@ -1,0 +1,242 @@
+# Roadmap — Asahlagi
+
+**Status**: OPEN. Living document.
+**Owner**: Ravi
+**Created**: 2026-05-18
+**Last updated**: 2026-05-18
+
+---
+
+## Context
+
+Setelah batch polishing + UX delight (lihat git history 2026-05-18), state product sekarang:
+- Frontend end-to-end working: text/URL/PDF input, one-question-at-a-time quiz, keyboard shortcuts, auto-save, score animation, confetti, "Asah Lagi" regenerate, per-question breakdown
+- Backend: HF Space DL + rule-based mix fallback, all-mode reliability
+- 43 backend tests + typecheck/build hijau
+- Belum di-deploy publik, belum ada frontend tests
+
+Dokumen ini menangkap arah pengembangan setelah batch hari ini, supaya keputusan bisa diambil saat sudah punya bandwidth tanpa harus brainstorming ulang.
+
+---
+
+## 1. Buat orang lain bisa coba (high ROI untuk capstone)
+
+### 1.1 Deploy public URL (lihat `DEPLOY.md`)
+- Frontend: Vercel (auto-deploy dari GitHub branch `main`)
+- Backend: **Hugging Face Spaces (Docker)** — tanpa kartu kredit; config di `huggingface/backend/`. HTTPS otomatis (`*.hf.space`). Render disimpan sebagai alternatif (`render.yaml`).
+- HF Space quiz-gen: sudah live di `https://raviarnan-asahlagi-quizgen.hf.space`
+- Secrets di Space backend: `HF_SPACE_URL`, `DATABASE_URL`, `CORS_ALLOWED_ORIGINS` (point ke Vercel + origin Capacitor `https://localhost`)
+- Frontend env: `VITE_API_BASE_URL` (point ke URL Space backend)
+
+**Hasil**: link publik yang bisa di-share ke pembimbing/audience, sekaligus prasyarat untuk app Android (lihat #6.4 + `MOBILE.md`).
+
+**Effort**: ~2-3 jam (setup awal + debugging CORS + healthcheck)
+
+### 1.2 README screenshots + demo GIF
+- Setelah deploy, screen-record 60-90 detik full flow
+- Embed di README sebagai hero
+- Tambah 3-4 screenshot (homepage, quiz, result) di section "Demo"
+
+**Effort**: ~1 jam
+
+---
+
+## 2. Doc sync (cepat tapi penting)
+
+Beberapa dokumen drift dari kode setelah banyak perubahan hari ini.
+
+### 2.1 API.md
+- Tambah section §4.X untuk `POST /quiz/regenerate`
+- Tambah field `question_reviews[]` di `QuizSubmitResponse`
+- Update field name di internal note: `source_material_excerpt` → `source_material`
+- Update endpoint count: 5 → 6 endpoints
+
+### 2.2 ARCHITECTURE.md
+- §7.1 storage: update "excerpt" mention jadi full material
+- §8 atau baru: dokumentasikan mix DL+rule-based strategy
+- §5: tambah regenerate endpoint ke routing table
+- Update quiz layout: scrolling list → single-question
+
+### 2.3 BRAND.md
+- §7.2 button labels: tambah `jumpToUnanswered`, `resultRetryLoading`
+- §7.X loading: tambah `LOADING_PROGRESS_MESSAGES` series
+- Catat brand-callback "asah lagi" sekarang juga dipakai di "Asah Lagi" button (tidak cuma di recommendation copy)
+
+### 2.4 TASKS.md
+- Centang/move tasks yang sudah selesai
+- Refleksi: backend trio selesai, frontend delight layer selesai
+- Tambah open backlog items dari ROADMAP.md ini
+
+### 2.5 PRD.md
+- Update scope: tambah multi-source input (PDF/URL) — sudah keluar dari "Out of Scope"
+- Tambah feature "regenerate" (Asah Lagi) ke list MVP
+
+**Effort total**: ~2 jam
+
+---
+
+## 3. Reliability / quality
+
+### 3.1 Frontend tests (Vitest + RTL)
+Saat ini 0 tests di frontend.
+
+**Minimum viable suite**:
+- Smoke: HomePage renders, sample button populates textarea
+- QuizPage: keyboard 1-4 selects option, J/K navigates, Enter advances
+- ResultPage: count-up animates to target value
+- useQuizPersistence: save → load → clear
+
+**Setup**:
+```bash
+npm install -D vitest @testing-library/react @testing-library/jest-dom @testing-library/user-event jsdom
+```
+
+**Effort**: ~3-4 jam (setup + 6-8 tests)
+
+### 3.2 Material quality pre-check
+Sebelum kirim ke generator, score "quizability" cepat:
+- Word count, sentence count, alpha ratio
+- Cek brand/junk pattern density (mirror filter di quiz_generator.py)
+- Kalau jelek → kasih warning + saran ("Materi ini sebagian besar tabel/sitasi. Mungkin tidak menghasilkan kuis bagus.") sebelum loading 15 detik
+
+**Effort**: ~2 jam (logic + UI warning component)
+
+### 3.3 Smart distractors via embeddings
+Saat ini distractor = random keyword similar length. Quality bisa naik signifikan dengan semantic similarity:
+- Tambah `sentence-transformers` ke HF Space (model `indobenchmark/indobert-base-p1` atau `firqaaa/indo-sentence-bert-base`)
+- Generator: encode correct answer + pool, pick 3 dengan similarity 0.5-0.8 (mirip tapi tidak identik)
+- Alternative lite: pakai word frequency + POS tagging untuk filter kata kerja vs kata benda
+
+**Effort**: ~1 hari (HF Space change + integration)
+
+### 3.4 Rate limiting backend
+Per-IP throttle untuk `/quiz/generate*` (3 request/menit), pakai `slowapi` middleware.
+
+**Effort**: ~30 menit
+
+---
+
+## 4. Feature additions (post-MVP)
+
+### 4.1 History page
+- LocalStorage based, no backend change
+- List 10 kuis terakhir + skor + understanding level
+- Click → re-display result page (kalau result masih cached) atau "Asah Lagi" dari kuis itu
+- "Bandingkan dengan attempt sebelumnya" di result page (apa kemajuan?)
+
+**Effort**: ~3-4 jam
+
+### 4.2 Share result URL
+- Copy URL dengan `?quiz_id=X` (atau short hash)
+- Result page accept query param, fetch atau decode
+- Optional: OG image generator untuk preview di Twitter/WA
+- Optional: download result as image
+
+**Effort**: ~3-5 jam (basic) sampai 1 hari (dengan OG)
+
+### 4.3 Quiz settings (pre-generate)
+User pilih sebelum generate:
+- Jumlah soal: 3 / 5 / 7 / 10
+- Difficulty (kalau ada): mudah / sedang / sulit
+- Toggle "Acak urutan opsi"
+
+Implementasi: backend terima parameter, generator hormati.
+
+**Effort**: ~2-3 jam
+
+### 4.4 Per-topic mastery tracking (BIG)
+Selaras dengan judul capstone "Sistem Deteksi Tingkat Pemahaman".
+- Tag tiap kuis dengan topik (auto-extract dari materi atau user input)
+- Track score per topik over time
+- Dashboard: "Pemahaman kamu di topik X naik dari 60% → 80%"
+- Identifikasi weak spots: topik dengan skor rendah konsisten
+
+**Effort**: ~2-3 hari
+
+---
+
+## 5. Polish layer 3 (kecil-kecil)
+
+- **Toast notifications** untuk feedback non-fatal (network blip, retry success)
+- **Skeleton loader** saat generate (sekarang masih bullet-text rotation)
+- **Drag-and-drop PDF anywhere** di homepage (sekarang cuma di dropzone area)
+- **Empty state illustration** di homepage (text-only, Lucide-style icon)
+- **Visual audit dark mode**: cek semua `bg-brand-button` apakah harusnya stay dark (button action) atau emerald (status indicator). PulsingDot fix tadi indikasi mungkin ada yang lain.
+- **prefers-reduced-motion** audit di seluruh app (sekarang baru count-up + question-in animation yang respect)
+
+---
+
+## 6. Bigger directions
+
+### 6.1 Multi-language (Indonesian + English)
+- i18n.ts arsitektur sudah siap (`{ id: {...}, en: {...} }`)
+- Backend insight/recommendation perlu translation atau parallel template
+- Toggle bahasa di nav
+
+**Effort**: 2-3 hari
+
+### 6.2 More question types
+- True/False
+- Isian singkat (free text, butuh string matching atau LLM grading)
+- Matching (cocok pernyataan A dengan jawaban B)
+
+Backend evaluator + UI both perlu refactor untuk handle question type variant.
+
+**Effort**: 3-5 hari
+
+### 6.3 Gamification (lihat `GAMIFICATION.md`)
+Jalur B (hybrid) disetujui tim. Fase 1 (XP/streak/level) sudah selesai.
+Pembagian Fase 2-4 ada di `GAMIFICATION_TASKS.md`.
+
+### 6.4 Mobile app — Capacitor, Android-first (lihat `MOBILE.md`)
+Bungkus React web yang ada jadi APK Android via Capacitor. **Keputusan**: Android dulu,
+iOS ditunda. **Prasyarat**: backend deploy ke HTTPS publik (lihat #1.1).
+
+Roadmap mobile (ditunda, urut prioritas):
+- **Push notification** (Capacitor Push + Firebase Cloud Messaging) — reminder streak,
+  daily goal, level-up nudge. Nyambung ke Fase 4 (Desta) nudge logic. Nilai jual mobile
+  terbesar untuk gamifikasi.
+- iOS support — dibatalkan (tim tidak punya Mac); tinjau ulang jika ada akses Mac nanti
+- Native storage + file picker (`@capacitor/preferences`, `@capacitor/filesystem`)
+- Publish Play Store ($25 sekali bayar)
+- Offline mode (rule-based generator + cache)
+
+**Effort wrap dasar**: ~0.5-1 hari (setelah backend ter-deploy). Push notification: +1-2 hari.
+
+---
+
+## Saran prioritas
+
+**Saat demo capstone deket (≤ 1 minggu)**:
+1. **#2 Doc sync** (~2 jam, wajib)
+2. **#1 Deploy public URL** (~3 jam, audience impact terbesar)
+3. **#1.2 Demo video/screenshots** (~1 jam)
+
+**Pasca demo, kalau lanjut sebagai produk**:
+4. **#3.1 Frontend tests** (reliability)
+5. **#4.1 History page** + **#4.2 Share URL** (meaningful feature add)
+6. **#4.4 Per-topic mastery** (DNA capstone tetap utuh, value naik signifikan)
+
+**Bisa di-defer ke versi 2**:
+- #3.3 Smart distractors (real ML upgrade)
+- #6 Bigger directions
+
+---
+
+## Decision log
+
+| Tanggal | Keputusan | Reason |
+|---|---|---|
+| 2026-05-18 | (OPEN) | Dokumen dibuat. Menunggu Ravi pilih prioritas pasca push hari ini. |
+
+---
+
+## Reference
+
+- `GAMIFICATION.md` — gamification options (3 jalur)
+- `BRAND.md` — voice, copy library
+- `CLAUDE.md` — scope lock
+- `PRD.md` — capstone requirements
+- `TASKS.md` — original 5-week plan
+- `API.md` — HTTP contract
+- `ARCHITECTURE.md` — internal structure
