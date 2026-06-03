@@ -63,7 +63,7 @@ class HistorySummary(BaseModel):
 
 
 class HistoryResponse(BaseModel):
-    summary: HistorySummary | None = None
+    summary: HistorySummary
     items: list[HistoryItem]
 
 

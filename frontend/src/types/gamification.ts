@@ -64,3 +64,8 @@ export interface GamificationAnalytics {
   score_trend: TrendPoint[];
   topic_mastery: TopicMasteryItem[];
 }
+
+export interface HistoryResponse {
+  summary: HistorySummary;
+  items: HistoryItem[];
+}

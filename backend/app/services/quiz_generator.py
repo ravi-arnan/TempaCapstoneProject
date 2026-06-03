@@ -94,6 +94,7 @@ def _wrap_quiz(
     text: str,
     difficulty: str = "medium",
     quiz_id: str | None = None,
+    topic: str | None = None,
 ) -> QuizInternal:
     """Build a QuizInternal from a list of questions, renumbering IDs."""
     renumbered = [
@@ -111,7 +112,7 @@ def _wrap_quiz(
         generated_at=datetime.now(timezone.utc),
         source_material=text[:20_000],
         difficulty=difficulty,
-        topic=_extract_quiz_topic(text),
+        topic=topic or _extract_quiz_topic(text),
     )
 
 
@@ -119,6 +120,7 @@ def generate_quiz(
     material_text: str,
     difficulty: str | None = None,
     quiz_id: str | None = None,
+    topic: str | None = None,
 ) -> QuizInternal:
     """Generate a multiple-choice quiz from raw material text with difficulty support.
 

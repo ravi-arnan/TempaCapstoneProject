@@ -199,6 +199,13 @@ def get_history_summary(device_id: str) -> dict:
             }
 
         stats = _get_or_create_stats(session, user.id)
+        
+        # Get total count (no limit)
+        total_count = session.scalar(
+            select(func.count(QuizAttempt.id)).where(QuizAttempt.user_id == user.id)
+        ) or 0
+        
+        # Get recent attempts for stats (limit 50 for performance)
         attempts = session.scalars(
             select(QuizAttempt)
             .where(QuizAttempt.user_id == user.id)
@@ -208,7 +215,7 @@ def get_history_summary(device_id: str) -> dict:
 
         if not attempts:
             return {
-                "total_quizzes": 0,
+                "total_quizzes": total_count,
                 "average_score": 0,
                 "total_xp": stats.total_xp,
                 "best_score": 0,
@@ -218,7 +225,7 @@ def get_history_summary(device_id: str) -> dict:
 
         scores = [r.score for r in attempts]
         return {
-            "total_quizzes": len(scores),
+            "total_quizzes": total_count,
             "average_score": round(sum(scores) / len(scores)),
             "total_xp": stats.total_xp,
             "best_score": max(scores),
