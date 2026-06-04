@@ -5,7 +5,7 @@ Any change here must be mirrored in frontend/src/types/gamification.ts.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
@@ -50,7 +50,38 @@ class HistoryItem(BaseModel):
     understanding_level: str
     xp_earned: int
     completed_at: datetime
+    topic: str | None = None
+
+
+class HistorySummary(BaseModel):
+    total_quizzes: int
+    average_score: int
+    total_xp: int
+    best_score: int
+    worst_score: int
+    most_recent_topic: str | None = None
 
 
 class HistoryResponse(BaseModel):
+    summary: HistorySummary
     items: list[HistoryItem]
+
+
+class TrendPoint(BaseModel):
+    date: date
+    average_score: int
+    attempt_count: int
+
+
+class TopicMasteryItem(BaseModel):
+    topic: str
+    average_score: int
+    attempt_count: int
+
+
+class AnalyticsResponse(BaseModel):
+    quiz_count: int
+    average_score: int
+    total_xp: int
+    score_trend: list[TrendPoint]
+    topic_mastery: list[TopicMasteryItem]

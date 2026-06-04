@@ -17,6 +17,7 @@ import { ApiException } from "@/types/api";
 import type {
   Badge,
   GamificationStats,
+  GamificationAnalytics,
   HistoryItem,
   RecordAttemptResult,
 } from "@/types/gamification";
@@ -222,6 +223,12 @@ export async function getGamificationHistory(
     { method: "GET" },
   );
   return res?.items ?? [];
+}
+
+export async function getGamificationAnalytics(): Promise<GamificationAnalytics | null> {
+  return gamificationFetch<GamificationAnalytics>("/gamification/analytics", {
+    method: "GET",
+  });
 }
 
 export async function getAchievements(): Promise<Badge[]> {

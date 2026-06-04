@@ -40,6 +40,7 @@ def save_quiz(quiz: QuizInternal) -> str:
                     source_material=quiz.source_material,
                     questions_json=json.dumps(questions_data),
                     difficulty=quiz.difficulty,
+                    topic=quiz.topic,
                 )
                 session.merge(pq)
         except Exception as exc:
@@ -70,6 +71,7 @@ def get_quiz(quiz_id: str) -> Optional[QuizInternal]:
                         source_material=pq.source_material,
                         generated_at=pq.created_at,
                         difficulty=pq.difficulty,
+                        topic=getattr(pq, "topic", "Umum"),
                     )
                     # Cache in memory for faster subsequent lookups
                     _store[quiz_id] = quiz

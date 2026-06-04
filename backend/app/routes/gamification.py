@@ -13,6 +13,7 @@ from fastapi import APIRouter, Header
 
 from app.db.session import is_db_configured
 from app.schemas.gamification import (
+    AnalyticsResponse,
     HistoryResponse,
     RecordAttemptRequest,
     RecordAttemptResponse,
@@ -79,7 +80,19 @@ def history_endpoint(
     _require_db()
     device_id = _require_device_id(x_device_id)
     limit = max(1, min(limit, 50))
-    return HistoryResponse(items=gamification_service.get_history(device_id, limit))
+    return HistoryResponse(
+        summary=gamification_service.get_history_summary(device_id),
+        items=gamification_service.get_history(device_id, limit),
+    )
+
+
+@router.get("/analytics", response_model=AnalyticsResponse)
+def analytics_endpoint(
+    x_device_id: str | None = Header(default=None),
+) -> AnalyticsResponse:
+    _require_db()
+    device_id = _require_device_id(x_device_id)
+    return AnalyticsResponse(**gamification_service.get_analytics(device_id))
 
 
 @router.get("/achievements")

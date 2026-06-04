@@ -39,6 +39,7 @@ class QuizInternal(BaseModel):
     # Kept verbatim so "Asah Lagi" can regenerate a fresh quiz from the same input.
     source_material: str = Field(default="", max_length=20_000)
     difficulty: str = "medium"
+    topic: str = "Umum"
 
     @property
     def total_questions(self) -> int:

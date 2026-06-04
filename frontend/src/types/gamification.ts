@@ -33,4 +33,39 @@ export interface HistoryItem {
   understanding_level: string;
   xp_earned: number;
   completed_at: string;
+  topic?: string | null;
+}
+
+export interface HistorySummary {
+  total_quizzes: number;
+  average_score: number;
+  total_xp: number;
+  best_score: number;
+  worst_score: number;
+  most_recent_topic?: string | null;
+}
+
+export interface TrendPoint {
+  date: string;
+  average_score: number;
+  attempt_count: number;
+}
+
+export interface TopicMasteryItem {
+  topic: string;
+  average_score: number;
+  attempt_count: number;
+}
+
+export interface GamificationAnalytics {
+  quiz_count: number;
+  average_score: number;
+  total_xp: number;
+  score_trend: TrendPoint[];
+  topic_mastery: TopicMasteryItem[];
+}
+
+export interface HistoryResponse {
+  summary: HistorySummary;
+  items: HistoryItem[];
 }

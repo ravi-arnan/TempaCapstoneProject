@@ -1,0 +1,26 @@
+# Database Migrations
+
+This directory contains SQL migration files for the Neon Postgres database.
+
+## How to apply migrations
+
+1. **Initial setup (first time only)**:
+   - Create tables using the SQL in `app/db/schema.sql`
+   - Run via `python -m app.db.init_db` (uses SQLAlchemy ORM)
+
+2. **Apply individual migrations**:
+   - Open the [Neon Console](https://console.neon.tech)
+   - Navigate to your project → SQL Editor
+   - Copy-paste the content of each migration file (in order)
+   - Execute each migration
+
+## Migration order
+
+- `0001_initial_schema.sql` — Initial gamification schema (XP, streak, badges, quiz attempts, persistent quizzes)
+- `0002_add_topic_columns.sql` — Add `topic` columns for per-topic mastery analytics
+
+## Notes
+
+- All `ALTER TABLE` statements use `IF EXISTS` and `IF NOT EXISTS` to be idempotent
+- Migrations are cumulative — apply in order without skipping
+- If a migration has already been applied (column exists), it will be safely skipped

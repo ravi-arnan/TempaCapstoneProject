@@ -74,11 +74,27 @@ def _is_duplicate(new_q_text: str, existing_questions: list[QuestionInternal], t
     return False
 
 
+def _extract_quiz_topic(text: str) -> str:
+    """Extract a lightweight topic tag from source material."""
+    cleaned = text.strip().replace("\n", " ")
+    if not cleaned:
+        return "Umum"
+
+    sentence = re.split(r"(?<=[.!?])\s+", cleaned, maxsplit=1)[0].strip()
+    if not sentence:
+        sentence = cleaned
+
+    if len(sentence) > 80:
+        sentence = sentence[:80].rsplit(" ", 1)[0]
+    return sentence or "Umum"
+
+
 def _wrap_quiz(
     questions: list[QuestionInternal],
     text: str,
     difficulty: str = "medium",
     quiz_id: str | None = None,
+    topic: str | None = None,
 ) -> QuizInternal:
     """Build a QuizInternal from a list of questions, renumbering IDs."""
     renumbered = [
@@ -96,6 +112,7 @@ def _wrap_quiz(
         generated_at=datetime.now(timezone.utc),
         source_material=text[:20_000],
         difficulty=difficulty,
+        topic=topic or _extract_quiz_topic(text),
     )
 
 
@@ -103,6 +120,7 @@ def generate_quiz(
     material_text: str,
     difficulty: str | None = None,
     quiz_id: str | None = None,
+    topic: str | None = None,
 ) -> QuizInternal:
     """Generate a multiple-choice quiz from raw material text with difficulty support.
 

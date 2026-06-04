@@ -76,6 +76,7 @@ class QuizAttempt(Base):
         index=True,
     )
     quiz_id: Mapped[str] = mapped_column(String(64))
+    topic: Mapped[str] = mapped_column(String(80), default="Umum", server_default="Umum")
     score: Mapped[int] = mapped_column(Integer)
     understanding_level: Mapped[str] = mapped_column(String(16))
     xp_earned: Mapped[int] = mapped_column(Integer)
@@ -112,6 +113,7 @@ class PersistentQuiz(Base):
     source_material: Mapped[str] = mapped_column(String(20000))
     questions_json: Mapped[str] = mapped_column(String)  # stored as JSON string
     difficulty: Mapped[str] = mapped_column(String(16), default="medium", server_default="medium")
+    topic: Mapped[str] = mapped_column(String(80), default="Umum", server_default="Umum")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

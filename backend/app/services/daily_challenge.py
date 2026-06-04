@@ -102,6 +102,7 @@ def get_or_create_daily_quiz(today: date, difficulty: str = "medium") -> QuizInt
         material_text=material["content"],
         difficulty=difficulty,
         quiz_id=quiz_id,
+        topic=material["topic"],  # Use curated topic directly to ensure aggregation
     )
     
     # Save in hybrid storage (memory + DB persistent)
