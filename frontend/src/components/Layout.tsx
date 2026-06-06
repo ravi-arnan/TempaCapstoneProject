@@ -4,6 +4,7 @@ import { TrendingUp } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { XpBadge } from "@/components/XpBadge";
+import { AuthNav } from "@/components/auth/AuthNav";
 import { useGamificationStats } from "@/hooks/useGamificationStats";
 import { NAV_LABELS } from "@/utils/i18n";
 
@@ -51,6 +52,7 @@ export function Layout({ children }: LayoutProps) {
             )}
             <XpBadge stats={stats} />
             <ThemeToggle />
+            <AuthNav />
           </div>
         </nav>
       </header>

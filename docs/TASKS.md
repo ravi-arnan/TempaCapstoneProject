@@ -401,7 +401,7 @@ Batch fitur baru setelah MVP jalan. Detail rationale + effort ada di `ROADMAP.md
 
 **Keputusan pembagian**:
 - Tiap teman **bangun frontend fitur-nya end-to-end**; **Ravi review + polish** (styling per `DESIGN.md`, animasi, responsive, dark mode, i18n, integrasi).
-- **Login pakai third-party OAuth** (Google via Supabase Auth) — bukan auth custom. ⚠️ Ini scope expansion dari `CLAUDE.md` (auth Out of Scope), disepakati sebagai post-MVP.
+- **Login pakai Google Identity Services (GIS) langsung** — bukan auth custom, bukan Supabase. ⚠️ Ini scope expansion dari `CLAUDE.md` (auth Out of Scope), disepakati sebagai post-MVP. GIS gratis & nol layanan eksternal baru.
 - **Ariq tidak ambil fitur baru** — dia kerjakan track task roadmap lama yang belum jalan (Data & Quality).
 
 ### Pembagian
@@ -452,10 +452,10 @@ Guided tour saat kunjungan pertama, highlight elemen kunci satu per satu. Desta 
 
 Ravi pegang login full (frontend + backend tipis) karena OAuth mayoritas frontend + verify token.
 
-**Tasks login**:
-- [ ] Setup Supabase Auth (atau Google OAuth langsung) — provider + client config
-- [ ] Frontend: tombol "Masuk dengan Google", avatar + menu di nav, state guest vs logged-in
-- [ ] Backend tipis: verify token di FastAPI, tabel `user` minimal di Postgres (`DATABASE_URL` sudah ada)
+**Tasks login** (Google Identity Services langsung):
+- [ ] Setup Google OAuth Client ID (Google Cloud Console) — Web application
+- [ ] Frontend: `@react-oauth/google`, tombol "Masuk dengan Google", avatar + menu di nav, state guest vs logged-in
+- [ ] Backend tipis: verify Google ID token di FastAPI (`google-auth`), tabel `user` minimal di Postgres (`DATABASE_URL` sudah ada)
 - [ ] Link quiz attempts ke `user_id` (Ariq review bagian data layer / schema)
 - [ ] **Guest mode tetap jalan** — app bisa dipakai tanpa login supaya demo nggak terblok
 - [ ] PR `feat/ravi-login-oauth` → review Ariq → merge

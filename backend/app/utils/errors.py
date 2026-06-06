@@ -30,6 +30,10 @@ class ApiException(HTTPException):
 # Generic
 INTERNAL_ERROR = "INTERNAL_ERROR"
 
+# Auth (POST /auth/google) — Google login via Google Identity Services
+AUTH_UNAVAILABLE = "AUTH_UNAVAILABLE"          # GOOGLE_CLIENT_ID or DB not configured / DB down
+INVALID_GOOGLE_TOKEN = "INVALID_GOOGLE_TOKEN"  # credential failed Google verification
+
 # Material input (POST /quiz/generate)
 MATERIAL_EMPTY = "MATERIAL_EMPTY"
 MATERIAL_TOO_SHORT = "MATERIAL_TOO_SHORT"

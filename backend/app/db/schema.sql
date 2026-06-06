@@ -10,8 +10,13 @@ CREATE TABLE IF NOT EXISTS users (
     id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     device_id    VARCHAR(128) UNIQUE NOT NULL,
     display_name VARCHAR(80),
+    google_sub   VARCHAR(64) UNIQUE,   -- Google OAuth subject id (NULL for guests)
+    email        VARCHAR(255),
+    avatar_url   VARCHAR(512),
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE INDEX IF NOT EXISTS idx_users_google_sub ON users(google_sub);
 
 CREATE TABLE IF NOT EXISTS user_stats (
     user_id          UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,

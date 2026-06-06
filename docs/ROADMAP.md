@@ -183,11 +183,11 @@ Guided tour saat kunjungan pertama, highlight elemen kunci satu per satu.
 ### 4.7 Login — Third-party OAuth (BARU 2026-06-06)
 **Owner: Ravi (full) · review: Ariq (data layer)**
 
-> ⚠️ **Scope expansion**: `CLAUDE.md` menandai auth sebagai *Out of Scope*. Disepakati masuk sebagai **post-MVP**, pakai jalur paling ringan: third-party OAuth (Google via Supabase Auth) — login "beneran" tanpa hand-roll password/JWT.
+> ⚠️ **Scope expansion**: `CLAUDE.md` menandai auth sebagai *Out of Scope*. Disepakati masuk sebagai **post-MVP**, pakai jalur paling ringan: **Google Identity Services (GIS) langsung** — login "beneran" tanpa hand-roll password/JWT, dan tanpa layanan auth pihak ketiga (gratis, nol infrastruktur baru).
 
 Ravi pegang full (frontend + backend tipis) karena OAuth mayoritas frontend + verify token, nyambung dengan kerja polishing-nya.
-- Frontend: tombol "Masuk dengan Google", avatar + menu di nav, state guest vs logged-in.
-- Backend tipis: verify token Supabase/Google, tabel `user` minimal di Postgres (`DATABASE_URL` sudah ada), link quiz attempts ke `user_id`. Ariq review bagian data layer (domain-nya).
+- Frontend: tombol "Masuk dengan Google" (`@react-oauth/google`), avatar + menu di nav, state guest vs logged-in.
+- Backend tipis: verify Google ID token pakai public key Google (`google-auth`), tabel `user` minimal di Postgres (`DATABASE_URL` sudah ada), link quiz attempts ke `user_id`. Ariq review bagian data layer (domain-nya).
 - Manfaat: history / mastery per-topik (#4.4) / gamifikasi (#6.3) bisa ter-link ke akun, bukan cuma localStorage.
 - Tetap bisa dipakai tanpa login (guest mode) supaya demo nggak terblok.
 
@@ -272,6 +272,7 @@ Roadmap mobile (ditunda, urut prioritas):
 | 2026-06-06 | Tambah 3 fitur: landing page (#4.5), onboarding tour (#4.6), login OAuth (#4.7) | Ravi mau fokus polishing; fitur frontend-heavy dibagi ke tim. |
 | 2026-06-06 | Owner: Landing→Audry, Tour→Desta, Login→Ravi (full), polish semua→Ravi | Tiap teman bangun frontend fitur-nya end-to-end; Ravi review + polish. Login OAuth ringan jadi Ravi pegang sendiri. |
 | 2026-06-06 | Login pakai third-party OAuth (Google/Supabase), bukan auth custom | Login "beneran" tanpa hand-roll password/JWT; scope expansion dari CLAUDE.md disepakati sebagai post-MVP. |
+| 2026-06-06 | Provider login: **Google Identity Services (GIS) langsung**, bukan Supabase Auth | GIS gratis tanpa kuota & nol layanan eksternal baru (sejalan KISS/anti over-engineering). Hindari risiko Supabase free-tier auto-pause (~7 hari idle) yang bisa ganggu demo. Verify ID token via public key Google. |
 | 2026-06-06 | Ariq ambil track Data & Quality: #3.2 + #3.4 + #6.2 | Ariq tidak ambil fitur baru; kerjakan task roadmap lama yang belum jalan, sesuai domain Data & Analisis. |
 
 ---

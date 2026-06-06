@@ -21,7 +21,8 @@ import type {
   HistoryItem,
   RecordAttemptResult,
 } from "@/types/gamification";
-import { getDeviceId } from "@/lib/deviceId";
+import type { AuthUser } from "@/types/auth";
+import { getDeviceId, setDeviceId } from "@/lib/deviceId";
 
 const BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ??
@@ -170,6 +171,24 @@ export function submitQuiz(
   req: QuizSubmitRequest,
 ): Promise<QuizSubmitResponse> {
   return postJson<QuizSubmitRequest, QuizSubmitResponse>("/quiz/submit", req);
+}
+
+// ============================================================================
+// Auth — Google login. Throws ApiException on failure (caller handles it).
+// ============================================================================
+
+/**
+ * Verify a Google ID token (credential) with the backend and link/create the
+ * account. The caller's current anonymous device id is sent so guest progress
+ * carries over; on success the client adopts the returned canonical device id.
+ */
+export async function loginWithGoogle(credential: string): Promise<AuthUser> {
+  const user = await postJson<
+    { credential: string; device_id: string },
+    AuthUser
+  >("/auth/google", { credential, device_id: getDeviceId() });
+  setDeviceId(user.device_id);
+  return user;
 }
 
 // ============================================================================

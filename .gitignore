@@ -95,6 +95,9 @@ Thumbs.db
 .env.development
 .env.production
 *.pem
+# OAuth client secret downloads (Google Cloud Console) — never commit these.
+client_secret*.json
+*client_secret*.json
 
 # ===== Misc =====
 *.log
@@ -103,3 +106,4 @@ tmp/
 
 # HF Space clone (separate git repo for huggingface.co/spaces/raviarnan/asahlagi-quizgen)
 backend/asahlagi-quizgen/
+.vercel
