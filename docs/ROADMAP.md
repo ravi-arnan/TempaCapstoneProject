@@ -3,7 +3,7 @@
 **Status**: OPEN. Living document.
 **Owner**: Ravi
 **Created**: 2026-05-18
-**Last updated**: 2026-05-18
+**Last updated**: 2026-06-06
 
 ---
 
@@ -94,6 +94,8 @@ npm install -D vitest @testing-library/react @testing-library/jest-dom @testing-
 **Effort**: ~3-4 jam (setup + 6-8 tests)
 
 ### 3.2 Material quality pre-check
+**Owner: Ariq** (assigned 2026-06-06)
+
 Sebelum kirim ke generator, score "quizability" cepat:
 - Word count, sentence count, alpha ratio
 - Cek brand/junk pattern density (mirror filter di quiz_generator.py)
@@ -110,6 +112,8 @@ Saat ini distractor = random keyword similar length. Quality bisa naik signifika
 **Effort**: ~1 hari (HF Space change + integration)
 
 ### 3.4 Rate limiting backend
+**Owner: Ariq** (assigned 2026-06-06)
+
 Per-IP throttle untuk `/quiz/generate*` (3 request/menit), pakai `slowapi` middleware.
 
 **Effort**: ~30 menit
@@ -153,6 +157,42 @@ Selaras dengan judul capstone "Sistem Deteksi Tingkat Pemahaman".
 
 **Effort**: ~2-3 hari
 
+### 4.5 Landing page — jelaskan fitur aplikasi (BARU 2026-06-06)
+**Owner: Audry · polish: Ravi**
+
+Halaman publik sebelum masuk app, buat menjelaskan apa & kenapa aplikasi ini ada.
+- App pindah ke route `/app` (atau `/mulai`); `/` jadi landing.
+- Section: hero + value prop ("Asah lagi sampai paham"), feature grid (input multi-source teks/URL/PDF, kuis satu-per-satu, analisis tingkat pemahaman, insight + rekomendasi, gamifikasi XP/streak, mastery per-topik), "cara kerja" 3 langkah, CTA "Coba sekarang".
+- Pakai Lucide icons, tokens dari `DESIGN.md`, suara dari `BRAND.md` (hindari template generic — lihat anti-template policy).
+- Dark/light mode + responsive.
+
+**Effort**: ~1 hari (build) + polish
+
+### 4.6 Step-by-step tour — onboarding (BARU 2026-06-06)
+**Owner: Desta · polish: Ravi**
+
+Guided tour saat kunjungan pertama, highlight elemen kunci satu per satu.
+- Sorot: input materi → tombol generate → timer → navigasi soal (J/K, 1-4) → halaman hasil (skor, level, insight, rekomendasi, chart).
+- Library: **driver.js** (ringan, tanpa dep berat) atau `react-joyride`.
+- Trigger: first visit (flag di localStorage) + tombol "?" di nav untuk ulang kapan saja.
+- Copy tiap langkah konsisten `BRAND.md` (suara "kamu", calm, no patronizing) — Desta cocok karena sudah pegang voice insight/recommendation.
+- Respect `prefers-reduced-motion`.
+
+**Effort**: ~0.5-1 hari
+
+### 4.7 Login — Third-party OAuth (BARU 2026-06-06)
+**Owner: Ravi (full) · review: Ariq (data layer)**
+
+> ⚠️ **Scope expansion**: `CLAUDE.md` menandai auth sebagai *Out of Scope*. Disepakati masuk sebagai **post-MVP**, pakai jalur paling ringan: third-party OAuth (Google via Supabase Auth) — login "beneran" tanpa hand-roll password/JWT.
+
+Ravi pegang full (frontend + backend tipis) karena OAuth mayoritas frontend + verify token, nyambung dengan kerja polishing-nya.
+- Frontend: tombol "Masuk dengan Google", avatar + menu di nav, state guest vs logged-in.
+- Backend tipis: verify token Supabase/Google, tabel `user` minimal di Postgres (`DATABASE_URL` sudah ada), link quiz attempts ke `user_id`. Ariq review bagian data layer (domain-nya).
+- Manfaat: history / mastery per-topik (#4.4) / gamifikasi (#6.3) bisa ter-link ke akun, bukan cuma localStorage.
+- Tetap bisa dipakai tanpa login (guest mode) supaya demo nggak terblok.
+
+**Effort**: ~1-1.5 hari
+
 ---
 
 ## 5. Polish layer 3 (kecil-kecil)
@@ -176,6 +216,7 @@ Selaras dengan judul capstone "Sistem Deteksi Tingkat Pemahaman".
 **Effort**: 2-3 hari
 
 ### 6.2 More question types
+**Owner: Ariq** (assigned 2026-06-06)
 - True/False
 - Isian singkat (free text, butuh string matching atau LLM grading)
 - Matching (cocok pernyataan A dengan jawaban B)
@@ -228,6 +269,10 @@ Roadmap mobile (ditunda, urut prioritas):
 | Tanggal | Keputusan | Reason |
 |---|---|---|
 | 2026-05-18 | (OPEN) | Dokumen dibuat. Menunggu Ravi pilih prioritas pasca push hari ini. |
+| 2026-06-06 | Tambah 3 fitur: landing page (#4.5), onboarding tour (#4.6), login OAuth (#4.7) | Ravi mau fokus polishing; fitur frontend-heavy dibagi ke tim. |
+| 2026-06-06 | Owner: Landing→Audry, Tour→Desta, Login→Ravi (full), polish semua→Ravi | Tiap teman bangun frontend fitur-nya end-to-end; Ravi review + polish. Login OAuth ringan jadi Ravi pegang sendiri. |
+| 2026-06-06 | Login pakai third-party OAuth (Google/Supabase), bukan auth custom | Login "beneran" tanpa hand-roll password/JWT; scope expansion dari CLAUDE.md disepakati sebagai post-MVP. |
+| 2026-06-06 | Ariq ambil track Data & Quality: #3.2 + #3.4 + #6.2 | Ariq tidak ambil fitur baru; kerjakan task roadmap lama yang belum jalan, sesuai domain Data & Analisis. |
 
 ---
 

@@ -395,6 +395,100 @@ ML prep         IndoT5 fine-tune    Evaluator + sklearn   Insight + recommend
 
 ---
 
+## 🆕 Fitur Tambahan — Post-MVP (assigned 2026-06-06)
+
+Batch fitur baru setelah MVP jalan. Detail rationale + effort ada di `ROADMAP.md` §4.5-4.7.
+
+**Keputusan pembagian**:
+- Tiap teman **bangun frontend fitur-nya end-to-end**; **Ravi review + polish** (styling per `DESIGN.md`, animasi, responsive, dark mode, i18n, integrasi).
+- **Login pakai third-party OAuth** (Google via Supabase Auth) — bukan auth custom. ⚠️ Ini scope expansion dari `CLAUDE.md` (auth Out of Scope), disepakati sebagai post-MVP.
+- **Ariq tidak ambil fitur baru** — dia kerjakan track task roadmap lama yang belum jalan (Data & Quality).
+
+### Pembagian
+
+| Fitur | Owner | Polish/Review | Ref |
+|---|---|---|---|
+| Landing page (jelaskan fitur) | **Audry** | Ravi | ROADMAP §4.5 |
+| Step-by-step tour (onboarding) | **Desta** | Ravi | ROADMAP §4.6 |
+| Login — OAuth Google | **Ravi** (full) | Ariq (data layer) | ROADMAP §4.7 |
+| Track Data & Quality (#3.2 + #3.4 + #6.2) | **Ariq** | Ravi | ROADMAP §3.2, §3.4, §6.2 |
+
+---
+
+### Audry — Landing Page
+
+Halaman publik sebelum app yang menjelaskan fitur & value prop. App pindah ke `/app` (atau `/mulai`), `/` jadi landing.
+
+**Tasks**:
+- [ ] Routing: pindahkan app saat ini ke `/app`, buat route `/` baru untuk landing
+- [ ] Hero: judul + tagline ("Asah lagi sampai paham") + CTA "Coba sekarang"
+- [ ] Feature grid (Lucide icons): input multi-source (teks/URL/PDF), kuis satu-per-satu, analisis tingkat pemahaman, insight + rekomendasi, gamifikasi XP/streak, mastery per-topik
+- [ ] Section "Cara kerja" 3 langkah (paste materi → kerjakan kuis → lihat analisis)
+- [ ] Pakai tokens `DESIGN.md`, suara `BRAND.md`, hindari template generic (anti-template policy)
+- [ ] Dark/light mode + responsive (320/768/1024/1440)
+- [ ] PR `feat/audry-landing-page` → review Ravi → merge
+
+**Kontrak**: jangan ubah flow app yang sudah ada; cuma tambah route `/` + redirect. CTA arahkan ke `/app`.
+
+---
+
+### Desta — Step-by-step Tour (Onboarding)
+
+Guided tour saat kunjungan pertama, highlight elemen kunci satu per satu. Desta pegang karena copy-nya harus konsisten voice (domain dia).
+
+**Tasks**:
+- [ ] Pilih library: **driver.js** (ringan, rekomendasi) atau `react-joyride`
+- [ ] Definisikan langkah: input materi → tombol generate → timer → navigasi soal (J/K, 1-4) → halaman hasil (skor/level/insight/rekomendasi/chart)
+- [ ] Trigger first-visit (flag localStorage) + tombol "?" di nav untuk ulang
+- [ ] Tulis copy tiap langkah konsisten `BRAND.md` (suara "kamu", calm, no patronizing)
+- [ ] Respect `prefers-reduced-motion`
+- [ ] PR `feat/desta-onboarding-tour` → review Ravi → merge
+
+**Kontrak**: tour tidak boleh blok interaksi normal; harus bisa di-skip kapan saja. Selector elemen jangan rapuh (pakai `data-tour="..."` attribute, koordinasi dengan Ravi).
+
+---
+
+### Ravi — Login (OAuth Google) + Polish semua fitur
+
+Ravi pegang login full (frontend + backend tipis) karena OAuth mayoritas frontend + verify token.
+
+**Tasks login**:
+- [ ] Setup Supabase Auth (atau Google OAuth langsung) — provider + client config
+- [ ] Frontend: tombol "Masuk dengan Google", avatar + menu di nav, state guest vs logged-in
+- [ ] Backend tipis: verify token di FastAPI, tabel `user` minimal di Postgres (`DATABASE_URL` sudah ada)
+- [ ] Link quiz attempts ke `user_id` (Ariq review bagian data layer / schema)
+- [ ] **Guest mode tetap jalan** — app bisa dipakai tanpa login supaya demo nggak terblok
+- [ ] PR `feat/ravi-login-oauth` → review Ariq → merge
+
+**Tasks polish** (untuk fitur teman):
+- [ ] Polish landing page Audry (styling, animasi, responsive, dark mode)
+- [ ] Polish tour Desta (transisi, reduced-motion, mobile)
+- [ ] Sediakan `data-tour="..."` attributes di komponen yang relevan untuk Desta
+
+---
+
+### Ariq — Track Data & Quality (task roadmap lama)
+
+Ariq tidak ambil fitur baru; mengerjakan beberapa task roadmap yang belum jalan, sesuai domain Data & Analisis (owner `quiz_evaluator.py`).
+
+**#3.2 Material quality pre-check**:
+- [ ] Skor "quizability" materi (word/sentence count, alpha ratio, junk/brand pattern density — mirror filter di `quiz_generator.py`)
+- [ ] Kalau jelek → warning + saran sebelum loading generate (hemat 15 detik user)
+
+**#3.4 Rate limiting backend**:
+- [ ] Per-IP throttle `/quiz/generate*` (3 req/menit) pakai `slowapi` middleware
+
+**#6.2 More question types**:
+- [ ] True/False + isian singkat (string matching)
+- [ ] Refactor `quiz_evaluator.py` untuk handle variant tipe soal (domain dia)
+- [ ] Koordinasi UI dengan Ravi (rendering tipe soal baru)
+
+- [ ] PR per task atau gabung `feat/ariq-data-quality` → review Ravi → merge
+
+**Kontrak**: kalau #6.2 ubah shape `QuizInternal`/`EvaluationResult`, **sync ke tim dulu** (integration boundary).
+
+---
+
 ## Shared Tasks (semua minggu)
 
 ### Repository & Collaboration
@@ -431,6 +525,10 @@ Convention: `<type>/<owner>-<topic>` atau `<type>/<topic>` untuk shared tasks.
 - `feat/ariq-evaluator` — Ariq's main implementation
 - `feat/desta-classifier-insight-recommendation` — Desta's modules (atau pisah jadi 3 PR kalau prefer)
 - `feat/ravi-frontend-polish` — Ravi's polish work
+- `feat/audry-landing-page` — Landing page (post-MVP)
+- `feat/desta-onboarding-tour` — Step-by-step tour (post-MVP)
+- `feat/ravi-login-oauth` — Login OAuth Google (post-MVP)
+- `feat/ariq-data-quality` — Track #3.2 + #3.4 + #6.2 (post-MVP)
 - `fix/api-contract` — bug fix di shared schemas
 - `docs/readme` — dokumentasi update
 - `test/integration` — shared integration tests

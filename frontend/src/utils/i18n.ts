@@ -144,6 +144,43 @@ export const GAMIFICATION = {
 } as const;
 
 // ============================================================================
+// Navigation labels
+// ============================================================================
+
+export const NAV_LABELS = {
+  progress: "Progresku",
+} as const;
+
+// ============================================================================
+// Progress page (score trend + per-topic mastery) — Gamification Fase 3
+// ============================================================================
+
+export const PROGRESS_PAGE = {
+  title: "Progresku",
+  subtitle: "Lihat perkembangan skormu dan topik yang masih perlu diasah.",
+  summaryQuizzes: "TOTAL KUIS",
+  summaryAvg: "RATA-RATA SKOR",
+  summaryXp: "TOTAL XP",
+  trendTitle: "Tren Skor",
+  trendCaption: "Rata-rata skor per hari",
+  trendEmpty: "Belum ada cukup data tren. Kerjakan beberapa kuis dulu, ya.",
+  masteryTitle: "Pemahaman per Topik",
+  masteryCaption: "Diurutkan dari yang paling perlu diasah",
+  masteryEmpty:
+    "Belum ada topik terlacak. Topik muncul otomatis setelah kamu mengerjakan kuis.",
+  masteryWeakestHint: "Paling perlu diasah",
+  attemptsTemplate: (n: number) => (n === 1 ? "1 kuis" : `${n} kuis`),
+  emptyTitle: "Belum ada progres",
+  emptyBody:
+    "Kerjakan kuis pertamamu untuk mulai melacak pemahaman dan tren skormu.",
+  emptyCta: "Mulai Mengasah",
+  loading: "Memuat progresmu...",
+  unavailableTitle: "Fitur progres belum aktif",
+  unavailableBody:
+    "Pelacakan progres sedang tidak tersedia. Fitur kuis tetap bisa kamu pakai seperti biasa.",
+} as const;
+
+// ============================================================================
 // Source type labels (for HomePage tabs)
 // ============================================================================
 
