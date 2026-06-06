@@ -21,9 +21,11 @@ load_dotenv()
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import OperationalError
 
 from app import __version__
 from app.routes import gamification, health, quiz
+from app.routes.gamification import GAMIFICATION_UNAVAILABLE
 from app.utils.errors import ApiException, INTERNAL_ERROR
 
 
@@ -65,6 +67,22 @@ async def api_exception_handler(_: Request, exc: ApiException) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail, "code": exc.code},
+    )
+
+
+@app.exception_handler(OperationalError)
+async def db_unavailable_handler(_: Request, exc: OperationalError) -> JSONResponse:
+    """A configured-but-unreachable database (Neon scaled to zero, network down,
+    wrong host) must degrade to the same 503 contract as an unconfigured one —
+    never a 500 — so gamification stays optional and the quiz UX keeps working.
+    """
+    logger.warning("Database unavailable, serving 503: %s", exc)
+    return JSONResponse(
+        status_code=503,
+        content={
+            "detail": "Fitur progres sedang tidak tersedia. Coba lagi sebentar.",
+            "code": GAMIFICATION_UNAVAILABLE,
+        },
     )
 
 
