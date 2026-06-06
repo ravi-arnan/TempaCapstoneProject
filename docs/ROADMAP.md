@@ -3,7 +3,7 @@
 **Status**: OPEN. Living document.
 **Owner**: Ravi
 **Created**: 2026-05-18
-**Last updated**: 2026-06-06
+**Last updated**: 2026-06-07
 
 ---
 
@@ -193,6 +193,32 @@ Ravi pegang full (frontend + backend tipis) karena OAuth mayoritas frontend + ve
 
 **Effort**: ~1-1.5 hari
 
+> ✅ **Status 2026-06-07**: SELESAI & live. GIS langsung, `/auth/google` verify via `google-auth`, kolom `users.google_sub/email/avatar_url` (migrasi 0003), guest mode utuh. Deployed: Neon migrated, HF Space `GOOGLE_CLIENT_ID` set, Vercel `VITE_GOOGLE_CLIENT_ID` set. (PR #6/#7/#8.)
+
+---
+
+### 4.8 User Hub & fitur akun — post-login (BARU 2026-06-07)
+**Owner: Ravi (frontend) · review: Ariq (data layer untuk endpoint baru)**
+
+Cluster fitur yang mengarah ke user, dibangun di atas login (#4.7). Status fondasi ditandai: 🟢 = endpoint/data sudah ada (mostly frontend), 🟡 = butuh backend baru.
+
+- **a) Halaman Profil (hub)** 🟢 — identitas (avatar/nama/email) + ringkasan gamifikasi (level/XP/streak/total kuis) + grid badge + link ke Progress (#4.4). Konsumsi endpoint yang sudah ada (`/gamification/stats`, `/achievements`, `/analytics`). Guest → ajak login.
+- **b) Halaman Settings** 🟢 — tema (light/dark), info akun, tombol Keluar. Opsi lanjut 🟡: edit nama tampilan (`PATCH /auth/me`), hapus akun & data (`DELETE` + cascade) — review Ariq.
+- **c) Halaman Riwayat Kuis (History)** 🟢 — `GET /gamification/history` (items + summary) **sudah jalan**; tinggal UI. List: skor, level pemahaman, topik, XP, tanggal; klik → detail / "Asah Lagi". (Menggantikan rencana #4.1 yang localStorage — kini DB-backed + ter-link akun.)
+- **d) Leaderboard** 🟡 — ranking by XP/level. **Desain privasi**: tampil display name (login) atau "Anonim" (guest), idealnya opt-in. Endpoint baru `GET /gamification/leaderboard` (top N). (GAMIFICATION.md dulu menandai ini "far future"; sekarang feasible karena sudah ada auth.)
+- **e) Edit preferensi belajar** 🟡 — default jumlah soal, difficulty, acak opsi, topik favorit; disimpan per-user + di-wire ke `/quiz/generate`. Nyambung dengan #4.3 (Quiz settings).
+- **f) Target/Goal mingguan** 🟡 — "X kuis minggu ini" + progress bar; booster retensi.
+- **g) Simpan materi (bookmark)** 🟡 — simpan materi yang ditempel untuk diasah ulang nanti. Butuh tabel baru. Relevan untuk use-case belajar.
+- **h) Badge/Pencapaian showcase** 🟢 — `/gamification/achievements` sudah ada (locked/unlocked); section di Profil atau halaman sendiri.
+- **i) Kartu Tantangan Harian + streak** 🟢 — backend `daily-challenge` sudah ada; surface di Home/Profil + streak calendar.
+- **j) Share hasil / Export progress** 🟡 — share URL hasil kuis (nyambung #4.2) + export ringkasan progres (gambar/PDF).
+
+**Catatan scope** (CLAUDE.md: utamakan flow end-to-end, jangan semua sekaligus). Saran batching:
+- **Batch 1 — "User Hub"** (cepat, mostly frontend): a) Profil + c) History + b) Settings (tema/logout) + h) badge. **~1-1.5 hari.**
+- **Batch 2** (butuh backend, review Ariq): e) edit preferensi + d) leaderboard + f) goal + g) bookmark. **~2-3 hari.**
+- **Batch 3**: j) share/export + i) daily challenge surfacing. **~0.5-1 hari.**
+- **Hati-hati / skip**: teman/social (berat, butuh relasi), notifikasi (butuh push infra → lihat #6.4).
+
 ---
 
 ## 5. Polish layer 3 (kecil-kecil)
@@ -274,6 +300,8 @@ Roadmap mobile (ditunda, urut prioritas):
 | 2026-06-06 | Login pakai third-party OAuth (Google/Supabase), bukan auth custom | Login "beneran" tanpa hand-roll password/JWT; scope expansion dari CLAUDE.md disepakati sebagai post-MVP. |
 | 2026-06-06 | Provider login: **Google Identity Services (GIS) langsung**, bukan Supabase Auth | GIS gratis tanpa kuota & nol layanan eksternal baru (sejalan KISS/anti over-engineering). Hindari risiko Supabase free-tier auto-pause (~7 hari idle) yang bisa ganggu demo. Verify ID token via public key Google. |
 | 2026-06-06 | Ariq ambil track Data & Quality: #3.2 + #3.4 + #6.2 | Ariq tidak ambil fitur baru; kerjakan task roadmap lama yang belum jalan, sesuai domain Data & Analisis. |
+| 2026-06-07 | Login (#4.7) selesai & deployed (Neon migrated, HF + Vercel env set) | Verified live: `/auth/google`→401 untuk token invalid, guest mode utuh. Hotfix `requests` dep (PR #8) setelah Space crash di rebuild pertama. |
+| 2026-06-07 | Tambah cluster #4.8 "User Hub & fitur akun" (profil, settings, history, leaderboard, edit preferensi, goal, bookmark, badge, daily challenge, share/export) | Lanjutan natural dari login. Owner Ravi (frontend), Ariq review data layer untuk endpoint baru. Dibatch: User Hub dulu (mostly FE), backend-heavy menyusul. |
 
 ---
 
