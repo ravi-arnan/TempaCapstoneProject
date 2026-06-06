@@ -71,12 +71,18 @@ async def api_exception_handler(_: Request, exc: ApiException) -> JSONResponse:
 
 
 @app.exception_handler(OperationalError)
-async def db_unavailable_handler(_: Request, exc: OperationalError) -> JSONResponse:
+async def db_unavailable_handler(request: Request, exc: OperationalError) -> JSONResponse:
     """A configured-but-unreachable database (Neon scaled to zero, network down,
     wrong host) must degrade to the same 503 contract as an unconfigured one —
     never a 500 — so gamification stays optional and the quiz UX keeps working.
+
+    Scoped to /gamification/* on purpose: only that surface is allowed to
+    silently degrade. A DB failure on any other endpoint keeps its standard 500
+    semantics instead of being mislabeled as a gamification outage.
     """
-    logger.warning("Database unavailable, serving 503: %s", exc)
+    if not request.url.path.startswith("/gamification"):
+        return await unhandled_exception_handler(request, exc)
+    logger.warning("Gamification database unavailable, serving 503: %s", exc)
     return JSONResponse(
         status_code=503,
         content={
