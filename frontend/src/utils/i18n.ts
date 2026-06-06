@@ -152,6 +152,17 @@ export const NAV_LABELS = {
 } as const;
 
 // ============================================================================
+// Auth — Google login (post-MVP, ROADMAP §4.7)
+// ============================================================================
+
+export const AUTH_LABELS = {
+  accountMenu: "Menu akun",
+  guestName: "Pengguna",
+  logout: "Keluar",
+  loginError: "Login gagal. Coba lagi sebentar.",
+} as const;
+
+// ============================================================================
 // Progress page (score trend + per-topic mastery) — Gamification Fase 3
 // ============================================================================
 
