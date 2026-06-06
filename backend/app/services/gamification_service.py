@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 
 from app.db.models import Achievement, QuizAttempt, User, UserStats
 from app.db.session import get_session
@@ -320,3 +320,101 @@ def get_achievements(device_id: str) -> list[dict]:
             }
             for a in ach.ACHIEVEMENTS
         ]
+
+
+def _merge_user(session, *, src: User, dst: User) -> None:
+    """Fold guest row `src` into account `dst`: move attempts + badges, combine
+    stats, then delete `src`. Used when a user logs in on a new device but the
+    Google account already exists elsewhere."""
+    session.execute(
+        update(QuizAttempt).where(QuizAttempt.user_id == src.id).values(user_id=dst.id)
+    )
+
+    dst_badges = set(
+        session.scalars(
+            select(Achievement.badge_code).where(Achievement.user_id == dst.id)
+        ).all()
+    )
+    for badge in session.scalars(
+        select(Achievement).where(Achievement.user_id == src.id)
+    ).all():
+        if badge.badge_code in dst_badges:
+            session.delete(badge)  # dst already has it; drop the duplicate
+        else:
+            badge.user_id = dst.id
+
+    src_stats = session.get(UserStats, src.id)
+    dst_stats = _get_or_create_stats(session, dst.id)
+    if src_stats is not None:
+        dst_stats.total_xp += src_stats.total_xp
+        dst_stats.level = xp_engine.level_for_xp(dst_stats.total_xp)
+        dst_stats.longest_streak = max(dst_stats.longest_streak, src_stats.longest_streak)
+        dst_stats.current_streak = max(dst_stats.current_streak, src_stats.current_streak)
+        if src_stats.last_active_date and (
+            dst_stats.last_active_date is None
+            or src_stats.last_active_date > dst_stats.last_active_date
+        ):
+            dst_stats.last_active_date = src_stats.last_active_date
+        session.delete(src_stats)
+
+    session.flush()
+    session.delete(src)
+    session.flush()
+
+
+def link_google_identity(
+    *,
+    google_sub: str,
+    email: str | None,
+    name: str | None,
+    avatar_url: str | None,
+    device_id: str | None = None,
+) -> dict:
+    """Link a verified Google identity to an app user (find-or-create).
+
+    - Account already exists for this google_sub: that row is canonical. If the
+      caller's guest device row is different, merge its progress in.
+    - No account yet: promote the caller's guest device row in place (zero data
+      migration), or create a fresh user if there's no guest row.
+
+    Returns {id, email, name, avatar_url, device_id} — device_id is the canonical
+    identity the client should use for subsequent gamification calls.
+    """
+    with get_session() as session:
+        account = session.scalar(select(User).where(User.google_sub == google_sub))
+        guest = (
+            session.scalar(select(User).where(User.device_id == device_id))
+            if device_id
+            else None
+        )
+
+        if account is None:
+            if guest is not None:
+                user = guest  # promote in place
+            else:
+                user = User(device_id=device_id or f"google:{google_sub}")
+                session.add(user)
+                session.flush()
+                session.add(UserStats(user_id=user.id))
+                session.flush()
+            user.google_sub = google_sub
+            user.email = email
+            user.display_name = name
+            user.avatar_url = avatar_url
+        else:
+            user = account
+            # Refresh profile fields from the latest Google data.
+            user.email = email or user.email
+            user.display_name = name or user.display_name
+            user.avatar_url = avatar_url or user.avatar_url
+            if guest is not None and guest.id != account.id:
+                _merge_user(session, src=guest, dst=account)
+
+        session.flush()
+        return {
+            "id": str(user.id),
+            "email": user.email,
+            "name": user.display_name,
+            "avatar_url": user.avatar_url,
+            "device_id": user.device_id,
+        }

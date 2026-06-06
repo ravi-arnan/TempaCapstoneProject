@@ -23,6 +23,9 @@ python-dotenv==1.0.1   # loads backend/.env for HF_SPACE_URL etc.
 sqlalchemy==2.0.36
 psycopg[binary]==3.2.3   # psycopg v3 driver; [binary] avoids needing system libpq
 
+# ===== Google login (OAuth — verify Google ID tokens) =====
+google-auth==2.53.0    # verifies GIS ID tokens against Google's public keys (uses requests transport)
+
 # ===== ML conv (sklearn) — used by Desta's classifier (lightweight, ~50MB) =====
 scikit-learn==1.8.0
 joblib==1.4.2
