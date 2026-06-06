@@ -24,7 +24,8 @@ sqlalchemy==2.0.36
 psycopg[binary]==3.2.3   # psycopg v3 driver; [binary] avoids needing system libpq
 
 # ===== Google login (OAuth — verify Google ID tokens) =====
-google-auth==2.53.0    # verifies GIS ID tokens against Google's public keys (uses requests transport)
+google-auth==2.53.0    # verifies GIS ID tokens against Google's public keys
+requests==2.32.3       # REQUIRED by google.auth.transport.requests — not pulled in transitively on a clean image
 
 # ===== ML conv (sklearn) — used by Desta's classifier (lightweight, ~50MB) =====
 scikit-learn==1.8.0
