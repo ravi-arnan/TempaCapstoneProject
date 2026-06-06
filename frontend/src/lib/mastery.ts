@@ -24,6 +24,19 @@ export function scoreTone(score: number): ScoreTone {
   return LOW;
 }
 
+/** Minimum visible bar size (%) so a small-but-nonzero score still registers. */
+export const MIN_BAR_PERCENT = 2;
+
+/**
+ * Bar extent (% of track) for a score-driven bar/meter. A true 0 (or negative)
+ * renders nothing so the visualization stays honest; any positive score gets at
+ * least MIN_BAR_PERCENT so it remains visible. Clamped to 100.
+ */
+export function barExtent(score: number): number {
+  if (score <= 0) return 0;
+  return Math.max(MIN_BAR_PERCENT, Math.min(100, score));
+}
+
 const ID_MONTHS_SHORT = [
   "Jan",
   "Feb",

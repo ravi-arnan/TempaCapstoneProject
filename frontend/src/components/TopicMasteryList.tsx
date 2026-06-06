@@ -1,5 +1,5 @@
 import type { TopicMasteryItem } from "@/types/gamification";
-import { scoreTone } from "@/lib/mastery";
+import { barExtent, scoreTone } from "@/lib/mastery";
 import { PROGRESS_PAGE } from "@/utils/i18n";
 
 interface TopicMasteryListProps {
@@ -36,7 +36,7 @@ export function TopicMasteryList({ items }: TopicMasteryListProps) {
         <ul className="mt-4 space-y-4">
           {sorted.map((item, index) => {
             const tone = scoreTone(item.average_score);
-            const width = Math.max(2, Math.min(100, item.average_score));
+            const width = barExtent(item.average_score);
             const isWeakest = index === 0;
             return (
               <li key={item.topic}>

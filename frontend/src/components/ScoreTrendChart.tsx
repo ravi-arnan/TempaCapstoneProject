@@ -1,5 +1,5 @@
 import type { TrendPoint } from "@/types/gamification";
-import { formatTrendDate, scoreTone } from "@/lib/mastery";
+import { barExtent, formatTrendDate, scoreTone } from "@/lib/mastery";
 import { PROGRESS_PAGE } from "@/utils/i18n";
 
 interface ScoreTrendChartProps {
@@ -35,7 +35,7 @@ export function ScoreTrendChart({ points }: ScoreTrendChartProps) {
       ) : (
         <ul className="mt-4 flex h-40 items-end gap-2" aria-label={PROGRESS_PAGE.trendCaption}>
           {recent.map((point) => {
-            const height = Math.max(2, Math.min(100, point.average_score));
+            const height = barExtent(point.average_score);
             const tone = scoreTone(point.average_score);
             const dateLabel = formatTrendDate(point.date);
             return (
