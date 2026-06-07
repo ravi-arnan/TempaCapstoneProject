@@ -3,7 +3,7 @@
 **Status**: OPEN. Living document.
 **Owner**: Ravi
 **Created**: 2026-05-18
-**Last updated**: 2026-06-07
+**Last updated**: 2026-06-08
 
 ---
 
@@ -223,12 +223,14 @@ Cluster fitur yang mengarah ke user, dibangun di atas login (#4.7). Status fonda
 
 ## 5. Polish layer 3 (kecil-kecil)
 
-- **Toast notifications** untuk feedback non-fatal (network blip, retry success)
-- **Skeleton loader** saat generate (sekarang masih bullet-text rotation)
-- **Drag-and-drop PDF anywhere** di homepage (sekarang cuma di dropzone area)
-- **Empty state illustration** di homepage (text-only, Lucide-style icon)
-- **Visual audit dark mode**: cek semua `bg-brand-button` apakah harusnya stay dark (button action) atau emerald (status indicator). PulsingDot fix tadi indikasi mungkin ada yang lain.
-- **prefers-reduced-motion** audit di seluruh app (sekarang baru count-up + question-in animation yang respect)
+- ✅ **Skeleton loader** saat generate — DONE 2026-06-08 (PR #14; preview kartu soal, pesan progres tetap).
+- ✅ **Drag-and-drop PDF** di homepage — DONE 2026-06-08 (PR #12; seluruh area input jadi drop target).
+- ✅ **prefers-reduced-motion** audit menyeluruh — DONE 2026-06-08 (PR #15; reset global app-wide).
+- **Toast notifications** untuk feedback non-fatal (network blip, retry success). *Catatan: trigger genuine sedikit → tunda sampai ada kebutuhan nyata (mis. share/export "tersalin").*
+- **Empty state illustration** di homepage (text-only, Lucide-style icon). *Butuh verifikasi visual.*
+- **Visual audit dark mode**: cek semua `bg-brand-button` apakah harusnya stay dark (button action) atau emerald (status indicator). PulsingDot fix tadi indikasi mungkin ada yang lain. *Butuh verifikasi visual.*
+
+> Mobile-specific polish (responsif, touch, safe-area, native-feel) dipisah ke **#6.5**.
 
 ---
 
@@ -270,6 +272,33 @@ Roadmap mobile (ditunda, urut prioritas):
 
 **Effort wrap dasar**: ~0.5-1 hari (setelah backend ter-deploy). Push notification: +1-2 hari.
 
+### 6.5 Mobile polish — bikin web terasa "native" di Android (BARU 2026-06-08)
+**Owner: Ravi (frontend)**
+
+Track polish khusus mobile, melengkapi wrap Capacitor (#6.4). Dipisah menjadi yang **bisa dikerjakan sekarang** (web-responsive murni, tanpa shell Capacitor) vs yang **butuh shell Capacitor dulu**.
+
+**A. Web-responsive & touch — bisa sekarang (prasyarat ringan):**
+- **Audit responsif** semua halaman di 320 / 375 / 430px: nav (pill Profil + Progress + XpBadge + ThemeToggle + Auth makin sempit), grid hasil (`md:grid-cols-2` → stack), Profil/Riwayat/Pengaturan, kuis satu-per-satu. Pastikan tidak ada overflow horizontal.
+- **Touch target ≥ 44px** (WCAG 2.5.5 / Apple HIG): audit tombol kecil — pill nav, theme toggle, opsi jawaban, item dropdown UserMenu.
+- **Jangan andalkan hover**: banyak state pakai `hover:` yang tak ada di layar sentuh. Tambah `active:`/pressed state + pastikan `focus-visible` jalan. (UserMenu sudah klik-based ✓.)
+- **Keyboard mobile**: textarea materi — set `autocapitalize`/`autocorrect`/`inputmode` yang sesuai, scroll-into-view saat fokus, hindari layout "loncat" saat keyboard muncul. Font input ≥ 16px supaya tidak auto-zoom (relevan kalau iOS nanti).
+- **Safe-area**: padding `env(safe-area-inset-*)` untuk nav atas & area aksi bawah (status bar / gesture nav), plus `viewport-fit=cover` di meta viewport.
+
+**B. Capacitor-native polish — butuh #6.4 dulu:**
+- **StatusBar plugin**: warna & style status bar ikut tema light/dark.
+- **SplashScreen plugin**: splash ber-brand, hide saat app siap.
+- **Hardware back (Android)** via `@capacitor/app`: back = navigasi dalam app / konfirmasi keluar saat di root.
+- **Keyboard plugin**: resize mode supaya input tidak ketutup keyboard.
+- **Haptics** (opsional): getar halus saat pilih jawaban / submit / level-up.
+
+**C. Performa mobile:**
+- **Code-split rute** (lazy `import()` per page) — bundle sekarang ~1MB (lihat warning build), berat di jaringan mobile. Lazy-load dep berat (canvas-confetti, chart).
+- Target CWV mobile + TTI cepat di 3G/4G.
+
+**Alternatif ringan — PWA dulu:** sebelum (atau selain) Capacitor, tambah `manifest.json` + service worker supaya "Add to Home Screen" + offline shell jalan. Jalur tercepat ke "berasa app" tanpa build Android. Capacitor tetap diperlukan untuk push notification (#6.4) yang di Android tidak andal lewat PWA.
+
+**Effort**: A ~0.5-1 hari (bisa segera) · B ~0.5 hari (setelah wrap) · C ~0.5 hari · PWA ~0.5 hari.
+
 ---
 
 ## Saran prioritas
@@ -302,6 +331,8 @@ Roadmap mobile (ditunda, urut prioritas):
 | 2026-06-06 | Ariq ambil track Data & Quality: #3.2 + #3.4 + #6.2 | Ariq tidak ambil fitur baru; kerjakan task roadmap lama yang belum jalan, sesuai domain Data & Analisis. |
 | 2026-06-07 | Login (#4.7) selesai & deployed (Neon migrated, HF + Vercel env set) | Verified live: `/auth/google`→401 untuk token invalid, guest mode utuh. Hotfix `requests` dep (PR #8) setelah Space crash di rebuild pertama. |
 | 2026-06-07 | Tambah cluster #4.8 "User Hub & fitur akun" (profil, settings, history, leaderboard, edit preferensi, goal, bookmark, badge, daily challenge, share/export) | Lanjutan natural dari login. Owner Ravi (frontend), Ariq review data layer untuk endpoint baru. Dibatch: User Hub dulu (mostly FE), backend-heavy menyusul. |
+| 2026-06-08 | Kirim #4.8 Batch 1+3 (User Hub + Daily Challenge + Streak), #3.1 testing (Vitest, coverage ~82%), polish §5 (skeleton, drag-drop PDF, reduced-motion) — semua merged ke main | Eksekusi item Ravi-owned berurutan; fix bug migrasi prod Neon (kolom `topic`) yang sempat bikin history/analytics 500. |
+| 2026-06-08 | Tambah track #6.5 "Mobile polish" (responsif/touch, Capacitor-native, performa, opsi PWA) | Polish khusus mobile dipisah dari wrap Capacitor (#6.4); bagian web-responsive bisa dikerjakan sekarang tanpa shell. Owner Ravi. |
 
 ---
 
