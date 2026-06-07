@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { LogOut } from "lucide-react";
+import { Link } from "react-router-dom";
+import { CircleUserRound, History, LogOut, Settings } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { AUTH_LABELS } from "@/utils/i18n";
 
@@ -70,20 +71,64 @@ export function UserMenu() {
               <p className="truncate text-xs text-text-muted">{user.email}</p>
             )}
           </div>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              logout();
-              window.location.reload();
-            }}
-            className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-text-primary outline-none transition-colors hover:bg-[var(--hover-tint)] focus-visible:bg-[var(--hover-tint)]"
-          >
-            <LogOut className="h-4 w-4" aria-hidden="true" />
-            {AUTH_LABELS.logout}
-          </button>
+          <MenuLink
+            to="/profil"
+            icon={CircleUserRound}
+            label={AUTH_LABELS.menuProfile}
+            onNavigate={() => setOpen(false)}
+          />
+          <MenuLink
+            to="/riwayat"
+            icon={History}
+            label={AUTH_LABELS.menuHistory}
+            onNavigate={() => setOpen(false)}
+          />
+          <MenuLink
+            to="/pengaturan"
+            icon={Settings}
+            label={AUTH_LABELS.menuSettings}
+            onNavigate={() => setOpen(false)}
+          />
+          <div className="border-t border-border-standard">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                logout();
+                window.location.reload();
+              }}
+              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-text-primary outline-none transition-colors hover:bg-[var(--hover-tint)] focus-visible:bg-[var(--hover-tint)]"
+            >
+              <LogOut className="h-4 w-4" aria-hidden="true" />
+              {AUTH_LABELS.logout}
+            </button>
+          </div>
         </div>
       )}
     </div>
+  );
+}
+
+function MenuLink({
+  to,
+  icon: Icon,
+  label,
+  onNavigate,
+}: {
+  to: string;
+  icon: typeof LogOut;
+  label: string;
+  onNavigate: () => void;
+}) {
+  return (
+    <Link
+      to={to}
+      role="menuitem"
+      onClick={onNavigate}
+      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-text-primary outline-none transition-colors hover:bg-[var(--hover-tint)] focus-visible:bg-[var(--hover-tint)]"
+    >
+      <Icon className="h-4 w-4" aria-hidden="true" />
+      {label}
+    </Link>
   );
 }

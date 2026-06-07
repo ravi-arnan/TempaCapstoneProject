@@ -149,6 +149,7 @@ export const GAMIFICATION = {
 
 export const NAV_LABELS = {
   progress: "Progresku",
+  profile: "Profilku",
 } as const;
 
 // ============================================================================
@@ -160,6 +161,9 @@ export const AUTH_LABELS = {
   guestName: "Pengguna",
   logout: "Keluar",
   loginError: "Login gagal. Coba lagi sebentar.",
+  menuProfile: "Profilku",
+  menuHistory: "Riwayat Kuis",
+  menuSettings: "Pengaturan",
 } as const;
 
 // ============================================================================
@@ -189,6 +193,81 @@ export const PROGRESS_PAGE = {
   unavailableTitle: "Fitur progres belum aktif",
   unavailableBody:
     "Pelacakan progres sedang tidak tersedia. Fitur kuis tetap bisa kamu pakai seperti biasa.",
+} as const;
+
+// ============================================================================
+// Profile hub (ROADMAP §4.8a) — identity + gamification summary + badges
+// ============================================================================
+
+export const PROFILE_PAGE = {
+  eyebrow: "Profilku",
+  title: "Profilku",
+  subtitle: "Ringkasan perjalanan belajarmu di Asahlagi.",
+  guestName: "Tamu",
+  guestNote:
+    "Kamu memakai mode tamu. Progresmu tersimpan di perangkat ini. Masuk dengan Google agar progres aman dan tersinkron.",
+  summaryLevel: "LEVEL",
+  summaryXp: "TOTAL XP",
+  summaryStreak: "STREAK",
+  summaryQuizzes: "TOTAL KUIS",
+  streakUnit: "hari",
+  badgesTitle: "Pencapaian",
+  badgesCaption: "Badge yang sudah kamu buka",
+  badgesEmpty: "Belum ada badge. Kerjakan kuis untuk membuka yang pertama.",
+  recentTitle: "Kuis Terakhir",
+  recentEmpty: "Belum ada riwayat. Yuk kerjakan kuis pertamamu.",
+  recentSeeAll: "Lihat semua riwayat",
+  linkProgress: "Lihat tren & pemahaman per topik",
+  linkSettings: "Pengaturan",
+  loading: "Memuat profilmu...",
+  unavailableTitle: "Profil belum aktif",
+  unavailableBody:
+    "Fitur profil sedang tidak tersedia. Fitur kuis tetap bisa kamu pakai seperti biasa.",
+} as const;
+
+// ============================================================================
+// History page (ROADMAP §4.8c) — DB-backed quiz history
+// ============================================================================
+
+export const HISTORY_PAGE = {
+  eyebrow: "Riwayat",
+  title: "Riwayat Kuis",
+  subtitle: "Semua kuis yang sudah kamu kerjakan, terbaru di atas.",
+  summaryQuizzes: "TOTAL KUIS",
+  summaryAvg: "RATA-RATA",
+  summaryBest: "SKOR TERBAIK",
+  summaryXp: "TOTAL XP",
+  scoreUnit: "skor",
+  xpTemplate: (n: number) => `+${n} XP`,
+  noTopic: "Tanpa topik",
+  loading: "Memuat riwayatmu...",
+  emptyTitle: "Belum ada riwayat",
+  emptyBody:
+    "Setiap kuis yang kamu selesaikan akan muncul di sini. Mulai kuis pertamamu, yuk.",
+  emptyCta: "Mulai Mengasah",
+  unavailableTitle: "Riwayat belum aktif",
+  unavailableBody:
+    "Pelacakan riwayat sedang tidak tersedia. Fitur kuis tetap bisa kamu pakai seperti biasa.",
+} as const;
+
+// ============================================================================
+// Settings page (ROADMAP §4.8b) — theme, account, logout
+// ============================================================================
+
+export const SETTINGS_PAGE = {
+  eyebrow: "Pengaturan",
+  title: "Pengaturan",
+  subtitle: "Atur tampilan dan akunmu.",
+  appearanceTitle: "Tampilan",
+  appearanceCaption: "Pilih tema terang atau gelap.",
+  accountTitle: "Akun",
+  accountCaption: "Informasi akun yang sedang masuk.",
+  accountEmailLabel: "Email",
+  accountNameLabel: "Nama",
+  guestTitle: "Mode tamu",
+  guestBody:
+    "Kamu belum masuk. Progres tersimpan di perangkat ini. Masuk dengan Google untuk mengamankan progresmu.",
+  logout: "Keluar dari akun",
 } as const;
 
 // ============================================================================
@@ -338,4 +417,23 @@ export function formatSeconds(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+/** Format an ISO timestamp as a short Indonesian date, e.g. "7 Jun 2026". */
+export function formatDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(d);
+}
+
+/** Coerce a stored understanding-level string to the typed union, or null. */
+export function toUnderstandingLevel(
+  value: string,
+): UnderstandingLevel | null {
+  const v = value.trim().toLowerCase();
+  return v === "high" || v === "medium" || v === "low" ? v : null;
 }

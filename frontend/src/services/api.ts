@@ -18,7 +18,7 @@ import type {
   Badge,
   GamificationStats,
   GamificationAnalytics,
-  HistoryItem,
+  HistoryResponse,
   RecordAttemptResult,
 } from "@/types/gamification";
 import type { AuthUser } from "@/types/auth";
@@ -234,14 +234,17 @@ export function recordQuizAttempt(body: {
   });
 }
 
-export async function getGamificationHistory(
+/**
+ * Quiz history (summary + items). Returns null when gamification is unavailable
+ * (503 / network failure) so the History page can show a graceful "off" state.
+ */
+export function getGamificationHistory(
   limit = 10,
-): Promise<HistoryItem[]> {
-  const res = await gamificationFetch<{ items: HistoryItem[] }>(
+): Promise<HistoryResponse | null> {
+  return gamificationFetch<HistoryResponse>(
     `/gamification/history?limit=${limit}`,
     { method: "GET" },
   );
-  return res?.items ?? [];
 }
 
 export async function getGamificationAnalytics(): Promise<GamificationAnalytics | null> {
