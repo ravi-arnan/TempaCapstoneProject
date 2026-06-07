@@ -42,7 +42,11 @@ if (typeof window !== "undefined") {
 }
 
 // React Testing Library doesn't auto-clean between tests under Vitest globals
-// in every config; do it explicitly so each test starts with a fresh DOM.
+// in every config; do it explicitly so each test starts with a fresh DOM. Also
+// reset the shared in-memory localStorage so writes (theme, auth, quiz
+// persistence, device id) don't leak across tests and cause order-dependent
+// failures as the suite grows.
 afterEach(() => {
   cleanup();
+  memoryStorage.clear();
 });
