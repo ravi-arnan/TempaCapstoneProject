@@ -56,6 +56,7 @@ export const EMPTY_STATES = {
   pdfHelp:
     "Upload file PDF (maksimal 10 MB). Sistem akan ekstrak teks dari PDF. Pastikan PDF berisi teks, bukan scan atau gambar.",
   pdfDropzone: "Klik atau seret file PDF ke sini",
+  pdfDropActive: "Lepaskan PDF di sini",
   pdfChangeFile: "klik untuk ganti file",
   pdfMustBePdf: "File harus berformat .pdf",
   pdfTooLarge: "File terlalu besar. Maksimal 10 MB.",

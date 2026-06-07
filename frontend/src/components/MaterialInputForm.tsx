@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { SourceType } from "@/types/quiz";
 import { EMPTY_STATES, BUTTON_LABELS, QUIZ_PAGE } from "@/utils/i18n";
+import { validatePdfFile } from "@/lib/pdfValidation";
 import { cn } from "@/lib/cn";
 
 interface MaterialInputFormProps {
@@ -22,8 +23,6 @@ interface MaterialInputFormProps {
 
 const URL_PASTE_RE = /^https?:\/\/\S+$/i;
 
-const MAX_PDF_BYTES = 10 * 1024 * 1024; // 10 MB
-
 /**
  * Material input form supporting 3 source types: text, URL, PDF.
  * Renders the appropriate input based on `sourceType`.
@@ -44,6 +43,7 @@ export function MaterialInputForm({
   const [url, setUrl] = useState("");
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Pull in externally-supplied text (e.g. when user clicks a sample button).
@@ -93,28 +93,61 @@ export function MaterialInputForm({
     else if (sourceType === "pdf" && pdfFile) onSubmitPdf(pdfFile);
   }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function acceptFile(file: File | null) {
     setPdfError(null);
-    const file = e.target.files?.[0] ?? null;
     if (!file) {
       setPdfFile(null);
       return;
     }
-    if (!file.name.toLowerCase().endsWith(".pdf")) {
-      setPdfError(EMPTY_STATES.pdfMustBePdf);
-      setPdfFile(null);
-      return;
-    }
-    if (file.size > MAX_PDF_BYTES) {
-      setPdfError(EMPTY_STATES.pdfTooLarge);
+    const error = validatePdfFile(file);
+    if (error) {
+      setPdfError(
+        error === "NOT_PDF"
+          ? EMPTY_STATES.pdfMustBePdf
+          : EMPTY_STATES.pdfTooLarge,
+      );
       setPdfFile(null);
       return;
     }
     setPdfFile(file);
   }
 
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    acceptFile(e.target.files?.[0] ?? null);
+  }
+
+  // Drag-and-drop for the PDF tab: the whole input area is a drop target so the
+  // user doesn't have to hit the button precisely.
+  const dropActive = sourceType === "pdf" && !isSubmitting;
+
+  function handleDragOver(e: React.DragEvent) {
+    if (!dropActive) return;
+    e.preventDefault();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    if (sourceType !== "pdf") return;
+    // Ignore drags moving onto child elements; only clear when leaving the form.
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+    setIsDragging(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    if (!dropActive) return;
+    e.preventDefault();
+    setIsDragging(false);
+    acceptFile(e.dataTransfer.files?.[0] ?? null);
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form
+      onSubmit={handleSubmit}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className="space-y-4"
+    >
       {sourceType === "text" && (
         <>
           <textarea
@@ -171,6 +204,7 @@ export function MaterialInputForm({
               "flex w-full items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border-standard bg-bg-alt p-8 text-text-muted transition-colors hover:border-brand-accent hover:text-text-primary",
               "disabled:cursor-not-allowed disabled:opacity-60",
               pdfFile && "border-brand-accent text-text-primary",
+              isDragging && "border-brand-accent bg-bg-page text-text-primary",
             )}
           >
             {pdfFile ? (
@@ -183,7 +217,11 @@ export function MaterialInputForm({
             ) : (
               <span className="flex flex-col items-center gap-1">
                 <PdfUploadIcon />
-                <span>{EMPTY_STATES.pdfDropzone}</span>
+                <span>
+                  {isDragging
+                    ? EMPTY_STATES.pdfDropActive
+                    : EMPTY_STATES.pdfDropzone}
+                </span>
               </span>
             )}
           </button>
