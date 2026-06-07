@@ -52,7 +52,7 @@ export function QuizQuestionCard({
               type="button"
               onClick={() => onSelect(i)}
               className={cn(
-                "w-full rounded-xl border px-4 py-3 text-left text-sm transition-colors",
+                "w-full rounded-xl border px-4 py-3 text-left text-sm transition-colors active:bg-bg-alt",
                 isSelected
                   ? "border-brand-accent bg-bg-alt text-text-primary"
                   : "border-border-standard bg-bg-page text-text-primary hover:bg-bg-alt",

@@ -43,3 +43,34 @@ describe("MaterialInputForm drag-and-drop (PDF)", () => {
     expect(screen.getByText(EMPTY_STATES.pdfDropActive)).toBeInTheDocument();
   });
 });
+
+describe("MaterialInputForm mobile keyboard hints (§6.5-A)", () => {
+  it("sets prose-friendly attributes on the material textarea", () => {
+    render(
+      <MaterialInputForm
+        sourceType="text"
+        onSubmitText={vi.fn()}
+        onSubmitUrl={vi.fn()}
+        onSubmitPdf={vi.fn()}
+      />,
+    );
+    const textarea = screen.getByRole("textbox");
+    expect(textarea).toHaveAttribute("autocapitalize", "sentences");
+    expect(textarea).toHaveAttribute("spellcheck", "true");
+  });
+
+  it("sets URL-friendly keyboard attributes on the URL input", () => {
+    render(
+      <MaterialInputForm
+        sourceType="url"
+        onSubmitText={vi.fn()}
+        onSubmitUrl={vi.fn()}
+        onSubmitPdf={vi.fn()}
+      />,
+    );
+    const input = screen.getByRole("textbox");
+    expect(input).toHaveAttribute("inputmode", "url");
+    expect(input).toHaveAttribute("autocapitalize", "none");
+    expect(input).toHaveAttribute("autocomplete", "url");
+  });
+});

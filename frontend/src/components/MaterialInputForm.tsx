@@ -156,6 +156,9 @@ export function MaterialInputForm({
             onPaste={handleTextPaste}
             placeholder={EMPTY_STATES.materialPlaceholder}
             rows={10}
+            autoCapitalize="sentences"
+            autoCorrect="on"
+            spellCheck
             className="w-full resize-y rounded-xl border border-border-standard bg-bg-page p-4 text-base text-text-primary shadow-level-1 placeholder:text-text-muted focus:border-border-prominent focus:outline-none focus-visible:[box-shadow:var(--focus-ring)] disabled:opacity-70"
             disabled={isSubmitting}
           />
@@ -177,6 +180,12 @@ export function MaterialInputForm({
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder={EMPTY_STATES.urlPlaceholder}
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            autoComplete="url"
+            spellCheck={false}
+            enterKeyHint="go"
             className="w-full rounded-xl border border-border-standard bg-bg-page p-4 text-base text-text-primary shadow-level-1 placeholder:text-text-muted focus:border-border-prominent focus:outline-none focus-visible:[box-shadow:var(--focus-ring)] disabled:opacity-70"
             disabled={isSubmitting}
           />
