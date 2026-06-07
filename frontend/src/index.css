@@ -122,8 +122,21 @@
   animation: question-in 220ms ease-out;
 }
 
+/* ================================================================
+   Reduced motion — honor the OS/browser "reduce motion" preference
+   across the whole app: looping animations (the loading ping, skeleton
+   shimmer), width/transform transitions (XP/progress/mastery meters),
+   the question slide-in, theme color transitions, etc. JS-driven motion
+   (confetti, count-up) is gated separately in its hooks.
+   ================================================================ */
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-question-in {
-    animation: none;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
