@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import {
   ChevronRight,
   CircleUserRound,
-  Flame,
   Settings,
   Trophy,
   TrendingUp,
@@ -14,6 +13,8 @@ import { MessageCard } from "@/components/MessageCard";
 import { StatTile } from "@/components/StatTile";
 import { BadgeGrid } from "@/components/BadgeGrid";
 import { HistoryItemRow } from "@/components/HistoryItemRow";
+import { DailyChallengeCard } from "@/components/DailyChallengeCard";
+import { StreakCard } from "@/components/StreakCard";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 import { useProfileData } from "@/hooks/useProfileData";
 import { useAuth } from "@/context/AuthContext";
@@ -61,16 +62,15 @@ export function ProfilePage() {
 
       <IdentityCard user={user} isConfigured={isConfigured} />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <DailyChallengeCard />
+
+      <div className="grid grid-cols-3 gap-3">
         <StatTile label={PROFILE_PAGE.summaryLevel} value={stats.level} icon={Zap} />
         <StatTile label={PROFILE_PAGE.summaryXp} value={stats.total_xp} />
-        <StatTile
-          label={PROFILE_PAGE.summaryStreak}
-          value={`${stats.current_streak} ${PROFILE_PAGE.streakUnit}`}
-          icon={Flame}
-        />
         <StatTile label={PROFILE_PAGE.summaryQuizzes} value={totalQuizzes} />
       </div>
+
+      <StreakCard current={stats.current_streak} longest={stats.longest_streak} />
 
       <section className="space-y-3" aria-labelledby="badges-heading">
         <SectionHeading id="badges-heading" icon={Trophy} title={PROFILE_PAGE.badgesTitle} caption={PROFILE_PAGE.badgesCaption} />

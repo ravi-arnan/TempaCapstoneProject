@@ -144,6 +144,31 @@ export const GAMIFICATION = {
 } as const;
 
 // ============================================================================
+// Daily Challenge (ROADMAP §4.8i) — surfaced on Home & Profil
+// ============================================================================
+
+export const DAILY_CHALLENGE = {
+  eyebrow: "Tantangan Harian",
+  title: "Tantangan hari ini",
+  body: "Satu kuis pilihan tiap hari dengan topik kejutan. Selesaikan untuk bonus XP dan jaga streak-mu.",
+  bonusBadge: "+50 XP bonus",
+  start: "Mulai Tantangan",
+  starting: "Menyiapkan tantangan...",
+} as const;
+
+// ============================================================================
+// Streak (ROADMAP §4.8i) — streak calendar / strip
+// ============================================================================
+
+export const STREAK = {
+  title: "Streak Belajar",
+  currentLabel: "Streak saat ini",
+  longestLabel: "Terpanjang",
+  dayUnit: "hari",
+  emptyHint: "Kerjakan kuis hari ini untuk memulai streak.",
+} as const;
+
+// ============================================================================
 // Navigation labels
 // ============================================================================
 
@@ -208,9 +233,7 @@ export const PROFILE_PAGE = {
     "Kamu memakai mode tamu. Progresmu tersimpan di perangkat ini. Masuk dengan Google agar progres aman dan tersinkron.",
   summaryLevel: "LEVEL",
   summaryXp: "TOTAL XP",
-  summaryStreak: "STREAK",
   summaryQuizzes: "TOTAL KUIS",
-  streakUnit: "hari",
   badgesTitle: "Pencapaian",
   badgesCaption: "Badge yang sudah kamu buka",
   badgesEmpty: "Belum ada badge. Kerjakan kuis untuk membuka yang pertama.",

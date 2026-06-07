@@ -173,6 +173,26 @@ export function submitQuiz(
   return postJson<QuizSubmitRequest, QuizSubmitResponse>("/quiz/submit", req);
 }
 
+/**
+ * Today's Daily Challenge quiz (curated, +50 XP bonus on first completion).
+ * Cached server-side per day, so the first request of the day runs DL inference
+ * (slow) and the rest are fast — hence the long generate timeout. The device id
+ * is sent so the backend can pick an adaptive difficulty.
+ */
+export async function getDailyChallenge(): Promise<QuizGenerateResponse> {
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(
+      `${BASE_URL}/quiz/daily-challenge`,
+      { method: "GET", headers: { "X-Device-Id": getDeviceId() } },
+      QUIZ_GENERATE_TIMEOUT_MS,
+    );
+  } catch (err) {
+    throw networkErrorToApiException(err);
+  }
+  return handleResponse<QuizGenerateResponse>(res);
+}
+
 // ============================================================================
 // Auth — Google login. Throws ApiException on failure (caller handles it).
 // ============================================================================
