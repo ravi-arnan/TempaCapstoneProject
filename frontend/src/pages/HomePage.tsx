@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { MaterialInputForm } from "@/components/MaterialInputForm";
 import { SourceTypeTabs } from "@/components/SourceTypeTabs";
 import { DailyChallengeCard } from "@/components/DailyChallengeCard";
+import { QuizGenerationSkeleton } from "@/components/QuizGenerationSkeleton";
 import { useQuiz } from "@/hooks/useQuiz";
 import type { SourceType } from "@/types/quiz";
 import {
@@ -111,6 +112,8 @@ export function HomePage() {
         prefillUrl={prefillUrl}
         onSmartUrlPaste={handleSmartUrlPaste}
       />
+
+      {generating && <QuizGenerationSkeleton />}
     </div>
   );
 }
