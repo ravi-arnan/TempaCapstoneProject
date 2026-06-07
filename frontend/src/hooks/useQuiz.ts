@@ -3,6 +3,7 @@ import {
   generateQuiz,
   generateQuizFromPdf,
   generateQuizFromUrl,
+  getDailyChallenge,
   regenerateQuiz,
   submitQuiz,
 } from "@/services/api";
@@ -114,6 +115,25 @@ export function useQuiz() {
     [],
   );
 
+  const startDailyChallenge = useCallback(
+    async (): Promise<QuizGenerateResponse | null> => {
+      setState((s) => ({ ...s, generating: true, generateError: null }));
+      try {
+        const res = await getDailyChallenge();
+        setState((s) => ({ ...s, generating: false }));
+        return res;
+      } catch (err) {
+        setState((s) => ({
+          ...s,
+          generating: false,
+          generateError: toApiException(err),
+        }));
+        return null;
+      }
+    },
+    [],
+  );
+
   const submit = useCallback(
     async (req: QuizSubmitRequest): Promise<QuizSubmitResponse | null> => {
       setState((s) => ({ ...s, submitting: true, submitError: null }));
@@ -139,6 +159,7 @@ export function useQuiz() {
     generateFromUrl,
     generateFromPdf,
     regenerate,
+    startDailyChallenge,
     submit,
   };
 }

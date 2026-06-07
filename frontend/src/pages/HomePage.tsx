@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MaterialInputForm } from "@/components/MaterialInputForm";
 import { SourceTypeTabs } from "@/components/SourceTypeTabs";
+import { DailyChallengeCard } from "@/components/DailyChallengeCard";
 import { useQuiz } from "@/hooks/useQuiz";
 import type { SourceType } from "@/types/quiz";
 import {
@@ -72,6 +73,8 @@ export function HomePage() {
           {HOMEPAGE.subtitle}
         </p>
       </header>
+
+      <DailyChallengeCard />
 
       <div className="flex flex-wrap items-center gap-3">
         <SourceTypeTabs
