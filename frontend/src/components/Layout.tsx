@@ -24,8 +24,8 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-bg-page">
-      <header className="border-b border-border-standard bg-bg-page">
-        <nav className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-6 py-4">
+      <header className="safe-pt border-b border-border-standard bg-bg-page">
+        <nav className="safe-px mx-auto flex max-w-5xl items-center justify-between gap-3 px-6 py-4">
           <Link
             to="/"
             className="rounded-md outline-none focus-visible:[box-shadow:var(--focus-ring)]"
@@ -56,7 +56,7 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </nav>
       </header>
-      <main className="mx-auto max-w-5xl px-6 py-12">{children}</main>
+      <main className="safe-px safe-pb mx-auto max-w-5xl px-6 py-12">{children}</main>
     </div>
   );
 }
