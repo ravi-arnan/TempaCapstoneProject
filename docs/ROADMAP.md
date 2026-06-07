@@ -202,7 +202,7 @@ Ravi pegang full (frontend + backend tipis) karena OAuth mayoritas frontend + ve
 
 Cluster fitur yang mengarah ke user, dibangun di atas login (#4.7). Status fondasi ditandai: 🟢 = endpoint/data sudah ada (mostly frontend), 🟡 = butuh backend baru.
 
-- **a) Halaman Profil (hub)** 🟢 — identitas (avatar/nama/email) + ringkasan gamifikasi (level/XP/streak/total kuis) + grid badge + link ke Progress (#4.4). Konsumsi endpoint yang sudah ada (`/gamification/stats`, `/achievements`, `/analytics`). Guest → ajak login.
+- **a) Halaman Profil (hub)** 🟢 — identitas (avatar/nama/email) + ringkasan gamifikasi (level/XP/streak/total kuis) + grid badge + link ke Progress (#4.4). Konsumsi endpoint yang sudah ada (`/gamification/stats`, `/gamification/achievements`, `/gamification/analytics`). Guest → ajak login.
 - **b) Halaman Settings** 🟢 — tema (light/dark), info akun, tombol Keluar. Opsi lanjut 🟡: edit nama tampilan (`PATCH /auth/me`), hapus akun & data (`DELETE` + cascade) — review Ariq.
 - **c) Halaman Riwayat Kuis (History)** 🟢 — `GET /gamification/history` (items + summary) **sudah jalan**; tinggal UI. List: skor, level pemahaman, topik, XP, tanggal; klik → detail / "Asah Lagi". (Menggantikan rencana #4.1 yang localStorage — kini DB-backed + ter-link akun.)
 - **d) Leaderboard** 🟡 — ranking by XP/level. **Desain privasi**: tampil display name (login) atau "Anonim" (guest), idealnya opt-in. Endpoint baru `GET /gamification/leaderboard` (top N). (GAMIFICATION.md dulu menandai ini "far future"; sekarang feasible karena sudah ada auth.)
