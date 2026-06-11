@@ -26,8 +26,10 @@ import difflib
 from datetime import datetime, timezone
 
 from app.schemas.internal import QuestionInternal, QuizInternal
+from app.services.material_quality import assess as _assess_material
 from app.utils.errors import (
     ApiException,
+    MATERIAL_LOW_QUALITY,
     MATERIAL_TOO_SHORT,
     QUIZ_GENERATION_FAILED,
 )
@@ -149,6 +151,13 @@ def generate_quiz(
             code=MATERIAL_TOO_SHORT,
             detail="Materinya terlalu pendek. Tambahkan minimal 100 karakter agar sistem bisa membuat kuis.",
         )
+
+    # Quizability pre-check (ROADMAP §3.2): bail early on clearly unsuitable
+    # material (CV / English / bare lists) with a helpful hint, before spending
+    # ~15s producing a nonsensical quiz.
+    suitable, hint = _assess_material(text)
+    if not suitable:
+        raise ApiException(status_code=400, code=MATERIAL_LOW_QUALITY, detail=hint)
 
     # === Path 1: DL via ml/generator (preferred) ===
     dl_questions: list[QuestionInternal] = []
