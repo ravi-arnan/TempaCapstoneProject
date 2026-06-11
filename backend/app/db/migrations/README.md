@@ -19,6 +19,7 @@ This directory contains SQL migration files for the Neon Postgres database.
 - `0001_initial_schema.sql` — Initial gamification schema (XP, streak, badges, quiz attempts, persistent quizzes)
 - `0002_add_topic_columns.sql` — Add `topic` columns for per-topic mastery analytics
 - `0003_add_google_auth.sql` — Add Google login columns (`google_sub`, `email`, `avatar_url`) to `users`
+- `0004_add_chat_messages.sql` — Add `chat_messages` table for Asahi free-chat memory
 
 ## Notes
 

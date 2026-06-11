@@ -4,7 +4,10 @@ import userEvent from "@testing-library/user-event";
 import { AsahiChatWidget } from "@/components/AsahiChatWidget";
 import { askAsahi } from "@/services/api";
 
-vi.mock("@/services/api", () => ({ askAsahi: vi.fn() }));
+vi.mock("@/services/api", () => ({
+  askAsahi: vi.fn(),
+  getAsahiHistory: vi.fn(() => Promise.resolve({ messages: [] })),
+}));
 const mockAsk = vi.mocked(askAsahi);
 
 beforeEach(() => mockAsk.mockReset());

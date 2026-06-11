@@ -10,15 +10,16 @@ swap in slowapi/Redis (noted in docs/CHATBOT.md).
 
 import time
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Header, Request
 
 from app.schemas.chat import (
+    ChatHistoryResponse,
     ChatRequest,
     ChatResponse,
     FreeChatRequest,
     FreeChatResponse,
 )
-from app.services import asahi_chat
+from app.services import asahi_chat, chat_memory
 from app.utils.errors import ApiException, CHAT_RATE_LIMITED
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -55,8 +56,20 @@ def chat(request: ChatRequest, http_request: Request) -> ChatResponse:
 
 
 @router.post("/ask", response_model=FreeChatResponse)
-def chat_ask(request: FreeChatRequest, http_request: Request) -> FreeChatResponse:
-    """Free-text chat with Asahi (home page). Guardrails live in the system prompt."""
+def chat_ask(
+    request: FreeChatRequest,
+    http_request: Request,
+    x_device_id: str | None = Header(default=None),
+) -> FreeChatResponse:
+    """Free-text chat with Asahi (home page). Guardrails live in the system prompt.
+    Persists the turn (best-effort) so Asahi remembers it next session."""
     _enforce_rate_limit(_client_ip(http_request))
     reply = asahi_chat.generate_free_reply(request)
+    chat_memory.save_turn(x_device_id, request.message, reply)
     return FreeChatResponse(reply=reply)
+
+
+@router.get("/history", response_model=ChatHistoryResponse)
+def chat_history(x_device_id: str | None = Header(default=None)) -> ChatHistoryResponse:
+    """Recent free-chat turns for this device, so the widget can restore them."""
+    return ChatHistoryResponse(messages=chat_memory.load_recent(x_device_id))

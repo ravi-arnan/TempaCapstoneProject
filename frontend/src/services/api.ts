@@ -13,6 +13,7 @@ import type {
 } from "@/types/quiz";
 import type { QuizSubmitResponse } from "@/types/result";
 import type {
+  ChatHistoryResponse,
   ChatRequest,
   ChatResponse,
   FreeChatRequest,
@@ -90,6 +91,7 @@ async function postJson<TReq, TRes>(
   path: string,
   body: TReq,
   timeoutMs: number = DEFAULT_TIMEOUT_MS,
+  headers?: Record<string, string>,
 ): Promise<TRes> {
   let res: Response;
   try {
@@ -97,7 +99,7 @@ async function postJson<TReq, TRes>(
       `${BASE_URL}${path}`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...headers },
         body: JSON.stringify(body),
       },
       timeoutMs,
@@ -111,10 +113,15 @@ async function postJson<TReq, TRes>(
 async function getJson<TRes>(
   path: string,
   timeoutMs: number = DEFAULT_TIMEOUT_MS,
+  headers?: Record<string, string>,
 ): Promise<TRes> {
   let res: Response;
   try {
-    res = await fetchWithTimeout(`${BASE_URL}${path}`, { method: "GET" }, timeoutMs);
+    res = await fetchWithTimeout(
+      `${BASE_URL}${path}`,
+      { method: "GET", headers },
+      timeoutMs,
+    );
   } catch (err) {
     throw networkErrorToApiException(err);
   }
@@ -304,5 +311,13 @@ export function sendChat(req: ChatRequest): Promise<ChatResponse> {
 }
 
 export function askAsahi(req: FreeChatRequest): Promise<FreeChatResponse> {
-  return postJson<FreeChatRequest, FreeChatResponse>("/chat/ask", req, CHAT_TIMEOUT_MS);
+  return postJson<FreeChatRequest, FreeChatResponse>("/chat/ask", req, CHAT_TIMEOUT_MS, {
+    "X-Device-Id": getDeviceId(),
+  });
+}
+
+export function getAsahiHistory(): Promise<ChatHistoryResponse> {
+  return getJson<ChatHistoryResponse>("/chat/history", DEFAULT_TIMEOUT_MS, {
+    "X-Device-Id": getDeviceId(),
+  });
 }

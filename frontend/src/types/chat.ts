@@ -46,3 +46,7 @@ export interface FreeChatRequest {
 export interface FreeChatResponse {
   reply: string;
 }
+
+export interface ChatHistoryResponse {
+  messages: FreeChatMessage[];
+}

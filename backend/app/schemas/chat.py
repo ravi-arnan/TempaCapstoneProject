@@ -50,3 +50,7 @@ class FreeChatRequest(BaseModel):
 
 class FreeChatResponse(BaseModel):
     reply: str
+
+
+class ChatHistoryResponse(BaseModel):
+    messages: list[FreeChatMessage]

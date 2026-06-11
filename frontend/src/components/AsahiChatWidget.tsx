@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Send, X } from "lucide-react";
 import { Asahi } from "@/components/mascot/Asahi";
-import { askAsahi } from "@/services/api";
+import { askAsahi, getAsahiHistory } from "@/services/api";
 import { ApiException } from "@/types/api";
 import type { FreeChatMessage } from "@/types/chat";
 import { cn } from "@/lib/cn";
@@ -37,6 +37,20 @@ export function AsahiChatWidget() {
   // Focus the input when the panel opens.
   useEffect(() => {
     if (open) inputRef.current?.focus();
+  }, [open]);
+
+  // Restore recent conversation from the server the first time the panel opens.
+  const loadedRef = useRef(false);
+  useEffect(() => {
+    if (!open || loadedRef.current) return;
+    loadedRef.current = true;
+    getAsahiHistory()
+      .then((res) => {
+        if (res.messages.length > 0) setMessages(res.messages);
+      })
+      .catch(() => {
+        /* no memory yet (offline / migration not applied) — keep the greeting */
+      });
   }, [open]);
 
   async function send() {
