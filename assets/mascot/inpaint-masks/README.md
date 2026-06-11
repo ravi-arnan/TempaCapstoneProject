@@ -8,6 +8,20 @@ background) byte-for-byte identical. Inpainting with a tight mask does exactly t
 > expression drifts the face — she looks like a different person each time. Masked
 > inpaint freezes the character and only repaints the small region you allow.
 
+## Two methods
+
+1. **Face-swap inpaint** (cheap, perfectly consistent) — for pure facial expressions
+   (`high`, `low`): mask only brows + mouth on `../asahi-base-full.png`, eyes protected.
+   Inherently front-facing because it reuses the base.
+2. **Gesture pose via SeaArt "Maintain Character Consistency"** — for hand gestures
+   (`wave`, `think`): generate a new pose from the base as reference. Costs ~41 credits,
+   produces brighter colors (tone-match on cutout with `-modulate 101,80`).
+
+> **ALL poses must be FRONT-FACING.** The consistency app tends to tilt the head / use a
+> 3/4 angle. Always include: `facing forward toward the viewer, head straight and centered,
+> looking directly at the viewer, front view, symmetrical composition`. This keeps the whole
+> set uniform with the front-facing base.
+
 ## Files here
 
 | File | Purpose |
