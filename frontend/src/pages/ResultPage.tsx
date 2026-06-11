@@ -2,7 +2,6 @@ import { useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AsahiDialog } from "@/components/AsahiDialog";
 import { InsightCard } from "@/components/InsightCard";
-import { Asahi, moodForLevel } from "@/components/mascot/Asahi";
 import { QuestionBreakdown } from "@/components/QuestionBreakdown";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { ResultSummary } from "@/components/ResultSummary";
@@ -76,19 +75,12 @@ export function ResultPage() {
 
   return (
     <div className="space-y-8">
-      <header className="flex items-start justify-between gap-4">
-        <div className="space-y-3">
-          <UnderstandingBadge level={result.understanding_level} />
-          <h1 className="text-4xl font-medium leading-tight tracking-tight text-text-primary">
-            {headers.headline}
-          </h1>
-          <p className="text-lg text-text-secondary">{headers.subhead}</p>
-        </div>
-        <Asahi
-          mood={moodForLevel(result.understanding_level)}
-          size={128}
-          className="hidden shrink-0 self-center sm:block"
-        />
+      <header className="space-y-3">
+        <UnderstandingBadge level={result.understanding_level} />
+        <h1 className="text-4xl font-medium leading-tight tracking-tight text-text-primary">
+          {headers.headline}
+        </h1>
+        <p className="text-lg text-text-secondary">{headers.subhead}</p>
       </header>
 
       <RewardBanner reward={reward} />

@@ -4,20 +4,17 @@ import { sendChat } from "@/services/api";
 import type { ChatContext, ChatIntent } from "@/types/chat";
 
 /**
- * Asahi game-dialog on the result page (docs/CHATBOT.md). Asahi reacts to the
- * quiz result and offers button choices; each button hits POST /chat.
+ * Asahi game-dialog on the result page (docs/CHATBOT.md). Modeled on a
+ * visual-novel / RPG dialogue box: Asahi's portrait on the left, her current
+ * line on the right, and the player's choices as options below. One line shows
+ * at a time (a choice replaces it with Asahi's reply) — not a scrolling log.
  *
- * If the backend is unreachable, we fall back to a local on-brand template so
- * the dialog never breaks — the AI is an upgrade on top, not a hard dependency.
+ * Guardrails: opening fetched once (ref survives StrictMode), each intent asked
+ * once (buttons disable), closing ends the dialog, local fallback if offline.
  */
 
 interface AsahiDialogProps {
   context: ChatContext;
-}
-
-interface Bubble {
-  id: number;
-  text: string;
 }
 
 const ACTIONS: { intent: ChatIntent; label: string }[] = [
@@ -28,7 +25,6 @@ const ACTIONS: { intent: ChatIntent; label: string }[] = [
 
 const CLOSING = "Sip! Semangat terus ya — asah lagi kapan pun kamu siap.";
 
-// On-brand fallback used only when the backend can't be reached.
 const FALLBACK: Record<ChatIntent, (c: ChatContext) => string> = {
   opening: (c) =>
     `Hai, kamu! Skor kamu ${c.score_percentage}%. ${
@@ -49,110 +45,116 @@ const FALLBACK: Record<ChatIntent, (c: ChatContext) => string> = {
 };
 
 export function AsahiDialog({ context }: AsahiDialogProps) {
-  const [bubbles, setBubbles] = useState<Bubble[]>([]);
+  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [closed, setClosed] = useState(false);
-  const nextId = useRef(0);
+  const [used, setUsed] = useState<ChatIntent[]>([]);
+  const startedRef = useRef(false);
 
-  const addBubble = (text: string) =>
-    setBubbles((prev) => [...prev, { id: nextId.current++, text }]);
-
-  // Opening line — fetched once when the dialog mounts.
+  // Opening line — fetched exactly once. The ref dedupes StrictMode's double
+  // invoke; setState after unmount is a harmless no-op in React 18.
   useEffect(() => {
-    let active = true;
+    if (startedRef.current) return;
+    startedRef.current = true;
     (async () => {
       setLoading(true);
       try {
         const res = await sendChat({ intent: "opening", context });
-        if (active) addBubble(res.reply);
+        setMessage(res.reply);
       } catch {
-        if (active) addBubble(FALLBACK.opening(context));
+        setMessage(FALLBACK.opening(context));
       } finally {
-        if (active) setLoading(false);
+        setLoading(false);
       }
     })();
-    return () => {
-      active = false;
-    };
   }, [context]);
 
   async function handleIntent(intent: ChatIntent) {
-    if (loading) return;
+    if (loading || closed || used.includes(intent)) return;
+    setUsed((prev) => [...prev, intent]);
     setLoading(true);
     try {
       const res = await sendChat({ intent, context });
-      addBubble(res.reply);
+      setMessage(res.reply);
     } catch {
-      addBubble(FALLBACK[intent](context));
+      setMessage(FALLBACK[intent](context));
     } finally {
       setLoading(false);
     }
   }
 
   function handleClose() {
-    addBubble(CLOSING);
+    setMessage(CLOSING);
+    setLoading(false);
     setClosed(true);
   }
+
+  const allAsked = used.length === ACTIONS.length;
 
   return (
     <section
       aria-labelledby="asahi-dialog-heading"
-      className="rounded-2xl border border-border-standard bg-bg-page p-5 shadow-level-1 sm:p-6"
+      className="overflow-hidden rounded-2xl border-2 border-border-prominent bg-bg-page shadow-level-1"
     >
-      <h2 id="asahi-dialog-heading" className="sr-only">
-        Ngobrol dengan Asahi
-      </h2>
-      <div className="flex items-start gap-4">
-        <Asahi
-          mood="wave"
-          size={84}
-          className="hidden shrink-0 self-end sm:block"
-        />
-        <div className="min-w-0 flex-1 space-y-3">
-          <div className="space-y-2" aria-live="polite">
-            {bubbles.map((b) => (
-              <p
-                key={b.id}
-                className="w-fit max-w-prose rounded-2xl rounded-tl-sm bg-bg-alt px-4 py-2.5 text-[15px] leading-relaxed text-text-primary"
-              >
-                {b.text}
-              </p>
-            ))}
-            {loading && (
-              <p className="w-fit rounded-2xl rounded-tl-sm bg-bg-alt px-4 py-2.5 text-sm text-text-secondary">
-                <span className="inline-flex gap-1 align-middle">
-                  <Dot /> <Dot delay="150ms" /> <Dot delay="300ms" />
-                </span>
+      <div className="flex items-stretch gap-4 p-5 sm:gap-5 sm:p-6">
+        {/* Portrait */}
+        <div className="flex h-[92px] w-[88px] shrink-0 items-end justify-center overflow-hidden rounded-xl border border-border-standard bg-gradient-to-b from-bg-alt to-bg-subtle">
+          <Asahi mood="wave" size={84} />
+        </div>
+
+        {/* Speaker + current line */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="mb-1.5 flex items-baseline gap-2">
+            <span
+              id="asahi-dialog-heading"
+              className="text-sm font-semibold text-text-primary"
+            >
+              Asahi
+            </span>
+            <span className="text-xs text-text-secondary">teman belajarmu</span>
+          </div>
+          <div
+            className="flex min-h-[3.5rem] flex-1 items-center"
+            aria-live="polite"
+          >
+            {loading ? (
+              <span className="inline-flex gap-1">
+                <Dot /> <Dot delay="150ms" /> <Dot delay="300ms" />
                 <span className="sr-only">Asahi sedang mengetik</span>
+              </span>
+            ) : (
+              <p className="text-[15px] leading-relaxed text-text-primary sm:text-base">
+                {message}
               </p>
             )}
           </div>
-
-          {!closed && (
-            <div className="flex flex-wrap gap-2 pt-1">
-              {ACTIONS.map((a) => (
-                <button
-                  key={a.intent}
-                  type="button"
-                  onClick={() => handleIntent(a.intent)}
-                  disabled={loading}
-                  className="rounded-pill border border-border-standard bg-bg-page px-4 py-1.5 text-sm text-text-primary shadow-level-1 transition-colors hover:bg-bg-alt active:bg-bg-alt disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {a.label}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={handleClose}
-                disabled={loading}
-                className="rounded-pill px-4 py-1.5 text-sm text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Makasih, Asahi
-              </button>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Choices */}
+      {!closed && (
+        <div className="flex flex-wrap items-center gap-2 border-t border-border-standard bg-bg-alt/40 px-5 py-3 sm:px-6">
+          {ACTIONS.map((a) => (
+            <button
+              key={a.intent}
+              type="button"
+              onClick={() => handleIntent(a.intent)}
+              disabled={loading || used.includes(a.intent)}
+              className="rounded-pill border border-border-standard bg-bg-page px-4 py-1.5 text-sm text-text-primary shadow-level-1 transition-colors hover:bg-bg-alt active:bg-bg-alt disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {a.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={loading}
+            className="ml-auto rounded-pill px-4 py-1.5 text-sm text-text-secondary transition-colors hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {allAsked ? "Selesai" : "Makasih, Asahi"}
+          </button>
+        </div>
+      )}
     </section>
   );
 }

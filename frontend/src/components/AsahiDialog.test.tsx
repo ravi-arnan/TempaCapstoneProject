@@ -31,7 +31,7 @@ describe("AsahiDialog", () => {
     expect(screen.getByRole("button", { name: "Semangatin aku" })).toBeInTheDocument();
   });
 
-  it("sends the chosen intent and appends the reply", async () => {
+  it("replaces the line with Asahi's reply for the chosen intent", async () => {
     const user = userEvent.setup();
     mockSendChat
       .mockResolvedValueOnce({ reply: "Pembuka" })
@@ -44,6 +44,7 @@ describe("AsahiDialog", () => {
     expect(
       await screen.findByText("Coba baca ulang, lalu asah lagi."),
     ).toBeInTheDocument();
+    expect(screen.queryByText("Pembuka")).not.toBeInTheDocument(); // replaced, not stacked
     expect(mockSendChat).toHaveBeenLastCalledWith({
       intent: "study_tips",
       context,
@@ -63,7 +64,24 @@ describe("AsahiDialog", () => {
     expect(await screen.findByText(/baca ulang materinya/)).toBeInTheDocument();
   });
 
-  it("hides the choice buttons after closing", async () => {
+  it("fetches the opening line once and disables a used choice", async () => {
+    const user = userEvent.setup();
+    mockSendChat
+      .mockResolvedValueOnce({ reply: "Pembuka" })
+      .mockResolvedValueOnce({ reply: "Balasan" });
+    render(<AsahiDialog context={context} />);
+    await screen.findByText("Pembuka");
+
+    expect(mockSendChat).toHaveBeenCalledTimes(1);
+
+    const tips = screen.getByRole("button", { name: "Tips belajar" });
+    await user.click(tips);
+    await screen.findByText("Balasan");
+
+    expect(tips).toBeDisabled();
+  });
+
+  it("ends the dialog and hides the choices on close", async () => {
     const user = userEvent.setup();
     mockSendChat.mockResolvedValue({ reply: "Pembuka" });
     render(<AsahiDialog context={context} />);
