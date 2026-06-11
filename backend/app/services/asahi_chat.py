@@ -14,6 +14,7 @@ import os
 
 import httpx
 
+from app.db.session import is_db_configured
 from app.schemas.chat import ChatRequest, ChatContext, FreeChatRequest
 from app.utils.errors import (
     ApiException,
@@ -82,6 +83,9 @@ defensif. JANGAN balas dengan kalimat template yang sama berulang.
 ATURAN (tetap dijaga, tapi sampaikan dengan luwes & ramah, bukan kaku):
 - Fokus bahas: belajar/cara belajar, motivasi, dan cara pakai Asahlagi. Boleh jelasin materi \
 secara ringkas & jujur; kalau nggak yakin, saranin cek ulang materinya. Jangan ngarang fakta/angka.
+- Kalau ada "DATA KUIS PENGGUNA" di pesan sistem, rujuk angkanya dengan AKURAT (skor, topik, level). \
+Kalau TIDAK ada data kuis sama sekali, JANGAN ngarang skor/hasil — bilang jujur kamu belum lihat \
+hasil kuisnya, lalu ajak dia kerjain kuis dulu.
 - Kalau diajak ke topik lain (politik, berita, medis, hukum, keuangan, hal pribadi/sensitif, \
 kekerasan, konten dewasa, nulis kode di luar konteks belajar, dsb), tolak dengan santai & \
 beda-beda kalimatnya, lalu ajak balik ngobrolin belajar.
@@ -219,9 +223,40 @@ def generate_reply(request: ChatRequest) -> str:
     )
 
 
-def generate_free_reply(request: FreeChatRequest) -> str:
-    """Free-chat mode: system prompt + recent history + the user's message."""
+def _quiz_context(device_id: str | None) -> str | None:
+    """Build a short, accurate summary of the user's recent quiz data so Asahi can
+    talk about it. Returns None if there's no data (so she won't make results up)."""
+    if not device_id or not is_db_configured():
+        return None
+    try:
+        from app.services import gamification_service
+
+        history = gamification_service.get_history(device_id.strip(), limit=1)
+        if not history:
+            return None
+        summary = gamification_service.get_history_summary(device_id.strip())
+        last = history[0]
+        level = _LEVEL_LABEL.get(
+            last["understanding_level"], last["understanding_level"]
+        )
+        return (
+            "DATA KUIS PENGGUNA (akurat — boleh dirujuk; JANGAN tambah angka di luar ini):\n"
+            f"- total kuis dikerjakan: {summary['total_quizzes']}\n"
+            f"- rata-rata skor: {summary['average_score']}%\n"
+            f'- kuis terakhir: topik "{last["topic"]}", skor {last["score"]}%, '
+            f"level pemahaman {level}"
+        )
+    except Exception:  # noqa: BLE001 — context is best-effort
+        logger.warning("Asahi quiz context fetch failed", exc_info=False)
+        return None
+
+
+def generate_free_reply(request: FreeChatRequest, device_id: str | None = None) -> str:
+    """Free-chat mode: system prompt + (optional) quiz context + history + message."""
     messages: list[dict] = [{"role": "system", "content": _FREE_SYSTEM_PROMPT}]
+    ctx = _quiz_context(device_id)
+    if ctx:
+        messages.append({"role": "system", "content": ctx})
     messages.extend(_FREE_FEW_SHOT)
     for turn in request.history[-8:]:
         role = "assistant" if turn.role == "asahi" else "user"

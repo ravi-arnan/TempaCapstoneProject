@@ -64,7 +64,7 @@ def chat_ask(
     """Free-text chat with Asahi (home page). Guardrails live in the system prompt.
     Persists the turn (best-effort) so Asahi remembers it next session."""
     _enforce_rate_limit(_client_ip(http_request))
-    reply = asahi_chat.generate_free_reply(request)
+    reply = asahi_chat.generate_free_reply(request, x_device_id)
     chat_memory.save_turn(x_device_id, request.message, reply)
     return FreeChatResponse(reply=reply)
 
