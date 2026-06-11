@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Send, X } from "lucide-react";
 import { Asahi } from "@/components/mascot/Asahi";
 import { askAsahi } from "@/services/api";
+import { ApiException } from "@/types/api";
 import type { FreeChatMessage } from "@/types/chat";
 import { cn } from "@/lib/cn";
 
@@ -48,8 +49,11 @@ export function AsahiChatWidget() {
     try {
       const res = await askAsahi({ message: text, history });
       setMessages((prev) => [...prev, { role: "asahi", content: res.reply }]);
-    } catch {
-      setMessages((prev) => [...prev, { role: "asahi", content: ERROR_REPLY }]);
+    } catch (err) {
+      // Surface the backend's friendly message (e.g. "lagi rame" on rate limit);
+      // fall back to a generic line for unexpected errors.
+      const reply = err instanceof ApiException ? err.error.detail : ERROR_REPLY;
+      setMessages((prev) => [...prev, { role: "asahi", content: reply }]);
     } finally {
       setLoading(false);
     }

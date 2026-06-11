@@ -15,7 +15,12 @@ import os
 import httpx
 
 from app.schemas.chat import ChatRequest, ChatContext, FreeChatRequest
-from app.utils.errors import ApiException, CHAT_FAILED, CHAT_UNAVAILABLE
+from app.utils.errors import (
+    ApiException,
+    CHAT_FAILED,
+    CHAT_RATE_LIMITED,
+    CHAT_UNAVAILABLE,
+)
 
 logger = logging.getLogger("asahlagi")
 
@@ -151,6 +156,18 @@ def _call_model(
         )
         resp.raise_for_status()
         reply = (resp.json()["choices"][0]["message"]["content"] or "").strip()
+    except httpx.HTTPStatusError as exc:
+        status = exc.response.status_code
+        logger.warning("Asahi chat upstream HTTP %s", status)
+        if status == 429:
+            raise ApiException(
+                429,
+                CHAT_RATE_LIMITED,
+                "Asahi lagi rame banget nih 🙏 Tunggu sebentar lalu coba lagi ya.",
+            ) from exc
+        raise ApiException(
+            502, CHAT_FAILED, "Asahi lagi nggak bisa nyaut. Coba lagi sebentar ya."
+        ) from exc
     except (httpx.HTTPError, KeyError, IndexError, ValueError) as exc:
         logger.warning("Asahi chat upstream failed: %s", type(exc).__name__)
         raise ApiException(
