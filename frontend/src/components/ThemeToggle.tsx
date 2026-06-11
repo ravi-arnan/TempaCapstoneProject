@@ -21,14 +21,14 @@ export function ThemeToggle() {
         aria-selected={theme === "light"}
         onClick={() => setTheme("light")}
         className={cn(
-          "flex items-center gap-1.5 rounded-full px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-[1.2px] transition-colors",
+          "flex items-center gap-1.5 rounded-full px-2.5 py-2 font-mono text-[11px] font-medium uppercase tracking-[1.2px] transition-colors sm:px-4",
           theme === "light"
             ? "bg-text-primary text-bg-page"
             : "text-text-muted hover:text-text-primary",
         )}
       >
         <SunIcon />
-        {THEME_LABELS.light}
+        <span className="hidden sm:inline">{THEME_LABELS.light}</span>
       </button>
       <button
         type="button"
@@ -36,14 +36,14 @@ export function ThemeToggle() {
         aria-selected={theme === "dark"}
         onClick={() => setTheme("dark")}
         className={cn(
-          "flex items-center gap-1.5 rounded-full px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-[1.2px] transition-colors",
+          "flex items-center gap-1.5 rounded-full px-2.5 py-2 font-mono text-[11px] font-medium uppercase tracking-[1.2px] transition-colors sm:px-4",
           theme === "dark"
             ? "bg-text-primary text-bg-page"
             : "text-text-muted hover:text-text-primary",
         )}
       >
         <MoonIcon />
-        {THEME_LABELS.dark}
+        <span className="hidden sm:inline">{THEME_LABELS.dark}</span>
       </button>
     </div>
   );

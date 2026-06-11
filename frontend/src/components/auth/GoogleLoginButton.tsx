@@ -32,7 +32,7 @@ export function GoogleLoginButton() {
         theme="outline"
         size="medium"
         shape="pill"
-        text="signin_with"
+        text="signin"
       />
       {error && (
         <span role="alert" className="text-[11px] text-status-rendah">

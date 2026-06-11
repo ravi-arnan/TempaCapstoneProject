@@ -29,7 +29,7 @@ export function Layout({ children }: LayoutProps) {
           >
             <Logo variant="full" />
           </Link>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <XpBadge stats={stats} />
             <ThemeToggle />
             <AuthNav />

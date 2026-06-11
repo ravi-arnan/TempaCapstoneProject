@@ -26,7 +26,7 @@ export function XpBadge({ stats }: XpBadgeProps) {
         title={`${stats.total_xp} XP total`}
       >
         <Zap className="h-3.5 w-3.5 text-brand-green" aria-hidden="true" />
-        <span className="font-mono text-[11px] font-medium uppercase tracking-[1.2px] text-text-primary">
+        <span className="whitespace-nowrap font-mono text-[11px] font-medium uppercase tracking-[1.2px] text-text-primary">
           {GAMIFICATION.levelShort} {stats.level}
         </span>
         <span
