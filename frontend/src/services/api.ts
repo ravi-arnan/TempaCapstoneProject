@@ -12,6 +12,7 @@ import type {
   QuizSubmitRequest,
 } from "@/types/quiz";
 import type { QuizSubmitResponse } from "@/types/result";
+import type { ChatRequest, ChatResponse } from "@/types/chat";
 import type { ApiError } from "@/types/api";
 import { ApiException } from "@/types/api";
 import type {
@@ -288,4 +289,11 @@ export function regenerateQuiz(
     { quiz_id: quizId },
     QUIZ_GENERATE_TIMEOUT_MS,
   );
+}
+
+// Asahi chatbot — model call can take a few seconds; give headroom.
+const CHAT_TIMEOUT_MS = 35_000;
+
+export function sendChat(req: ChatRequest): Promise<ChatResponse> {
+  return postJson<ChatRequest, ChatResponse>("/chat", req, CHAT_TIMEOUT_MS);
 }

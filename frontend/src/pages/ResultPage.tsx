@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { AsahiDialog } from "@/components/AsahiDialog";
 import { InsightCard } from "@/components/InsightCard";
 import { Asahi, moodForLevel } from "@/components/mascot/Asahi";
 import { QuestionBreakdown } from "@/components/QuestionBreakdown";
@@ -10,6 +11,7 @@ import { ScoreChart } from "@/components/ScoreChart";
 import { UnderstandingBadge } from "@/components/UnderstandingBadge";
 import { useConfetti } from "@/hooks/useConfetti";
 import { useQuiz } from "@/hooks/useQuiz";
+import type { ChatContext } from "@/types/chat";
 import type { RecordAttemptResult } from "@/types/gamification";
 import type { QuizSubmitResponse } from "@/types/result";
 import { BUTTON_LABELS, RESULT_HEADERS, getErrorMessage } from "@/utils/i18n";
@@ -42,6 +44,22 @@ export function ResultPage() {
 
   useConfetti(
     !!result && result.score.score_percentage >= CONFETTI_SCORE_THRESHOLD,
+  );
+
+  const chatContext = useMemo<ChatContext | null>(
+    () =>
+      result
+        ? {
+            quiz_id: result.quiz_id,
+            score_percentage: result.score.score_percentage,
+            understanding_level: result.understanding_level,
+            correct_count: result.score.correct_count,
+            wrong_count: result.score.wrong_count,
+            unanswered_count: result.score.unanswered_count,
+            weak_topics: [],
+          }
+        : null,
+    [result],
   );
 
   if (!result) return null;
@@ -86,6 +104,8 @@ export function ResultPage() {
       </div>
 
       <ScoreChart data={result.chart_data} />
+
+      {chatContext && <AsahiDialog context={chatContext} />}
 
       {result.question_reviews && result.question_reviews.length > 0 && (
         <QuestionBreakdown reviews={result.question_reviews} />

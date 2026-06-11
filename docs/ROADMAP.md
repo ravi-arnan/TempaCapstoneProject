@@ -3,7 +3,7 @@
 **Status**: OPEN. Living document.
 **Owner**: Ravi
 **Created**: 2026-05-18
-**Last updated**: 2026-06-08
+**Last updated**: 2026-06-12
 
 ---
 
@@ -221,6 +221,27 @@ Cluster fitur yang mengarah ke user, dibangun di atas login (#4.7). Status fonda
 
 ---
 
+### 4.9 Maskot Asahi v2 — konsistensi ekspresi (BARU 2026-06-12)
+**Owner: Ravi (frontend)**
+
+Maskot "Asahi" lama (AI-render penuh tiap ekspresi) drift wajahnya. Diselesaikan dengan
+**puppet approach**: satu base **full-hair transparan**; ekspresi wajah via inpaint
+**alis+mulut saja** (mata dilindungi → warna mata tetap), pose gesture via SeaArt "Maintain
+Character Consistency". **Semua front-facing**, di-tone-match ke palet base, cutout bg via
+rembg lokal. Recipe lengkap: `assets/mascot/inpaint-masks/README.md`. Rig:
+`frontend/src/components/mascot/Asahi.tsx` (`mood`→image, `mid`=base, fallback ke base).
+
+Status (branch `feat/mascot-asahi-v2`):
+- ✅ `mid` (base), `wave` (Hero), `think` (loading) — live & ter-wire (HomePage hero,
+  ResultPage `moodForLevel`, loading skeleton).
+- ⏳ `high`, `low` — belum (fallback ke base). `think` perlu **re-gen front-facing**
+  (versi sekarang anglenya miring).
+
+**Sisa kerja**: `high` (gesture/face-swap, front-facing) + `low` (face-swap) + `think`
+front-facing → cutout + tone-match → `frontend/public/mascot/`. **Effort**: ~1-2 jam.
+
+---
+
 ## 5. Polish layer 3 (kecil-kecil)
 
 - ✅ **Skeleton loader** saat generate — DONE 2026-06-08 (PR #14; preview kartu soal, pesan progres tetap).
@@ -261,6 +282,13 @@ Pembagian Fase 2-4 ada di `GAMIFICATION_TASKS.md`.
 Bungkus React web yang ada jadi APK Android via Capacitor. **Keputusan**: Android dulu,
 iOS ditunda. **Prasyarat**: backend deploy ke HTTPS publik (lihat #1.1).
 
+> **React Native?** Dipertimbangkan demi native feel / smoothness. **Keputusan 2026-06-12:
+> TIDAK untuk capstone.** RN = rewrite total frontend (React DOM ≠ RN: semua page, styling,
+> router, chart, maskot ditulis ulang) → risiko jebol demo, lawan mandat "simpel + demo
+> andal". Untuk app form/kuis/chart ini, gain native feel kecil; Capacitor + polish (#6.5) +
+> plugin native (StatusBar/SplashScreen/Haptics) ≈ 85% native feel tanpa rewrite. RN ditaruh
+> sebagai **v2 pasca-demo** (pakai **Expo + NativeWind** kalau jadi). Trade-off di decision log.
+
 Roadmap mobile (ditunda, urut prioritas):
 - **Push notification** (Capacitor Push + Firebase Cloud Messaging) — reminder streak,
   daily goal, level-up nudge. Nyambung ke Fase 4 (Desta) nudge logic. Nilai jual mobile
@@ -299,9 +327,42 @@ Track polish khusus mobile, melengkapi wrap Capacitor (#6.4). Dipisah menjadi ya
 
 **Effort**: A ~0.5-1 hari (bisa segera) · B ~0.5 hari (setelah wrap) · C ~0.5 hari · PWA ~0.5 hari.
 
+### 6.6 AI Chatbot Asahi — game-dialog (BARU 2026-06-12)
+**Owner: TBD · ⚠️ butuh persetujuan tim (scope expansion)**
+
+> CLAUDE.md menandai chatbot/AI canggih sebagai *Out of Scope*. Masuk sebagai **post-MVP**
+> yang disepakati (pola seperti login #4.7), HANYA setelah MVP inti (kuis→hasil) solid.
+
+Asahi sebagai teman belajar — **dialog terkekang (game-style)**, bukan chat bebas, supaya
+murah/aman/on-brand.
+- **Model**: GitHub Models (gratis, auth via **GitHub PAT**) — mis. `gpt-4o-mini`. Free tier
+  untuk prototipe, ada rate limit (bukan skala produksi besar).
+- **Arsitektur**: Frontend (UI dialog) → `POST /chat` (FastAPI) → ambil konteks user dari DB
+  (**scoped ke user login saja**) + system prompt → panggil GitHub Models (**PAT di env server
+  `GITHUB_TOKEN`**) → filter output → reply. **PAT server-side only — JANGAN `VITE_`**
+  (kalau ke frontend, akun GitHub bocor).
+- **Safeguard**: rate limit (`slowapi`), authz konteks DB per-user, input validation +
+  anti prompt-injection, system prompt kunci persona BRAND voice + batas topik (belajar/kuis),
+  tolak off-topic/berbahaya. **Jangan klaim "AI tutor canggih"** (aturan produk CLAUDE.md).
+- **Desain**: respons pendek in-character + **tombol pilihan** (suggested replies), batasi
+  giliran → hemat kuota & terasa "game".
+
+**Effort**: ~1-2 hari (endpoint + system prompt + UI dialog + safeguard).
+**Prasyarat**: MVP solid + sepakat tim. Catatan klarifikasi: "PAT akses database" itu keliru —
+PAT hanya untuk model AI; akses DB terpisah (backend query Neon).
+
 ---
 
 ## Saran prioritas
+
+**▶ Prioritas terkini (2026-06-12) — urut kerjakan dari atas:**
+1. **Selesaikan maskot (#4.9)** — `high` + `low` + `think` front-facing. ~1-2 jam, hampir kelar, ROI visual tinggi.
+2. **Deploy publik (#1.1)** + **demo GIF/screenshot (#1.2)** — ROI capstone terbesar.
+3. **Capacitor wrap (#6.4)** — kalau mobile bagian demo. ~1 hari. (Bukan React Native — lihat #6.4.)
+4. **AI Chatbot Asahi (#6.6)** — POST-MVP, HANYA setelah MVP solid + sepakat tim.
+5. **React Native** — **v2 pasca-demo**, jangan sekarang (lihat #6.4 + decision log).
+
+> Yang **bukan** sekarang: RN migration, chatbot sebelum MVP solid. Fokus: selesaikan maskot → deploy → demo.
 
 **Saat demo capstone deket (≤ 1 minggu)**:
 1. **#2 Doc sync** (~2 jam, wajib)
@@ -333,6 +394,9 @@ Track polish khusus mobile, melengkapi wrap Capacitor (#6.4). Dipisah menjadi ya
 | 2026-06-07 | Tambah cluster #4.8 "User Hub & fitur akun" (profil, settings, history, leaderboard, edit preferensi, goal, bookmark, badge, daily challenge, share/export) | Lanjutan natural dari login. Owner Ravi (frontend), Ariq review data layer untuk endpoint baru. Dibatch: User Hub dulu (mostly FE), backend-heavy menyusul. |
 | 2026-06-08 | Kirim #4.8 Batch 1+3 (User Hub + Daily Challenge + Streak), #3.1 testing (Vitest, coverage ~82%), polish §5 (skeleton, drag-drop PDF, reduced-motion) — semua merged ke main | Eksekusi item Ravi-owned berurutan; fix bug migrasi prod Neon (kolom `topic`) yang sempat bikin history/analytics 500. |
 | 2026-06-08 | Tambah track #6.5 "Mobile polish" (responsif/touch, Capacitor-native, performa, opsi PWA) | Polish khusus mobile dipisah dari wrap Capacitor (#6.4); bagian web-responsive bisa dikerjakan sekarang tanpa shell. Owner Ravi. |
+| 2026-06-12 | Maskot Asahi v2 (#4.9) via **puppet** (inpaint alis+mulut, mata dilindungi) + pose gesture (SeaArt consistency app), semua **front-facing**, base full-hair transparan (rembg). Live: mid/wave/think; wired ke hero/result/loading. Branch `feat/mascot-asahi-v2`. | AI-render full-image tiap ekspresi drift wajahnya; puppet jaga konsistensi sambil pertahankan look anime yang disukai tim. |
+| 2026-06-12 | **AI Chatbot Asahi (#6.6)** diterima sebagai **POST-MVP** (butuh sepakat tim). GitHub Models (PAT server-side) + dialog terkekang + safeguard. | Asahi jadi teman belajar; jalur gratis (GitHub Models) & terkekang supaya aman/murah/on-brand. Scope expansion CLAUDE.md, pola seperti login #4.7. |
+| 2026-06-12 | Mobile: tetap **Capacitor** untuk demo; **React Native ditunda ke v2 pasca-demo**. | RN native feel nyata tapi gain kecil untuk app form/kuis ini; cost = rewrite total frontend → risiko jebol demo + lawan mandat "simpel + demo andal". Capacitor reuse 100% kode (~1 hari). RN nanti pakai Expo + NativeWind. |
 
 ---
 
