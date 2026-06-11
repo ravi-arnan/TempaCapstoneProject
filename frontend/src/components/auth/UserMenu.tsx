@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { CircleUserRound, History, LogOut, Settings } from "lucide-react";
+import { CircleUserRound, History, LogOut, Settings, TrendingUp } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { AUTH_LABELS } from "@/utils/i18n";
 
@@ -75,6 +75,12 @@ export function UserMenu() {
             to="/profil"
             icon={CircleUserRound}
             label={AUTH_LABELS.menuProfile}
+            onNavigate={() => setOpen(false)}
+          />
+          <MenuLink
+            to="/progress"
+            icon={TrendingUp}
+            label={AUTH_LABELS.menuProgress}
             onNavigate={() => setOpen(false)}
           />
           <MenuLink

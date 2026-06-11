@@ -188,6 +188,7 @@ export const AUTH_LABELS = {
   logout: "Keluar",
   loginError: "Login gagal. Coba lagi sebentar.",
   menuProfile: "Profilku",
+  menuProgress: "Progresku",
   menuHistory: "Riwayat Kuis",
   menuSettings: "Pengaturan",
 } as const;

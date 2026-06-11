@@ -257,7 +257,7 @@ export function QuizPage() {
           </div>
           <div className="h-1 w-full overflow-hidden rounded-full bg-bg-subtle">
             <div
-              className="h-full bg-brand-button transition-all duration-300 ease-out"
+              className="h-full bg-status-tinggi transition-all duration-300 ease-out"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
