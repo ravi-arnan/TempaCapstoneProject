@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Asahi } from "@/components/mascot/Asahi";
 import { MaterialInputForm } from "@/components/MaterialInputForm";
 import { SourceTypeTabs } from "@/components/SourceTypeTabs";
 import { DailyChallengeCard } from "@/components/DailyChallengeCard";
@@ -66,13 +67,16 @@ export function HomePage() {
 
   return (
     <div className="space-y-8">
-      <header className="space-y-3">
-        <h1 className="text-5xl font-medium leading-[1.05] tracking-tight text-text-primary">
-          {HOMEPAGE.hero}
-        </h1>
-        <p className="max-w-2xl text-lg text-text-secondary">
-          {HOMEPAGE.subtitle}
-        </p>
+      <header className="flex items-center justify-between gap-4">
+        <div className="space-y-3">
+          <h1 className="text-5xl font-medium leading-[1.05] tracking-tight text-text-primary">
+            {HOMEPAGE.hero}
+          </h1>
+          <p className="max-w-2xl text-lg text-text-secondary">
+            {HOMEPAGE.subtitle}
+          </p>
+        </div>
+        <Asahi mood="wave" size={150} className="hidden shrink-0 sm:block" />
       </header>
 
       <DailyChallengeCard />

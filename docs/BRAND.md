@@ -484,16 +484,23 @@ This brand requires sign-off from the team before being locked.
 
 ## 12. Mascot
 
-**Status**: Base art only (`assets/mascot/asahi-base.png`, with background). The full
-expression set was generated (high/medium/low/wave/thinking) but the auto background
-removal (rembg isnet-anime) left gray edge artifacts, so the transparent cutouts were
-removed pending a cleaner pass. Tied to the gamification layer (see `GAMIFICATION.md`).
+**Status**: **Puppet approach — keeps the anime look, fixes consistency.** We keep the
+soft-anime base render the team liked (`assets/mascot/asahi-base.png`) and derive each
+expression by **inpainting only the eyes/mouth region** (tight masks freeze everything
+else). Because the rest of the face/hair/shirt/background stays byte-identical, every mood
+is the exact same character — the drift problem of full AI re-generation is gone.
 
-To redo cleanly later: keep the original with-background renders, and cut out with a
-higher-quality method (manual cleanup, or a tool with better anime matting) before adding
-back the per-state files (`asahi-high/medium/low/wave/thinking.png`).
+- Rig: `frontend/src/components/mascot/Asahi.tsx`. Usage `<Asahi mood="high" size={96} />`.
+  Moods `high | mid | low | wave | think`; `mid` = the base render. `moodForLevel()` maps a
+  result level → mood. Missing expression art degrades gracefully to the base.
+- Expression art workflow (masks + prompts + settings): `assets/mascot/inpaint-masks/README.md`.
+- App-facing PNGs live in `frontend/public/mascot/`. The base is now a **full-hair,
+  transparent-background** render (`asahi-base.png`, 1536×1464) so it drops onto any
+  surface. Expression source (opaque, for inpainting): `assets/mascot/asahi-base-full.png`.
+  The four variants `asahi-high/low/think/wave.png` are produced via the inpaint recipe,
+  then background-removed (rembg, isnet-anime) locally.
 
-![Asahi base art](../assets/mascot/asahi-base.png)
+![Asahi base art](../assets/mascot/asahi-base-transparent.png)
 
 ### Name: **Asahi**
 
@@ -566,6 +573,7 @@ Build a character sheet with consistent expressions for these moments:
 
 ## Changelog
 
+- **v1.4 (2026-06-12)** — Mascot expression consistency solved via the **puppet approach**: keep the anime base render, derive moods by inpainting only the eyes/mouth (tight masks → rest of the image stays identical). Added `Asahi.tsx` rig (mood → image, `mid`=base, graceful fallback), `moodForLevel()` helper, inpaint masks + recipe (`assets/mascot/inpaint-masks/`), and `frontend/public/mascot/` asset slot. A flat-vector redesign was tried first and rejected (looked generic). The anime look is retained.
 - **v1.3 (2026-05-25)** — Mascot base art added (`assets/mascot/asahi-base.png`). Expression set + transparent cutouts were generated but removed for now (auto cutout left gray edge artifacts); to be redone with a cleaner method.
 - **v1.2 (2026-05-25)** — Added §12 Mascot: "Asahi", a soft-anime study-companion mascot tied to the gamification layer. Defined personality (brand-voice-aligned), brand-tied visuals (emerald eyes, logo hairclip), expression set for result states, usage rules, and AI generation reference. Base art v1 added (`assets/mascot/asahi-base.png`); expressions + transparent cutout pending.
 - **v1.1 (2026-05-04)** — Renamed brand from "Asah" to "Asahlagi" (compound: asah + lagi = "sharpen again"). Updated tagline to "Asah lagi sampai paham." Etymology rewritten to highlight the iterative-learning loop encoded in the name. Logo files updated (wordmark only — icon mark unchanged since first letter is still "A"). Copy templates in §7 updated to use "asah lagi" as a brand-as-action callback in result page headers and recommendations.
