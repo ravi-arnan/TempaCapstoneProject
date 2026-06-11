@@ -6,8 +6,6 @@
  *
  * The shimmer respects prefers-reduced-motion via `motion-reduce:animate-none`.
  */
-import { Asahi } from "@/components/mascot/Asahi";
-
 const SHIMMER = "rounded bg-bg-subtle animate-pulse motion-reduce:animate-none";
 
 export function QuizGenerationSkeleton() {
@@ -16,8 +14,6 @@ export function QuizGenerationSkeleton() {
       aria-hidden="true"
       className="rounded-2xl border border-border-standard bg-bg-page p-6 shadow-level-1"
     >
-      {/* Asahi "thinking" while the quiz is being written */}
-      <Asahi mood="think" size={64} className="mx-auto mb-4" />
       {/* question label */}
       <div className={`mb-3 h-3 w-20 ${SHIMMER}`} />
       {/* question text (two lines) */}
