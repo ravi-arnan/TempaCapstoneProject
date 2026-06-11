@@ -33,3 +33,20 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
+
+
+# ── Free chat (open text box on the home page) ──────────────────────────────
+
+
+class FreeChatMessage(BaseModel):
+    role: Literal["user", "asahi"]
+    content: str = Field(min_length=1, max_length=600)
+
+
+class FreeChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=600)
+    history: list[FreeChatMessage] = Field(default_factory=list, max_length=10)
+
+
+class FreeChatResponse(BaseModel):
+    reply: str

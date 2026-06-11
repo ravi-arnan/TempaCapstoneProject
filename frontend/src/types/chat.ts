@@ -29,3 +29,20 @@ export interface ChatRequest {
 export interface ChatResponse {
   reply: string;
 }
+
+// Free chat (open text box on the home page) — mirrors backend FreeChat* schemas.
+export type ChatRole = "user" | "asahi";
+
+export interface FreeChatMessage {
+  role: ChatRole;
+  content: string;
+}
+
+export interface FreeChatRequest {
+  message: string;
+  history: FreeChatMessage[];
+}
+
+export interface FreeChatResponse {
+  reply: string;
+}

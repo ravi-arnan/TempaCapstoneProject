@@ -12,7 +12,12 @@ import time
 
 from fastapi import APIRouter, Request
 
-from app.schemas.chat import ChatRequest, ChatResponse
+from app.schemas.chat import (
+    ChatRequest,
+    ChatResponse,
+    FreeChatRequest,
+    FreeChatResponse,
+)
 from app.services import asahi_chat
 from app.utils.errors import ApiException, CHAT_RATE_LIMITED
 
@@ -47,3 +52,11 @@ def chat(request: ChatRequest, http_request: Request) -> ChatResponse:
     _enforce_rate_limit(_client_ip(http_request))
     reply = asahi_chat.generate_reply(request)
     return ChatResponse(reply=reply)
+
+
+@router.post("/ask", response_model=FreeChatResponse)
+def chat_ask(request: FreeChatRequest, http_request: Request) -> FreeChatResponse:
+    """Free-text chat with Asahi (home page). Guardrails live in the system prompt."""
+    _enforce_rate_limit(_client_ip(http_request))
+    reply = asahi_chat.generate_free_reply(request)
+    return FreeChatResponse(reply=reply)
