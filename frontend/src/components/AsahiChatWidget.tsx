@@ -56,7 +56,7 @@ export function AsahiChatWidget() {
   async function send() {
     const text = input.trim();
     if (!text || loading) return;
-    const history = messages;
+    const history = messages.slice(-16); // keep the request within backend limits
     setMessages((prev) => [...prev, { role: "user", content: text }]);
     setInput("");
     setLoading(true);
@@ -64,9 +64,11 @@ export function AsahiChatWidget() {
       const res = await askAsahi({ message: text, history });
       setMessages((prev) => [...prev, { role: "asahi", content: res.reply }]);
     } catch (err) {
-      // Surface the backend's friendly message (e.g. "lagi rame" on rate limit);
-      // fall back to a generic line for unexpected errors.
-      const reply = err instanceof ApiException ? err.error.detail : ERROR_REPLY;
+      // Surface the backend's friendly message (e.g. "lagi rame" on rate limit),
+      // but only when it's a plain string — a 422 detail is an array of objects
+      // and would crash rendering. Fall back to a generic line otherwise.
+      const detail = err instanceof ApiException ? err.error.detail : undefined;
+      const reply = typeof detail === "string" ? detail : ERROR_REPLY;
       setMessages((prev) => [...prev, { role: "asahi", content: reply }]);
     } finally {
       setLoading(false);

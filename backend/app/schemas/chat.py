@@ -40,12 +40,14 @@ class ChatResponse(BaseModel):
 
 class FreeChatMessage(BaseModel):
     role: Literal["user", "asahi"]
-    content: str = Field(min_length=1, max_length=600)
+    # Asahi replies can be a few sentences; match the DB storage cap so restored
+    # history validates when the client sends it back.
+    content: str = Field(min_length=1, max_length=2000)
 
 
 class FreeChatRequest(BaseModel):
-    message: str = Field(min_length=1, max_length=600)
-    history: list[FreeChatMessage] = Field(default_factory=list, max_length=10)
+    message: str = Field(min_length=1, max_length=2000)
+    history: list[FreeChatMessage] = Field(default_factory=list, max_length=20)
 
 
 class FreeChatResponse(BaseModel):
