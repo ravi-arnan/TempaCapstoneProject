@@ -40,7 +40,15 @@ HTTPS automatically, and the team already uses HF Spaces. Config lives in
    - `HF_SPACE_URL` = `https://raviarnan-asahlagi-quizgen.hf.space`
    - `CORS_ALLOWED_ORIGINS` = `https://<your-vercel-app>.vercel.app,https://localhost`
      (`https://localhost` is for the Capacitor Android app)
-4. The Space builds automatically. Verify:
+   - `GOOGLE_CLIENT_ID` = the Google OAuth client ID (login `/auth/google`)
+   - `GITHUB_TOKEN` = a GitHub fine-grained PAT (no scopes needed) — powers the
+     **Asahi chatbot** via GitHub Models. **Server-side only; never expose as `VITE_`.**
+     Without it, `/chat/*` returns `CHAT_UNAVAILABLE` (rest of the app still works).
+4. **DB migrations** (Neon, applied manually — no Alembic): ensure every file in
+   `backend/app/db/migrations/` has run, incl. `0003_*` (login `users`) and
+   `0004_add_chat_messages.sql` (chat memory). The chatbot's `/chat/history` &
+   memory need `chat_messages`; a missing migration 500s those endpoints.
+5. The Space builds automatically. Verify:
    `curl https://<user>-asahlagi-backend.hf.space/health` returns `{"status":"ok",...}`.
 
 ### Notes
@@ -76,5 +84,7 @@ set the same three secrets, deploy.
 - [ ] Frontend on Vercel can generate a quiz (text)
 - [ ] Submit works end-to-end (score, level, insight, recommendation)
 - [ ] Gamification: `GET /gamification/stats` works with `X-Device-Id` header
+- [ ] Chatbot: send a message in the homepage Asahi bubble — reply returns (not
+      `CHAT_UNAVAILABLE`); confirms `GITHUB_TOKEN` is set and `chat_messages` exists
 - [ ] CORS allows the Vercel origin (no console errors in the browser)
 - [ ] Update `VITE_API_BASE_URL` in the Android build before packaging (see `MOBILE.md`)
