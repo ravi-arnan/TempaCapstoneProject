@@ -231,14 +231,17 @@ Character Consistency". **Semua front-facing**, di-tone-match ke palet base, cut
 rembg lokal. Recipe lengkap: `assets/mascot/inpaint-masks/README.md`. Rig:
 `frontend/src/components/mascot/Asahi.tsx` (`mood`→image, `mid`=base, fallback ke base).
 
-Status (branch `feat/mascot-asahi-v2`):
-- ✅ `mid` (base), `wave` (Hero), `think` (loading) — live & ter-wire (HomePage hero,
-  ResultPage `moodForLevel`, loading skeleton).
-- ⏳ `high`, `low` — belum (fallback ke base). `think` perlu **re-gen front-facing**
-  (versi sekarang anglenya miring).
+Status (branch `feat/mascot-asahi-v2`): ✅ **SELESAI 2026-06-12.** Set 7 ekspresi semua
+front-facing, on-model, cutout + tone-match, tersimpan di `frontend/public/mascot/`:
+- `mid` (base), `wave`, `think` (re-gen front-facing) — live & ter-wire.
+- `high`, `low` (murung) — face-swap inpaint alis+mulut, mata emerald terjaga.
+- `shocked`, `blush` — ekspresi ekstra (chat reaction); ter-wire di `AsahiMood`/`MOOD_SRC`.
 
-**Sisa kerja**: `high` (gesture/face-swap, front-facing) + `low` (face-swap) + `think`
-front-facing → cutout + tone-match → `frontend/public/mascot/`. **Effort**: ~1-2 jam.
+Prompt preset semua ekspresi disimpan di `assets/mascot/prompts/*.txt` (commit `8b626ba`).
+
+**Sisa (opsional, non-blok)**: surface `shocked`/`blush` ke UI nyata (mis. reaksi chat saat
+user nyeleneh / digombal) — butuh sinyal mood dari backend chat. Mood `sleepy` di-skip
+(eye-drift; opsi-A aman tapi diputuskan cukup di 7 ekspresi).
 
 ---
 
@@ -355,14 +358,16 @@ PAT hanya untuk model AI; akses DB terpisah (backend query Neon).
 
 ## Saran prioritas
 
-**▶ Prioritas terkini (2026-06-12) — urut kerjakan dari atas:**
-1. **Selesaikan maskot (#4.9)** — `high` + `low` + `think` front-facing. ~1-2 jam, hampir kelar, ROI visual tinggi.
-2. **Deploy publik (#1.1)** + **demo GIF/screenshot (#1.2)** — ROI capstone terbesar.
-3. **Capacitor wrap (#6.4)** — kalau mobile bagian demo. ~1 hari. (Bukan React Native — lihat #6.4.)
-4. **AI Chatbot Asahi (#6.6)** — POST-MVP, HANYA setelah MVP solid + sepakat tim.
+**▶ Prioritas terkini (2026-06-12, updated) — urut kerjakan dari atas:**
+1. ✅ **Maskot (#4.9)** — SELESAI (7 ekspresi front-facing, ter-wire).
+2. ✅ **AI Chatbot Asahi (#6.6)** — BUILT this session (free-chat + memori Neon + konteks kuis +
+   rate-limit + material pre-check). Sisa: set `GITHUB_TOKEN` di secret HF Space saat deploy.
+3. **▶ BERIKUTNYA: Deploy publik (#1.1)** + **demo GIF/screenshot (#1.2)** — ROI capstone terbesar.
+   Prasyarat: merge `feat/mascot-asahi-v2` → main; set HF Space secret `GITHUB_TOKEN` (chat).
+4. **Capacitor wrap (#6.4)** — kalau mobile bagian demo. ~1 hari. (Bukan React Native.)
 5. **React Native** — **v2 pasca-demo**, jangan sekarang (lihat #6.4 + decision log).
 
-> Yang **bukan** sekarang: RN migration, chatbot sebelum MVP solid. Fokus: selesaikan maskot → deploy → demo.
+> Yang **bukan** sekarang: RN migration. Fokus: deploy → demo.
 
 **Saat demo capstone deket (≤ 1 minggu)**:
 1. **#2 Doc sync** (~2 jam, wajib)
