@@ -16,7 +16,7 @@ import { cn } from "@/lib/cn";
  * the base, so the app never shows a broken image while art is still being made.
  */
 
-export type AsahiMood = "high" | "mid" | "low" | "wave" | "think";
+export type AsahiMood = "high" | "mid" | "low" | "wave" | "think" | "shocked" | "blush";
 
 const BASE_SRC = "/mascot/asahi-base.png";
 
@@ -26,6 +26,8 @@ const MOOD_SRC: Record<AsahiMood, string> = {
   low: "/mascot/asahi-low.png",
   wave: "/mascot/asahi-wave.png",
   think: "/mascot/asahi-think.png",
+  shocked: "/mascot/asahi-shocked.png",
+  blush: "/mascot/asahi-blush.png",
 };
 
 const MOOD_LABEL: Record<AsahiMood, string> = {
@@ -34,6 +36,8 @@ const MOOD_LABEL: Record<AsahiMood, string> = {
   low: "Asahi menyemangati dengan lembut",
   wave: "Asahi menyapa",
   think: "Asahi sedang berpikir",
+  shocked: "Asahi terkejut",
+  blush: "Asahi tersipu malu",
 };
 
 const LEVEL_TO_MOOD: Record<UnderstandingLevel, AsahiMood> = {
