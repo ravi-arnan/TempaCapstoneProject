@@ -10,8 +10,8 @@ import type { Answer } from "@/types/quiz";
 const QUIZ_ID = "quiz-abc";
 const KEY = `asahlagi-quiz-${QUIZ_ID}`;
 const answers: Answer[] = [
-  { question_id: 1, selected_option_index: 2 },
-  { question_id: 2, selected_option_index: null },
+  { question_id: 1, selected_option_index: 2, text_answer: null },
+  { question_id: 2, selected_option_index: null, text_answer: null },
 ];
 
 describe("useQuizPersistence", () => {
