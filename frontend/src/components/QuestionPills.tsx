@@ -33,7 +33,7 @@ export function QuestionPills({ answers, currentIndex, onJump }: QuestionPillsPr
               isCurrent
                 ? "bg-text-primary text-bg-page ring-2 ring-brand-accent ring-offset-2 ring-offset-bg-page"
                 : answered
-                  ? "bg-brand-button text-white hover:opacity-90"
+                  ? "bg-status-tinggi text-[var(--status-tinggi-text)] hover:opacity-90"
                   : "border border-border-prominent bg-bg-page text-text-muted hover:border-text-muted hover:text-text-primary",
             )}
           >

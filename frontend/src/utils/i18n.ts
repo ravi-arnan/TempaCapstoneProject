@@ -188,6 +188,7 @@ export const AUTH_LABELS = {
   logout: "Keluar",
   loginError: "Login gagal. Coba lagi sebentar.",
   menuProfile: "Profilku",
+  menuProgress: "Progresku",
   menuHistory: "Riwayat Kuis",
   menuSettings: "Pengaturan",
 } as const;
@@ -381,6 +382,7 @@ const PREFER_BACKEND_DETAIL = new Set([
   "PDF_INVALID",
   "URL_FETCH_FAILED",
   "URL_EMPTY_CONTENT",
+  "MATERIAL_LOW_QUALITY", // show the specific "unsuitable material" hint
 ]);
 
 export function getErrorMessage(code: string | undefined, fallback?: string) {

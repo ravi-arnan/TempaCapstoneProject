@@ -14,6 +14,9 @@ vi.mock("@/services/api", () => ({
   generateQuizFromPdf: vi.fn(),
   getDailyChallenge: vi.fn(),
   recordQuizAttempt: vi.fn(),
+  // AsahiDialog fires this on mount; keep it pending so it doesn't touch the
+  // network or update state during this page smoke test (its own test below).
+  sendChat: vi.fn(() => new Promise(() => {})),
 }));
 
 const result: QuizSubmitResponse = {

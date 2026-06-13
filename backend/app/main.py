@@ -24,7 +24,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 
 from app import __version__
-from app.routes import auth, gamification, health, quiz
+from app.routes import auth, chat, gamification, health, quiz
 from app.routes.gamification import GAMIFICATION_UNAVAILABLE
 from app.utils.errors import ApiException, AUTH_UNAVAILABLE, INTERNAL_ERROR
 
@@ -111,3 +111,4 @@ app.include_router(health.router)
 app.include_router(quiz.router)
 app.include_router(gamification.router)
 app.include_router(auth.router)
+app.include_router(chat.router)

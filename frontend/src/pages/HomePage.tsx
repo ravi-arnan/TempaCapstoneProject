@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AsahiChatWidget } from "@/components/AsahiChatWidget";
 import { MaterialInputForm } from "@/components/MaterialInputForm";
 import { SourceTypeTabs } from "@/components/SourceTypeTabs";
 import { DailyChallengeCard } from "@/components/DailyChallengeCard";
@@ -114,6 +115,8 @@ export function HomePage() {
       />
 
       {generating && <QuizGenerationSkeleton />}
+
+      <AsahiChatWidget />
     </div>
   );
 }
