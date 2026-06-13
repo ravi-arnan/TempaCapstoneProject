@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { LandingPage } from "@/pages/LandingPage";
 import { HomePage } from "@/pages/HomePage";
 import { QuizPage } from "@/pages/QuizPage";
 import { ResultPage } from "@/pages/ResultPage";
@@ -12,7 +13,8 @@ export function App() {
   return (
     <Layout>
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/app" element={<HomePage />} />
         <Route path="/quiz" element={<QuizPage />} />
         <Route path="/result" element={<ResultPage />} />
         <Route path="/progress" element={<ProgressPage />} />

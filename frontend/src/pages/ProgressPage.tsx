@@ -38,7 +38,7 @@ export function ProgressPage() {
     return (
       <MessageCard title={PROGRESS_PAGE.emptyTitle} body={PROGRESS_PAGE.emptyBody}>
         <Link
-          to="/"
+          to="/app"
           className="rounded-pill border border-brand-button bg-brand-button px-8 py-2 text-sm font-medium text-white shadow-level-1 transition-colors hover:bg-brand-button-hover"
         >
           {PROGRESS_PAGE.emptyCta}
