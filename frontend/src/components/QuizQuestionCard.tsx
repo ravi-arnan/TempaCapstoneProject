@@ -54,6 +54,7 @@ export function QuizQuestionCard({
             value={textAnswer ?? ""}
             onChange={(e) => onTextChange?.(e.target.value)}
             placeholder="Ketik jawaban kamu di sini..."
+            aria-label={`Jawaban untuk soal ${index + 1}`}
             className={cn(
               "w-full rounded-xl border px-4 py-3 text-sm transition-colors",
               "border-border-standard bg-bg-page text-text-primary focus:border-brand-accent focus:outline-none focus:ring-1 focus:ring-brand-accent/40"

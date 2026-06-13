@@ -37,6 +37,8 @@ pandas==2.2.3
 pdfplumber==0.11.4     # PDF text & table extraction (handles multi-column layout well)
 trafilatura==1.12.2    # Article text extraction from URLs
 
+# ===== Rate limiting =====
+slowapi==0.1.9
 
 # ===== Dev / testing =====
 pytest==8.3.3
@@ -46,4 +48,3 @@ pytest==8.3.3
 # If you really want local DL fallback, install them manually:
 #   pip install torch==2.4.1 --index-url https://download.pytorch.org/whl/cpu
 #   pip install transformers==4.45.2 sentencepiece==0.2.0
-slowapi==0.1.9  

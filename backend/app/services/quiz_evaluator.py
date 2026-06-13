@@ -17,6 +17,8 @@ analysis with pandas if needed). The base scoring logic below is
 relatively standard and Ariq can keep or replace it.
 """
 
+import re
+
 from app.schemas.internal import EvaluationResult, QuestionResult, QuizInternal
 from app.schemas.quiz import Answer
 from app.utils.errors import (
@@ -60,8 +62,11 @@ def evaluate(
                 is_unanswered = not ans.text_answer or not ans.text_answer.strip()
                 is_correct = False
                 if not is_unanswered and q.correct_answer_text:
-                    import re
-                    # Simple string matching: ignore case and punctuation
+                    # Simple string matching: ignore case and punctuation.
+                    # NOTE (MVP): exact-match is acceptable here because
+                    # short_answer blanks are always a single word extracted
+                    # from the source material. For future improvement,
+                    # consider fuzzy/Levenshtein matching for typo tolerance.
                     user_ans = re.sub(r'[^\w\s]', '', ans.text_answer).strip().lower()
                     correct_ans = re.sub(r'[^\w\s]', '', q.correct_answer_text).strip().lower()
                     is_correct = (user_ans == correct_ans)
