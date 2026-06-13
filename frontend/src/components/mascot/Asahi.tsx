@@ -18,16 +18,16 @@ import { cn } from "@/lib/cn";
 
 export type AsahiMood = "high" | "mid" | "low" | "wave" | "think" | "shocked" | "blush";
 
-const BASE_SRC = "/mascot/asahi-base.png";
+const BASE_SRC = "/mascot/asahi-base.webp";
 
 const MOOD_SRC: Record<AsahiMood, string> = {
   mid: BASE_SRC, // base render = warm neutral
-  high: "/mascot/asahi-high.png",
-  low: "/mascot/asahi-low.png",
-  wave: "/mascot/asahi-wave.png",
-  think: "/mascot/asahi-think.png",
-  shocked: "/mascot/asahi-shocked.png",
-  blush: "/mascot/asahi-blush.png",
+  high: "/mascot/asahi-high.webp",
+  low: "/mascot/asahi-low.webp",
+  wave: "/mascot/asahi-wave.webp",
+  think: "/mascot/asahi-think.webp",
+  shocked: "/mascot/asahi-shocked.webp",
+  blush: "/mascot/asahi-blush.webp",
 };
 
 const MOOD_LABEL: Record<AsahiMood, string> = {

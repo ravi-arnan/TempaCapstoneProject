@@ -92,12 +92,14 @@
       color 0.2s ease;
   }
 
+  /* Theme-fade for every element. Intentionally excludes box-shadow: animating
+     shadow blur on every node spikes paint cost on theme toggle (INP). Elements
+     that want a shadow hover transition opt in locally. */
   body * {
     transition:
       background-color 0.2s ease,
       color 0.2s ease,
-      border-color 0.2s ease,
-      box-shadow 0.2s ease;
+      border-color 0.2s ease;
   }
 
   *:focus-visible {
