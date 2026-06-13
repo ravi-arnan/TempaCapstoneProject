@@ -39,7 +39,7 @@ export function HistoryPage() {
     return (
       <MessageCard title={HISTORY_PAGE.emptyTitle} body={HISTORY_PAGE.emptyBody}>
         <Link
-          to="/"
+          to="/app"
           className="rounded-pill border border-brand-button bg-brand-button px-8 py-2 text-sm font-medium text-white shadow-level-1 transition-colors hover:bg-brand-button-hover"
         >
           {HISTORY_PAGE.emptyCta}
