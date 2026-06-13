@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { XpBadge } from "@/components/XpBadge";
@@ -17,6 +17,7 @@ interface LayoutProps {
  */
 export function Layout({ children }: LayoutProps) {
   const { stats } = useGamificationStats();
+  const { pathname } = useLocation();
 
   return (
     <div className="min-h-screen bg-bg-page">
