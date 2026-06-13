@@ -11,7 +11,7 @@ unhandled exceptions.
 """
 
 from datetime import date
-from fastapi import APIRouter, File, UploadFile, Header
+from fastapi import APIRouter, File, UploadFile, Header, Request
 
 from app.db.session import is_db_configured
 from app.schemas.quiz import (
@@ -30,6 +30,7 @@ from app.services import (
     gamification_service,
     daily_challenge,
 )
+from app.utils.limiter import limiter
 from app.utils.errors import ApiException, MATERIAL_TOO_LONG, QUIZ_NOT_FOUND
 
 router = APIRouter(prefix="/quiz", tags=["quiz"])
@@ -83,7 +84,9 @@ def _quiz_internal_to_response(quiz_internal) -> QuizGenerateResponse:
 
 
 @router.post("/generate", response_model=QuizGenerateResponse)
+@limiter.limit("3/minute")
 def generate_quiz_endpoint(
+    request: Request,
     req: QuizGenerateRequest,
     x_device_id: str | None = Header(default=None),
 ) -> QuizGenerateResponse:
@@ -100,7 +103,9 @@ def generate_quiz_endpoint(
 
 
 @router.post("/generate-from-url", response_model=QuizGenerateResponse)
+@limiter.limit("3/minute")
 def generate_from_url_endpoint(
+    request: Request,
     req: QuizGenerateFromUrlRequest,
     x_device_id: str | None = Header(default=None),
 ) -> QuizGenerateResponse:
@@ -121,7 +126,9 @@ def generate_from_url_endpoint(
 
 
 @router.post("/generate-from-pdf", response_model=QuizGenerateResponse)
+@limiter.limit("3/minute")
 async def generate_from_pdf_endpoint(
+    request: Request,
     file: UploadFile = File(...),
     difficulty: str | None = None,
     x_device_id: str | None = Header(default=None),

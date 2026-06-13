@@ -472,16 +472,16 @@ Ravi pegang login full (frontend + backend tipis) karena OAuth mayoritas fronten
 Ariq tidak ambil fitur baru; mengerjakan beberapa task roadmap yang belum jalan, sesuai domain Data & Analisis (owner `quiz_evaluator.py`).
 
 **#3.2 Material quality pre-check**:
-- [ ] Skor "quizability" materi (word/sentence count, alpha ratio, junk/brand pattern density — mirror filter di `quiz_generator.py`)
-- [ ] Kalau jelek → warning + saran sebelum loading generate (hemat 15 detik user)
+- [x] Skor "quizability" materi (word/sentence count, alpha ratio, junk/brand pattern density — mirror filter di `quiz_generator.py`)
+- [x] Kalau jelek → warning + saran sebelum loading generate (hemat 15 detik user)
 
 **#3.4 Rate limiting backend**:
-- [ ] Per-IP throttle `/quiz/generate*` (3 req/menit) pakai `slowapi` middleware
+- [x] Per-IP throttle `/quiz/generate*` (3 req/menit) pakai `slowapi` middleware
 
 **#6.2 More question types**:
-- [ ] True/False + isian singkat (string matching)
-- [ ] Refactor `quiz_evaluator.py` untuk handle variant tipe soal (domain dia)
-- [ ] Koordinasi UI dengan Ravi (rendering tipe soal baru)
+- [x] True/False + isian singkat (string matching)
+- [x] Refactor `quiz_evaluator.py` untuk handle variant tipe soal (domain dia)
+- [x] Koordinasi UI dengan Ravi (rendering tipe soal baru)
 
 - [ ] PR per task atau gabung `feat/ariq-data-quality` → review Ravi → merge
 

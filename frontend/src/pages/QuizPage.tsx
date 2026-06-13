@@ -58,6 +58,7 @@ export function QuizPage() {
     return quiz.questions.map((q) => ({
       question_id: q.id,
       selected_option_index: null,
+      text_answer: null,
     }));
   });
 
@@ -65,7 +66,13 @@ export function QuizPage() {
   const [currentIndex, setCurrentIndex] = useState(() => {
     if (!savedState) return 0;
     const idx = savedState.answers.findIndex(
-      (a) => a.selected_option_index === null,
+      (a, i) => {
+        const type = quiz?.questions[i]?.type;
+        if (type === "short_answer") {
+          return !a.text_answer || a.text_answer.trim() === "";
+        }
+        return a.selected_option_index === null;
+      }
     );
     return idx === -1 ? 0 : idx;
   });
@@ -73,7 +80,7 @@ export function QuizPage() {
   const [showRestoredNotice, setShowRestoredNotice] = useState(
     () =>
       savedState !== null &&
-      savedState.answers.some((a) => a.selected_option_index !== null),
+      savedState.answers.some((a) => a.selected_option_index !== null || (a.text_answer && a.text_answer.trim() !== "")),
   );
 
   useEffect(() => {
@@ -101,6 +108,17 @@ export function QuizPage() {
     [],
   );
 
+  const handleTextChange = useCallback(
+    (questionIndex: number, text: string) => {
+      setAnswers((prev) =>
+        prev.map((a, i) =>
+          i === questionIndex ? { ...a, text_answer: text } : a,
+        ),
+      );
+    },
+    [],
+  );
+
   const gotoQuestion = useCallback(
     (index: number) => {
       const clamped = Math.max(
@@ -113,7 +131,13 @@ export function QuizPage() {
   );
 
   const answeredCount = answers.filter(
-    (a) => a.selected_option_index !== null,
+    (a, i) => {
+      const type = quiz?.questions[i]?.type;
+      if (type === "short_answer") {
+        return a.text_answer && a.text_answer.trim() !== "";
+      }
+      return a.selected_option_index !== null;
+    }
   ).length;
   const allAnswered = quiz ? answeredCount === quiz.total_questions : false;
   const progressPercent = quiz
@@ -147,9 +171,15 @@ export function QuizPage() {
   }, [answers, navigate, quiz, seconds, start, stop, submit]);
 
   const jumpToFirstUnanswered = useCallback(() => {
-    const idx = answers.findIndex((a) => a.selected_option_index === null);
+    const idx = answers.findIndex((a, i) => {
+      const type = quiz?.questions[i]?.type;
+      if (type === "short_answer") {
+        return !a.text_answer || a.text_answer.trim() === "";
+      }
+      return a.selected_option_index === null;
+    });
     if (idx !== -1) gotoQuestion(idx);
-  }, [answers, gotoQuestion]);
+  }, [answers, gotoQuestion, quiz]);
 
   // Keyboard shortcuts.
   useEffect(() => {
@@ -291,8 +321,10 @@ export function QuizPage() {
           selectedOptionIndex={
             answers[currentIndex]?.selected_option_index ?? null
           }
+          textAnswer={answers[currentIndex]?.text_answer ?? null}
           isCurrent
           onSelect={(opt) => handleSelect(currentIndex, opt)}
+          onTextChange={(text) => handleTextChange(currentIndex, text)}
         />
       </div>
 

@@ -29,9 +29,38 @@ _MIN_WORDS = 20
 _MIN_ID_RATIO = 0.04
 _MIN_SENTENCES = 2
 
+_STRUCTURAL_NOISE_CHARS = '|↑↓→←↳·•►▪'
+_BRAND_LIKE_RE = re.compile(r"^[a-z]+[A-Z][a-zA-Z]*$|^[A-Z]{2,}[a-z]+$")
+
 
 def assess(text: str) -> tuple[bool, str | None]:
     """Return (is_suitable, hint). `hint` is a user-facing reason when unsuitable."""
+    
+    # 1. Structural noise check
+    if any(c in text for c in _STRUCTURAL_NOISE_CHARS):
+        return False, (
+            "Materi mengandung banyak simbol atau elemen format (seperti tabel/daftar). "
+            "Sistem butuh teks paragraf yang bersih agar bisa membuat kuis yang baik."
+        )
+
+    # 2. Alpha ratio check
+    if len(text) > 0:
+        alpha_count = sum(1 for c in text if c.isalpha())
+        if alpha_count / len(text) < 0.65:
+            return False, (
+                "Materi terlalu banyak mengandung angka, simbol, atau tanda baca. "
+                "Coba gunakan materi yang lebih didominasi oleh teks/kalimat."
+            )
+
+    words_raw = text.split()
+    if words_raw:
+        brand_count = sum(1 for w in words_raw if _BRAND_LIKE_RE.match("".join(c for c in w if c.isalpha())))
+        if brand_count / len(words_raw) > 0.15:
+            return False, (
+                "Materi ini terlalu banyak mengandung nama merek atau istilah non-standar. "
+                "Gunakan materi penjelasan edukasional yang umum."
+            )
+
     words = re.findall(r"[a-zA-ZÀ-ÿ]+", text.lower())
     n = len(words)
     if n < _MIN_WORDS:

@@ -23,10 +23,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+
 from app import __version__
 from app.routes import auth, chat, gamification, health, quiz
 from app.routes.gamification import GAMIFICATION_UNAVAILABLE
 from app.utils.errors import ApiException, AUTH_UNAVAILABLE, INTERNAL_ERROR
+from app.utils.limiter import limiter
 
 
 def _parse_origins(value: str | None) -> list[str]:
@@ -45,6 +50,8 @@ app = FastAPI(
     version=__version__,
 )
 
+app.state.limiter = limiter
+
 # CORS — per API.md §9
 app.add_middleware(
     CORSMiddleware,
@@ -56,6 +63,8 @@ app.add_middleware(
     allow_headers=["Content-Type", "X-Device-Id"],
 )
 
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # ============================================================================
 # Exception handlers — per API.md §2 (response envelope + global error policy)

@@ -17,8 +17,9 @@ class Question(BaseModel):
     that lives in QuestionInternal (schemas/internal.py)."""
 
     id: int = Field(..., ge=1)
+    type: str = Field(default="multiple_choice", pattern="^(multiple_choice|true_false|short_answer)$")
     question: str = Field(..., min_length=1)
-    options: Annotated[list[str], conlist(str, min_length=4, max_length=4)]
+    options: Optional[Annotated[list[str], conlist(str, min_length=2, max_length=4)]] = None
 
 
 class Answer(BaseModel):
@@ -26,6 +27,7 @@ class Answer(BaseModel):
 
     question_id: int = Field(..., ge=1)
     selected_option_index: Optional[int] = Field(default=None, ge=0, le=3)
+    text_answer: Optional[str] = Field(default=None)
 
 
 class QuizGenerateRequest(BaseModel):

@@ -54,11 +54,24 @@ def evaluate(
                     detail="Soal tidak ditemukan dalam kuis. Coba mulai ulang.",
                 )
 
-            is_unanswered = ans.selected_option_index is None
-            is_correct = (
-                not is_unanswered
-                and ans.selected_option_index == q.correct_option_index
-            )
+            q_type = getattr(q, 'type', 'multiple_choice')
+            
+            if q_type == 'short_answer':
+                is_unanswered = not ans.text_answer or not ans.text_answer.strip()
+                is_correct = False
+                if not is_unanswered and q.correct_answer_text:
+                    import re
+                    # Simple string matching: ignore case and punctuation
+                    user_ans = re.sub(r'[^\w\s]', '', ans.text_answer).strip().lower()
+                    correct_ans = re.sub(r'[^\w\s]', '', q.correct_answer_text).strip().lower()
+                    is_correct = (user_ans == correct_ans)
+            else:
+                # handles multiple_choice and true_false
+                is_unanswered = ans.selected_option_index is None
+                is_correct = (
+                    not is_unanswered
+                    and ans.selected_option_index == q.correct_option_index
+                )
 
             if is_correct:
                 correct += 1
@@ -72,6 +85,8 @@ def evaluate(
                     question_id=q.id,
                     selected_option_index=ans.selected_option_index,
                     correct_option_index=q.correct_option_index,
+                    text_answer=ans.text_answer,
+                    correct_answer_text=q.correct_answer_text,
                     is_correct=is_correct,
                     is_unanswered=is_unanswered,
                 )

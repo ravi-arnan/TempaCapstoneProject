@@ -46,3 +46,4 @@ pytest==8.3.3
 # If you really want local DL fallback, install them manually:
 #   pip install torch==2.4.1 --index-url https://download.pytorch.org/whl/cpu
 #   pip install transformers==4.45.2 sentencepiece==0.2.0
+slowapi==0.1.9  
