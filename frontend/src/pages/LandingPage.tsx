@@ -93,7 +93,7 @@ export function LandingPage() {
           className={`flex justify-center transition-all duration-1000 ease-out delay-200 motion-reduce:transition-none motion-reduce:opacity-100 motion-reduce:translate-x-0 ${heroMounted ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8"}`}
         >
           <img 
-            src="/mascot/asahi-wave-bright.png" 
+            src="/mascot/asahi-wave.png"
             alt="Mascot Asahi" 
             className="w-full max-w-sm object-contain drop-shadow-2xl"
           />
