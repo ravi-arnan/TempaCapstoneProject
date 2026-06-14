@@ -50,7 +50,7 @@ export function DailyChallengeCard() {
             type="button"
             onClick={handleStart}
             disabled={generating}
-            className="inline-flex items-center gap-2 rounded-pill border border-brand-button bg-brand-button px-6 py-2.5 text-sm font-medium text-white shadow-level-1 outline-none transition-colors hover:bg-brand-button-hover focus-visible:[box-shadow:var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-70"
+            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-pill border border-brand-button bg-brand-button px-6 py-2.5 text-sm font-medium text-white shadow-level-1 outline-none transition-colors hover:bg-brand-button-hover active:bg-brand-button-hover focus-visible:[box-shadow:var(--focus-ring)] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {generating ? DAILY_CHALLENGE.starting : DAILY_CHALLENGE.start}
           </button>

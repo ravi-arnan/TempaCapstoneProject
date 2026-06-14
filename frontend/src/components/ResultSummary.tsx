@@ -16,7 +16,7 @@ export function ResultSummary({ score, timeTakenSeconds }: ResultSummaryProps) {
   const animatedCorrect = useCountUp(score.correct_count, { durationMs: 600 });
 
   return (
-    <div className="flex flex-wrap gap-8 border-t border-border-subtle pt-4">
+    <div className="flex flex-wrap gap-x-8 gap-y-4 border-t border-border-subtle pt-4">
       <Stat label={STAT_LABELS.score} value={`${animatedScore}%`} />
       <Stat label={STAT_LABELS.time} value={formatSeconds(timeTakenSeconds)} />
       <Stat

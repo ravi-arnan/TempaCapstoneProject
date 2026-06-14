@@ -40,10 +40,11 @@ export function XpBadge({ stats }: XpBadgeProps) {
         </span>
       </div>
 
-      {/* Streak */}
+      {/* Streak — hidden on mobile to keep the dense nav from overflowing; the
+          full streak lives on Profil (StreakCard). */}
       {stats.current_streak > 0 && (
         <div
-          className="flex items-center gap-1 rounded-full border border-border-standard bg-bg-page px-2.5 py-1 shadow-level-1"
+          className="hidden items-center gap-1 rounded-full border border-border-standard bg-bg-page px-2.5 py-1 shadow-level-1 sm:flex"
           title={`Streak ${stats.current_streak} hari`}
         >
           <Flame className="h-3.5 w-3.5 text-status-sedang" aria-hidden="true" />

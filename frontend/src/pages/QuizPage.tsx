@@ -303,13 +303,13 @@ export function QuizPage() {
       )}
 
       {/* Sticky bottom nav: Prev / (Next or Submit) */}
-      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-border-standard bg-bg-page/95 px-6 py-4 backdrop-blur-sm shadow-level-3">
+      <div className="safe-px fixed inset-x-0 bottom-0 z-10 border-t border-border-standard bg-bg-page/95 py-4 pb-[calc(1rem_+_env(safe-area-inset-bottom,0px))] backdrop-blur-sm shadow-level-3 [--safe-gutter:1.5rem]">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => gotoQuestion(currentIndex - 1)}
             disabled={isFirst || submitting}
-            className="rounded-pill border border-border-standard bg-bg-page px-6 py-2.5 text-sm font-medium text-text-primary shadow-level-1 transition-colors hover:bg-bg-alt disabled:cursor-not-allowed disabled:opacity-40"
+            className="min-h-[44px] rounded-pill border border-border-standard bg-bg-page px-6 py-2.5 text-sm font-medium text-text-primary shadow-level-1 transition-colors hover:bg-bg-alt active:bg-bg-alt disabled:cursor-not-allowed disabled:opacity-40"
           >
             {BUTTON_LABELS.prevQuestion}
           </button>
@@ -318,7 +318,7 @@ export function QuizPage() {
             <button
               type="button"
               onClick={() => gotoQuestion(currentIndex + 1)}
-              className="rounded-pill border border-brand-button bg-brand-button px-8 py-2.5 text-sm font-medium text-white shadow-level-1 transition-colors hover:bg-brand-button-hover"
+              className="min-h-[44px] rounded-pill border border-brand-button bg-brand-button px-8 py-2.5 text-sm font-medium text-white shadow-level-1 transition-colors hover:bg-brand-button-hover active:bg-brand-button-hover"
             >
               {BUTTON_LABELS.nextQuestion}
             </button>
@@ -327,7 +327,7 @@ export function QuizPage() {
               type="button"
               onClick={handleSubmit}
               disabled={submitting}
-              className="rounded-pill border border-brand-button bg-brand-button px-8 py-2.5 text-sm font-medium text-white shadow-level-1 transition-colors hover:bg-brand-button-hover disabled:cursor-not-allowed disabled:opacity-60"
+              className="min-h-[44px] rounded-pill border border-brand-button bg-brand-button px-8 py-2.5 text-sm font-medium text-white shadow-level-1 transition-colors hover:bg-brand-button-hover active:bg-brand-button-hover disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting
                 ? EMPTY_STATES.submitProcessing
@@ -337,7 +337,7 @@ export function QuizPage() {
             <button
               type="button"
               onClick={jumpToFirstUnanswered}
-              className="rounded-pill border border-brand-button bg-brand-button px-8 py-2.5 text-sm font-medium text-white shadow-level-1 transition-colors hover:bg-brand-button-hover"
+              className="min-h-[44px] rounded-pill border border-brand-button bg-brand-button px-8 py-2.5 text-sm font-medium text-white shadow-level-1 transition-colors hover:bg-brand-button-hover active:bg-brand-button-hover"
             >
               {BUTTON_LABELS.jumpToUnanswered}
             </button>

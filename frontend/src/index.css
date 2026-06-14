@@ -121,9 +121,14 @@
 .safe-pb {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+/* Horizontal gutter that is ALSO notch-safe. The element sets its base gutter
+   via --safe-gutter (default 0); we pad by max(base, notch inset). This must
+   NOT clobber a base gutter — earlier it set padding directly to env() (=0 on
+   non-notched screens), which overrode Tailwind's px-* and made content hug the
+   edge. Set --safe-gutter via an arbitrary property, e.g. `[--safe-gutter:1.5rem]`. */
 .safe-px {
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
+  padding-left: max(var(--safe-gutter, 0px), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--safe-gutter, 0px), env(safe-area-inset-right, 0px));
 }
 
 /* ================================================================

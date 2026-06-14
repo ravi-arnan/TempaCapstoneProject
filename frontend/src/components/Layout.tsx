@@ -4,6 +4,7 @@ import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { XpBadge } from "@/components/XpBadge";
 import { AuthNav } from "@/components/auth/AuthNav";
+import { useAuth } from "@/context/AuthContext";
 import { useGamificationStats } from "@/hooks/useGamificationStats";
 
 interface LayoutProps {
@@ -17,12 +18,13 @@ interface LayoutProps {
  */
 export function Layout({ children }: LayoutProps) {
   const { stats } = useGamificationStats();
+  const { user } = useAuth();
   const { pathname } = useLocation();
 
   return (
     <div className="min-h-screen bg-bg-page">
       <header className="safe-pt border-b border-border-standard bg-bg-page">
-        <nav className="safe-px mx-auto flex max-w-5xl items-center justify-between gap-3 px-6 py-4">
+        <nav className="safe-px mx-auto flex max-w-5xl items-center justify-between gap-2 py-4 [--safe-gutter:1rem] sm:gap-3 sm:[--safe-gutter:1.5rem]">
           <Link
             to={pathname === "/" ? "/" : "/app"}
             className="rounded-md outline-none focus-visible:[box-shadow:var(--focus-ring)]"
@@ -31,13 +33,15 @@ export function Layout({ children }: LayoutProps) {
             <Logo variant="full" />
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
-            <XpBadge stats={stats} />
+            {/* XP/streak only for logged-in users (gamification is account-bound);
+                guests and the marketing landing nav stay clean. */}
+            {pathname !== "/" && user && <XpBadge stats={stats} />}
             <ThemeToggle />
             <AuthNav />
           </div>
         </nav>
       </header>
-      <main className="safe-px mx-auto max-w-5xl px-6 pt-12 pb-[calc(6rem_+_env(safe-area-inset-bottom,0px))]">
+      <main className="safe-px mx-auto max-w-5xl pt-12 pb-[calc(6rem_+_env(safe-area-inset-bottom,0px))] [--safe-gutter:1.5rem]">
         {children}
       </main>
     </div>

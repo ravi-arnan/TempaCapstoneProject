@@ -65,7 +65,7 @@ export function SettingsPage() {
                   logout();
                   window.location.reload();
                 }}
-                className="inline-flex items-center gap-2 rounded-pill border border-border-standard bg-bg-page px-5 py-2 text-sm font-medium text-status-rendah shadow-level-1 outline-none transition-colors hover:bg-[var(--hover-tint)] focus-visible:[box-shadow:var(--focus-ring)]"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-pill border border-border-standard bg-bg-page px-5 py-2 text-sm font-medium text-status-rendah shadow-level-1 outline-none transition-colors hover:bg-[var(--hover-tint)] active:bg-[var(--hover-tint)] focus-visible:[box-shadow:var(--focus-ring)]"
               >
                 <LogOut className="h-4 w-4" aria-hidden="true" />
                 {SETTINGS_PAGE.logout}

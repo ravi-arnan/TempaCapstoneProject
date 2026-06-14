@@ -130,6 +130,8 @@ export const REVIEW_LABELS = {
 export const THEME_LABELS = {
   light: "Light",
   dark: "Dark",
+  switchToLight: "Ganti ke mode terang",
+  switchToDark: "Ganti ke mode gelap",
 } as const;
 
 // ============================================================================
