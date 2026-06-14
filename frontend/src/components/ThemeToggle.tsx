@@ -8,44 +8,61 @@ import { cn } from "@/lib/cn";
  */
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
 
   return (
-    <div
-      role="tablist"
-      aria-label="Theme switcher"
-      className="inline-flex rounded-full border border-border-standard bg-bg-page p-1 shadow-level-1"
-    >
+    <>
+      {/* Mobile: single icon toggle — keeps the nav from getting cramped on
+          narrow screens. Shows the icon for the mode you'd switch TO. */}
       <button
         type="button"
-        role="tab"
-        aria-selected={theme === "light"}
-        onClick={() => setTheme("light")}
-        className={cn(
-          "flex min-h-[40px] min-w-[40px] items-center justify-center gap-1.5 rounded-full px-2.5 py-2 font-mono text-[11px] font-medium uppercase tracking-[1.2px] transition-colors sm:min-w-0 sm:px-4",
-          theme === "light"
-            ? "bg-text-primary text-bg-page"
-            : "text-text-muted hover:text-text-primary active:text-text-primary",
-        )}
+        onClick={() => setTheme(isDark ? "light" : "dark")}
+        aria-label={
+          isDark ? THEME_LABELS.switchToLight : THEME_LABELS.switchToDark
+        }
+        className="flex h-10 w-10 items-center justify-center rounded-full border border-border-standard bg-bg-page text-text-muted shadow-level-1 outline-none transition-colors hover:text-text-primary active:text-text-primary focus-visible:[box-shadow:var(--focus-ring)] sm:hidden"
       >
-        <SunIcon />
-        <span className="hidden sm:inline">{THEME_LABELS.light}</span>
+        {isDark ? <SunIcon /> : <MoonIcon />}
       </button>
-      <button
-        type="button"
-        role="tab"
-        aria-selected={theme === "dark"}
-        onClick={() => setTheme("dark")}
-        className={cn(
-          "flex min-h-[40px] min-w-[40px] items-center justify-center gap-1.5 rounded-full px-2.5 py-2 font-mono text-[11px] font-medium uppercase tracking-[1.2px] transition-colors sm:min-w-0 sm:px-4",
-          theme === "dark"
-            ? "bg-text-primary text-bg-page"
-            : "text-text-muted hover:text-text-primary active:text-text-primary",
-        )}
+
+      {/* >= sm: segmented light/dark control */}
+      <div
+        role="tablist"
+        aria-label="Theme switcher"
+        className="hidden rounded-full border border-border-standard bg-bg-page p-1 shadow-level-1 sm:inline-flex"
       >
-        <MoonIcon />
-        <span className="hidden sm:inline">{THEME_LABELS.dark}</span>
-      </button>
-    </div>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={theme === "light"}
+          onClick={() => setTheme("light")}
+          className={cn(
+            "flex items-center gap-1.5 rounded-full px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-[1.2px] transition-colors",
+            theme === "light"
+              ? "bg-text-primary text-bg-page"
+              : "text-text-muted hover:text-text-primary active:text-text-primary",
+          )}
+        >
+          <SunIcon />
+          <span>{THEME_LABELS.light}</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={theme === "dark"}
+          onClick={() => setTheme("dark")}
+          className={cn(
+            "flex items-center gap-1.5 rounded-full px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-[1.2px] transition-colors",
+            theme === "dark"
+              ? "bg-text-primary text-bg-page"
+              : "text-text-muted hover:text-text-primary active:text-text-primary",
+          )}
+        >
+          <MoonIcon />
+          <span>{THEME_LABELS.dark}</span>
+        </button>
+      </div>
+    </>
   );
 }
 

@@ -47,7 +47,11 @@ export function Logo({ variant = "full", className }: LogoProps) {
           d="M32 8 L56 56 L43 56 L32 30 L21 56 L8 56 Z M19 47 L43 32 L46 37 L22 52 Z"
         />
       </svg>
-      <span className="text-[17px] text-text-primary">asahlagi</span>
+      {/* Hide the wordmark below 360px so the nav cluster (logo + XP + theme +
+          auth) doesn't overflow on tiny phones. 375px+ keeps it. */}
+      <span className="hidden text-[17px] text-text-primary min-[360px]:inline">
+        asahlagi
+      </span>
     </span>
   );
 }

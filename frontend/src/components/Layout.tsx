@@ -31,7 +31,9 @@ export function Layout({ children }: LayoutProps) {
             <Logo variant="full" />
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
-            <XpBadge stats={stats} />
+            {/* XP/streak is an in-app concern — keep the marketing landing nav
+                clean (and uncramped on mobile). */}
+            {pathname !== "/" && <XpBadge stats={stats} />}
             <ThemeToggle />
             <AuthNav />
           </div>
