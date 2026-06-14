@@ -186,6 +186,18 @@ def test_build_quiz_uses_consistent_generated_question():
     assert any("Berapa" in q["question"] for q in quiz) or numeric
 
 
+def test_build_quiz_routes_open_questions_to_cloze():
+    # Open, untyped "Apa ..." questions don't reliably target the answer span,
+    # so they must be routed to a coherent cloze even when "well-formed".
+    def gen(_prompt):
+        return "Apa fungsi utama dari bagian ini?"
+
+    quiz = qg.build_quiz(MATERIAL, gen, num_questions=3, rng=random.Random(1))
+    assert len(quiz) >= 2
+    _every_mcq_is_coherent(quiz)
+    assert all(q["question"].startswith('Lengkapi: "') for q in quiz)
+
+
 def test_build_quiz_falls_back_to_cloze_on_garbage_model():
     # Model always returns junk → every question must be a coherent cloze.
     def gen(_prompt):

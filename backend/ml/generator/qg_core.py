@@ -479,12 +479,17 @@ def build_quiz(
         if (
             generated
             and is_question_quality_acceptable(generated)
+            and question_expects(generated) is not None
             and question_is_consistent(generated, answer)
         ):
+            # Keep ONLY typed factoids the guard can vouch for (Siapa→name,
+            # Berapa→number, "apa nama"→name). Open untyped questions
+            # ("Apa yang dimaksud…", "Apa fungsi…") don't reliably target the
+            # chosen span, so they fall through to a coherent cloze below.
             question_text: str | None = generated
         else:
-            # Model output was missing / low quality / inconsistent with the
-            # chosen answer → coherent cloze for the same span.
+            # Missing / low quality / open / inconsistent → coherent cloze for
+            # the same answer span (the answer literally fits the gap).
             question_text = make_cloze_question(passage, answer)
         if not question_text:
             continue
