@@ -23,8 +23,14 @@ def test_normal_material_returns_quiz(monkeypatch):
     quiz = quiz_generator.generate_quiz(material)
     assert isinstance(quiz, QuizInternal)
     assert len(quiz.questions) >= 2
-    assert all(len(q.options) == 4 for q in quiz.questions)
-    assert all(0 <= q.correct_option_index <= 3 for q in quiz.questions)
+    for q in quiz.questions:
+        if q.options is None:
+            # short_answer (free-text) carries the answer in correct_answer_text.
+            assert q.correct_answer_text is not None, f"Q{q.id}: free-text needs answer"
+        else:
+            # multiple_choice = 4 options, true_false = 2.
+            assert len(q.options) in (2, 4), f"Q{q.id}: unexpected option count"
+            assert 0 <= q.correct_option_index < len(q.options)
 
 def test_questions_have_unique_ids(monkeypatch):
     from ml.generator import inference
@@ -54,7 +60,10 @@ def test_options_are_distinct(monkeypatch):
     )
     quiz = quiz_generator.generate_quiz(material)
     for q in quiz.questions:
-        assert len(set(q.options)) == 4, f"Q{q.id}: duplicate options"
+        if q.options is None:
+            continue  # short_answer (free-text) has no options
+        # Options must be distinct, whatever the count (4 for MC, 2 for T/F).
+        assert len(set(q.options)) == len(q.options), f"Q{q.id}: duplicate options"
 
 def test_fallback_on_dl_failure(monkeypatch):
     """Even if DL model unavailable, generator should fall back to rule-based."""

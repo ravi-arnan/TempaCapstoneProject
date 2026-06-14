@@ -52,7 +52,12 @@ HTTPS automatically, and the team already uses HF Spaces. Config lives in
    `curl https://<user>-asahlagi-backend.hf.space/health` returns `{"status":"ok",...}`.
 
 ### Notes
-- To deploy a newer backend commit: Settings, **Factory rebuild** (re-clones fresh).
+- **The Space does NOT auto-redeploy when `main` changes.** Merging a backend PR
+  does nothing until you rebuild. To pull a newer commit, either Settings →
+  **Factory rebuild** (re-clones fresh) in the HF UI, or run the helper:
+  `backend/.venv/bin/python scripts/redeploy_space.py` (reads `HF_WRITE_TOKEN` +
+  `GITHUB_TOKEN` from `backend/.env`, sets the secret, then factory-rebuilds).
+  This is exactly the gap that left `/chat/*` 404'ing after the chatbot merge.
 - HF free CPU is generous (2 vCPU, 16 GB RAM) — fits scikit-learn + pandas easily.
 - Free Spaces sleep after 48h idle; first request wakes it (~30-60s). Warm up
   before a demo by hitting `/health`.

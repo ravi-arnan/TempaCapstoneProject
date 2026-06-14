@@ -118,6 +118,24 @@ Per-IP throttle untuk `/quiz/generate*` (3 request/menit), pakai `slowapi` middl
 
 **Effort**: ~30 menit
 
+### 3.5 Answer-aware quiz generation (BARU 2026-06-14) — kualitas pertanyaan & opsi
+**Owner: Audry (model) · Ravi (inference/integration)**
+
+Masalah: "jawaban benar" diambil `max(keywords, key=len)` (kata terpanjang), tak
+nyambung dengan pertanyaan → opsi ngawur ("Berapa jumlah planet?" → "mengitarinya").
+
+- ✅ **Inference fix (live, HF Space `2aa8bc7`)** — `qg_core.py` (dibagi HF Space + local):
+  pilih span jawaban dulu (utamakan angka/nama, penalti kata kerja) → highlight `<hl>` →
+  guard konsistensi (berapa→angka, nama→nama diri, anti-superlatif, jawaban ∉ pertanyaan) →
+  fallback **cloze** koheren → distraktor sekategori. Menutup ~70-75% kasus.
+- ⏳ **Model v2 (answer-aware fine-tune)** — `notebooks/train_quiz_generator.ipynb` di-upgrade:
+  latih dengan answer span ber-`<hl>` + token khusus (sebelumnya plain QG, makanya `<hl>`
+  tak dipatuhi). Audry jalankan di Colab (~1.5-2 jam T4, fp32) → `push_to_hub` ke
+  `raviarnan/indot5-quizgen-asahlagi` → Factory rebuild Space. Tanpa ubah kode Space.
+- Sisa lever: distraktor via embeddings (#3.3) untuk semantik lebih halus.
+
+**Effort**: inference fix DONE · v2 fine-tune ~0.5 hari (mostly Colab wall-time).
+
 ---
 
 ## 4. Feature additions (post-MVP)
@@ -403,6 +421,7 @@ PAT hanya untuk model AI; akses DB terpisah (backend query Neon).
 | 2026-06-12 | **AI Chatbot Asahi (#6.6)** diterima sebagai **POST-MVP** (butuh sepakat tim). GitHub Models (PAT server-side) + dialog terkekang + safeguard. | Asahi jadi teman belajar; jalur gratis (GitHub Models) & terkekang supaya aman/murah/on-brand. Scope expansion CLAUDE.md, pola seperti login #4.7. |
 | 2026-06-12 | Mobile: tetap **Capacitor** untuk demo; **React Native ditunda ke v2 pasca-demo**. | RN native feel nyata tapi gain kecil untuk app form/kuis ini; cost = rewrite total frontend → risiko jebol demo + lawan mandat "simpel + demo andal". Capacitor reuse 100% kode (~1 hari). RN nanti pakai Expo + NativeWind. |
 | 2026-06-14 | **#6.5-A Mobile polish (web-responsive & touch) SELESAI** — branch `feat/mobile-polish-6.5a`. Touch target ≥44px, `active:` states, safe-area bottom bar kuis, responsif 320/375/430 (0 overflow, verified Playwright). | Bagian yang bisa dikerjakan tanpa shell Capacitor; prasyarat ringan untuk #6.4 wrap. §6.5-B (StatusBar/Splash/Haptics) & §6.5-C (code-split) menyusul. Typecheck + 100 test + build hijau. |
+| 2026-06-14 | **Kualitas quiz (#3.5)**: bug "jawaban benar = kata terpanjang" diperbaiki **answer-aware** (branch `feat/quiz-answer-aware` + HF Space `9e9e99b/2aa8bc7` live). Pilih span jawaban dulu → highlight → guard konsistensi (angka/nama, anti-superlatif, anti-verb) → fallback cloze koheren → distraktor sekategori. | Fine-tune lama ternyata **plain QG** (tak ber-`<hl>`), jadi model tak patuh span jawaban. Inference-fix menutup ~70-75%; untuk presisi penuh, notebook di-upgrade ke **answer-aware v2** (latih dengan `<hl>`, token khusus) — Audry jalankan di Colab lalu Factory rebuild. |
 
 ---
 

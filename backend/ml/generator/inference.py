@@ -178,58 +178,20 @@ def generate(material_text: str) -> list[dict]:
 
 
 # ============================================================================
-# Local inference logic (fallback path)
+# Local inference logic (fallback path) — shares the answer-aware core
 # ============================================================================
 
-_STOP_WORDS = frozenset({
-    "yang", "dan", "di", "ke", "dari", "untuk", "pada", "dengan", "ini",
-    "itu", "atau", "adalah", "akan", "tidak", "juga", "dapat", "sebagai",
-    "telah", "oleh", "dalam", "saat", "yaitu", "namun", "agar", "karena",
-    "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
-    "and", "or", "but", "of", "in", "on", "at", "to", "for", "with",
-    "this", "that", "these", "those", "it", "its", "they", "them",
-})
-
-_WORD_RE = re.compile(r"[A-Za-zÀ-ÿ]{4,}")
+from ml.generator import qg_core
 
 
-def _extract_keywords(text: str) -> list[str]:
-    seen: set[str] = set()
-    words: list[str] = []
-    for m in _WORD_RE.finditer(text):
-        w = m.group(0)
-        wl = w.lower()
-        if wl in _STOP_WORDS or wl in seen:
-            continue
-        seen.add(wl)
-        words.append(w)
-    return words
+def _run_local_model(prompt: str) -> str:
+    """Run the local IndoT5 on a prompt; return raw decoded text.
 
-
-from app.services._distractors import _pick_similar_length_distractors
-
-
-def _split_passages(text: str, n: int = _NUM_QUESTIONS) -> list[str]:
-    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
-    if len(sentences) <= n:
-        return sentences[:n]
-    step = max(1, len(sentences) // n)
-    return [sentences[i * step] for i in range(n) if i * step < len(sentences)]
-
-
-def _generate_local_question(passage: str) -> str:
+    Cleaning / validation lives in qg_core, shared with the HF Space.
+    """
     if _local_model is None or _local_tokenizer is None:
         raise RuntimeError("Local model not loaded")
 
-    # Add prompt variation for local generation
-    prompts = [
-        f"buat pertanyaan dari kalimat berikut: {passage}",
-        f"buatlah soal pilihan ganda berdasarkan teks ini: {passage}",
-        f"pertanyaan untuk teks: {passage}",
-        f"buat pertanyaan: {passage}",
-        f"tuliskan satu pertanyaan dari: {passage}"
-    ]
-    prompt = random.choice(prompts)
     inputs = _local_tokenizer(
         prompt,
         return_tensors="pt",
@@ -244,88 +206,16 @@ def _generate_local_question(passage: str) -> str:
         no_repeat_ngram_size=_NO_REPEAT_NGRAM_SIZE,
         early_stopping=True,
     )
-    decoded = _local_tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
-
-    for prefix in ("pertanyaan:", "Pertanyaan:", "PERTANYAAN:"):
-        if decoded.lower().startswith(prefix.lower()):
-            decoded = decoded[len(prefix):].strip()
-            break
-    if "?" in decoded:
-        decoded = decoded.split("?", 1)[0].strip() + "?"
-    if decoded and decoded[0].islower():
-        decoded = decoded[0].upper() + decoded[1:]
-    if decoded and decoded[-1] not in "?.!":
-        decoded += "?"
-    return decoded
-
-
-def _is_question_quality_acceptable(question: str) -> bool:
-    stripped = question.strip()
-    if len(stripped) < 15:
-        return False
-    words = [w for w in stripped.split() if any(c.isalpha() for c in w)]
-    if len(words) < 3:
-        return False
-    if not any(len("".join(c for c in w if c.isalpha())) >= 5 for w in words):
-        return False
-    letters = [c for c in stripped.lower() if c.isalpha()]
-    if not letters:
-        return False
-    most_common = max(letters, key=letters.count)
-    if letters.count(most_common) / len(letters) > 0.5:
-        return False
-    return True
+    return _local_tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
 
 
 def _generate_locally(material_text: str) -> list[dict]:
-    """Local CPU fallback when HF Space unavailable."""
-    passages = _split_passages(material_text)
-    if len(passages) < 3:
-        raise RuntimeError("Material too short or homogeneous")
-
-    keywords_pool = _extract_keywords(material_text)
-    if len(keywords_pool) < 4:
-        raise RuntimeError("Not enough distinct keywords for distractors")
-
+    """Local CPU fallback when HF Space unavailable. Uses the same answer-aware
+    assembly as the Space, so the correct answer always answers the question."""
     rng = random.Random(abs(hash(material_text)) & 0xFFFFFFFF)
-    questions: list[dict] = []
-
-    for i, passage in enumerate(passages):
-        try:
-            q_text = _generate_local_question(passage)
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("ml.generator: local question gen failed for passage %d: %s", i, exc)
-            continue
-
-        if not _is_question_quality_acceptable(q_text):
-            logger.info(
-                "ml.generator: skipping low-quality output for passage %d: %r",
-                i,
-                q_text[:60],
-            )
-            continue
-
-        passage_keywords = _extract_keywords(passage)
-        if not passage_keywords:
-            continue
-        correct = max(passage_keywords, key=len)
-
-        distractors = _pick_similar_length_distractors(correct, keywords_pool, 3)
-        if len(distractors) < 3:
-            continue
-        options = [correct, *distractors]
-        rng.shuffle(options)
-        correct_idx = options.index(correct)
-
-        questions.append({
-            "question": q_text,
-            "options": options,
-            "correct_option_index": correct_idx,
-        })
-
-        if len(questions) >= _NUM_QUESTIONS:
-            break
-
+    questions = qg_core.build_quiz(
+        material_text, _run_local_model, num_questions=_NUM_QUESTIONS, rng=rng
+    )
     if not questions:
         raise RuntimeError("Failed to generate any valid questions locally")
     logger.info("ml.generator: local CPU produced %d questions", len(questions))
