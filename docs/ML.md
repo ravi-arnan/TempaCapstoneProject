@@ -71,11 +71,23 @@ Pretrained IndoT5 understands Indonesian text but isn't tuned for question gener
 Without fine-tuning: model might output summaries, paraphrases, or generic text — not questions.
 With fine-tuning: model reliably produces interrogative sentences relevant to the input.
 
-### Fine-tuning: postponed (2026-05-08), then completed (2026-05-26)
+### Fine-tuning: postponed (2026-05-08), done (2026-05-26), answer-aware v2 (2026-06-14)
 
 **Status**: DONE. Fine-tuned `Wikidepia/IndoT5-base` on TyDiQA-id and deployed as
 `raviarnan/indot5-quizgen-asahlagi`. The quiz-gen HF Space and the backend now use it.
 The notes below keep the original postponement history for context.
+
+**Answer-aware v2 (2026-06-14)**: the first fine-tune trained on the bare answer
+sentence (plain QG: `passage → question`), so the model never learned *which* span to
+ask about — the backend then guessed the answer with `max(keywords, key=len)`, producing
+nonsensical options ("Berapa jumlah planet?" → "mengitarinya"). Fixed in two layers:
+- **Inference (live)**: `qg_core.py` (shared by the HF Space + local CPU) now picks the
+  answer span first, highlights it (`<hl>`), enforces question/answer consistency, and
+  falls back to a coherent cloze — so the correct answer always answers the question.
+- **Model v2**: `notebooks/train_quiz_generator.ipynb` now trains *answer-aware* — the
+  answer span is wrapped in `<hl> … <hl>` (registered as a special token) so the model
+  learns to target it. Re-run on Colab and `push_to_hub` to the same repo id; the Space
+  upgrades on Factory rebuild (no code change). See ROADMAP §3.5.
 
 **What happened (2026-05-08)**: first training attempt in Colab used `fp16=True` (default in our notebook template). T5 has known fp16 instability — gradients overflowed to NaN, training loss collapsed to 0, and model produced garbage output ("aaaaaaaaa..." for any input).
 

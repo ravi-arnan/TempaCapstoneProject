@@ -48,8 +48,22 @@ def test_answer_type():
 def test_looks_like_verb():
     assert qg.looks_like_verb("didominasi")
     assert qg.looks_like_verb("mengitarinya")
+    # Stronger detection: prefix alone (no -kan/-nya suffix needed).
+    assert qg.looks_like_verb("mengandung")
+    assert qg.looks_like_verb("berlangsung")
+    assert qg.looks_like_verb("dilepaskan")
+    # Capitalised tokens are proper nouns, never verbs.
+    assert not qg.looks_like_verb("Merah")
+    assert not qg.looks_like_verb("Republik")
     assert not qg.looks_like_verb("Matahari")
     assert not qg.looks_like_verb("planet")
+
+
+def test_select_answer_skips_verbs():
+    # Must pick a noun (kloroplas / klorofil), never the verb "mengandung".
+    span = qg.select_answer_span("Proses ini terjadi di dalam kloroplas yang mengandung klorofil.")
+    assert span in {"kloroplas", "klorofil"}
+    assert not qg.looks_like_verb(span)
 
 
 # --- consistency guard ----------------------------------------------------
@@ -71,6 +85,20 @@ def test_siapa_requires_proper_noun():
 
 def test_open_question_accepts_common_noun():
     assert qg.question_is_consistent("Apa yang dihasilkan fotosintesis?", "oksigen")
+
+
+def test_nama_question_requires_proper_noun():
+    # "Apa nama planet ..." must map to a name, not a number like "satu".
+    assert qg.question_is_consistent("Apa nama planet dalam?", "Merkurius")
+    assert not qg.question_is_consistent("Apa nama planet yang memiliki kehidupan?", "satu")
+
+
+def test_superlative_rejected_for_entity():
+    # Can't fact-check "the biggest" against an arbitrary entity → reject.
+    assert not qg.question_is_consistent("Apakah planet terbesar di Tata Surya?", "Saturnus")
+    assert not qg.question_is_consistent("Kota apa yang paling padat?", "Bandung")
+    # A non-superlative "ter..." word must NOT trigger the guard.
+    assert qg.question_is_consistent("Apa yang terdapat di planet dalam?", "batuan")
 
 
 # --- prompting + cloze ----------------------------------------------------

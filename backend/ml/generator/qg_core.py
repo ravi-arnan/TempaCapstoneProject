@@ -110,10 +110,14 @@ def is_number(token: str) -> bool:
 
 
 def looks_like_verb(token: str) -> bool:
-    """Heuristic: Indonesian verb affixes. False positives exist (e.g. 'berita'),
-    so this is only used as a soft penalty, never a hard reject."""
-    t = token.lower()
-    return bool(_VERB_PREFIX_RE.match(t) and _VERB_SUFFIX_RE.search(t))
+    """Heuristic: a lowercase me-/di-/ter-/ber- word is almost always a verb in
+    prose (mengandung, berlangsung, dilepaskan, mengubah, menyerap). Capitalised
+    tokens are proper nouns (Merah, Republik, Indonesia) — never flagged. Soft
+    penalty only, so an occasional false positive (berita) still loses gently to
+    a cleaner noun rather than being excluded outright."""
+    if not token or token[:1].isupper():
+        return False
+    return bool(_VERB_PREFIX_RE.match(token.lower()))
 
 
 def answer_type(token: str, passage: str = "") -> str:
@@ -241,16 +245,30 @@ def answer_aware_prompt(passage: str, answer: str) -> str:
     return f"buat pertanyaan: {highlighted}"
 
 
+# Superlative markers — a question like "planet terbesar?" / "paling cepat?"
+# can't be fact-checked against an arbitrary chosen entity, so we don't trust
+# such generated questions. Specific list (not bare `ter\w+`) to avoid matching
+# non-superlatives like terdiri / terdapat / terletak / tersebut.
+_SUPERLATIVE_RE = re.compile(
+    r"\b(ter(besar|kecil|tinggi|rendah|jauh|dekat|panjang|pendek|cepat|lambat|"
+    r"berat|ringan|baik|buruk|banyak|sedikit|luas|sempit|lama|baru|kuat|lemah|"
+    r"populer|terkenal|utama)|paling)\b"
+)
+
+
 def question_expects(question: str) -> str | None:
     """What answer category a question implies, if detectable.
 
-    'number'      -> berapa / jumlah / berapakah
-    'proper_noun' -> siapa / di mana / kapan (names / places / times)
+    'number'      -> berapa / jumlah
+    'proper_noun' -> siapa / di mana / kapan / "(apa) nama ..." (names/places)
     None          -> apa / bagaimana / mengapa / ... (any noun is fine)
     """
     q = question.lower()
-    if re.search(r"\bberapa(kah)?\b|\bjumlah\b|\bberapakah\b", q):
+    if re.search(r"\bberapa(kah)?\b|\bjumlah\b", q):
         return "number"
+    # "apa nama ...", "... bernama ..." asks for a name → expect a proper noun.
+    if re.search(r"\bnama\b|\bbernama\b", q):
+        return "proper_noun"
     if re.search(r"\bsiapa(kah)?\b|\bdi\s?mana\b|\bdimana\b|\bkapan\b", q):
         return "proper_noun"
     return None
@@ -260,12 +278,16 @@ def question_is_consistent(question: str, answer: str) -> bool:
     """Reject answer/question mismatches that produce nonsense quizzes.
 
     - The answer must NOT appear verbatim in the question (would give it away).
+    - Superlative questions about a named entity are rejected — we can't verify
+      which entity is "the biggest", so we defer to a coherent cloze instead.
     - If the question implies a category, the answer must match it
-      (e.g. "Berapa ..." must map to a number).
+      (e.g. "Berapa ..." → number, "apa nama ..." → proper noun).
     """
     if not question or not answer:
         return False
     if re.search(r"\b" + re.escape(answer.lower()) + r"\b", question.lower()):
+        return False
+    if _SUPERLATIVE_RE.search(question.lower()) and answer_type(answer) != "number":
         return False
     expected = question_expects(question)
     if expected is None:
