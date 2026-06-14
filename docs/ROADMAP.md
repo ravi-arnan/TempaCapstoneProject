@@ -3,7 +3,7 @@
 **Status**: OPEN. Living document.
 **Owner**: Ravi
 **Created**: 2026-05-18
-**Last updated**: 2026-06-12
+**Last updated**: 2026-06-14
 
 ---
 
@@ -308,12 +308,12 @@ Roadmap mobile (ditunda, urut prioritas):
 
 Track polish khusus mobile, melengkapi wrap Capacitor (#6.4). Dipisah menjadi yang **bisa dikerjakan sekarang** (web-responsive murni, tanpa shell Capacitor) vs yang **butuh shell Capacitor dulu**.
 
-**A. Web-responsive & touch — bisa sekarang (prasyarat ringan):**
-- **Audit responsif** semua halaman di 320 / 375 / 430px: nav (pill Profil + Progress + XpBadge + ThemeToggle + Auth makin sempit), grid hasil (`md:grid-cols-2` → stack), Profil/Riwayat/Pengaturan, kuis satu-per-satu. Pastikan tidak ada overflow horizontal.
-- **Touch target ≥ 44px** (WCAG 2.5.5 / Apple HIG): audit tombol kecil — pill nav, theme toggle, opsi jawaban, item dropdown UserMenu.
-- **Jangan andalkan hover**: banyak state pakai `hover:` yang tak ada di layar sentuh. Tambah `active:`/pressed state + pastikan `focus-visible` jalan. (UserMenu sudah klik-based ✓.)
-- **Keyboard mobile**: textarea materi — set `autocapitalize`/`autocorrect`/`inputmode` yang sesuai, scroll-into-view saat fokus, hindari layout "loncat" saat keyboard muncul. Font input ≥ 16px supaya tidak auto-zoom (relevan kalau iOS nanti).
-- **Safe-area**: padding `env(safe-area-inset-*)` untuk nav atas & area aksi bawah (status bar / gesture nav), plus `viewport-fit=cover` di meta viewport.
+**A. Web-responsive & touch — ✅ SELESAI 2026-06-14 (branch `feat/mobile-polish-6.5a`):**
+- ✅ **Audit responsif** 320 / 375 / 430px — diverifikasi via Playwright: **0 overflow horizontal** di `/`, `/app`, `/profil`, `/riwayat`, `/pengaturan`, `/progress`. Nav padding `px-4 sm:px-6`; `StatTile`/`ResultSummary`/hero diperkecil di mobile supaya angka besar / kata panjang tidak jebol.
+- ✅ **Touch target** ≥ 44px (40px untuk pill nav padat): avatar UserMenu + item dropdown, ThemeToggle, SourceTypeTabs, QuestionPills, dan semua CTA utama (submit home, kuis prev/next/submit/jump, result, daily challenge, progress, sample, logout).
+- ✅ **Jangan andalkan hover**: `active:`/pressed state ditambah di semua kontrol yang sebelumnya cuma `hover:`.
+- ✅ **Keyboard mobile**: sudah benar dari sebelumnya — textarea `autocapitalize`/`autocorrect`, input URL `inputmode`/`enterkeyhint`, font input 16px (no auto-zoom).
+- ✅ **Safe-area**: header/main sudah pakai `safe-pt`/`safe-px` + `viewport-fit=cover`; ditambah **bottom bar kuis** (`safe-px` + `pb-[calc(1rem+env(safe-area-inset-bottom))]`) yang tadinya ketutup gesture-nav.
 
 **B. Capacitor-native polish — butuh #6.4 dulu:**
 - **StatusBar plugin**: warna & style status bar ikut tema light/dark.
@@ -402,6 +402,7 @@ PAT hanya untuk model AI; akses DB terpisah (backend query Neon).
 | 2026-06-12 | Maskot Asahi v2 (#4.9) via **puppet** (inpaint alis+mulut, mata dilindungi) + pose gesture (SeaArt consistency app), semua **front-facing**, base full-hair transparan (rembg). Live: mid/wave/think; wired ke hero/result/loading. Branch `feat/mascot-asahi-v2`. | AI-render full-image tiap ekspresi drift wajahnya; puppet jaga konsistensi sambil pertahankan look anime yang disukai tim. |
 | 2026-06-12 | **AI Chatbot Asahi (#6.6)** diterima sebagai **POST-MVP** (butuh sepakat tim). GitHub Models (PAT server-side) + dialog terkekang + safeguard. | Asahi jadi teman belajar; jalur gratis (GitHub Models) & terkekang supaya aman/murah/on-brand. Scope expansion CLAUDE.md, pola seperti login #4.7. |
 | 2026-06-12 | Mobile: tetap **Capacitor** untuk demo; **React Native ditunda ke v2 pasca-demo**. | RN native feel nyata tapi gain kecil untuk app form/kuis ini; cost = rewrite total frontend → risiko jebol demo + lawan mandat "simpel + demo andal". Capacitor reuse 100% kode (~1 hari). RN nanti pakai Expo + NativeWind. |
+| 2026-06-14 | **#6.5-A Mobile polish (web-responsive & touch) SELESAI** — branch `feat/mobile-polish-6.5a`. Touch target ≥44px, `active:` states, safe-area bottom bar kuis, responsif 320/375/430 (0 overflow, verified Playwright). | Bagian yang bisa dikerjakan tanpa shell Capacitor; prasyarat ringan untuk #6.4 wrap. §6.5-B (StatusBar/Splash/Haptics) & §6.5-C (code-split) menyusul. Typecheck + 100 test + build hijau. |
 
 ---
 
