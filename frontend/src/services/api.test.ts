@@ -24,7 +24,7 @@ describe("api — happy paths", () => {
     fetchMock.mockResolvedValue(jsonResponse({ status: "ok", version: "1" }));
     const res = await api.checkHealth();
     expect(res).toEqual({ status: "ok", version: "1" });
-    const [url, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toContain("/health");
     expect(init.method).toBe("GET");
   });
@@ -34,7 +34,7 @@ describe("api — happy paths", () => {
     fetchMock.mockResolvedValue(jsonResponse(quiz));
     const res = await api.generateQuiz({ material_text: "halo dunia" });
     expect(res).toEqual(quiz);
-    const [url, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toContain("/quiz/generate");
     expect(init.method).toBe("POST");
     expect(JSON.parse(init.body)).toEqual({ material_text: "halo dunia" });
@@ -43,23 +43,23 @@ describe("api — happy paths", () => {
   it("submitQuiz POSTs to /quiz/submit", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ quiz_id: "q1" }));
     await api.submitQuiz({ quiz_id: "q1", answers: [], time_taken_seconds: 5 });
-    expect(fetchMock.mock.calls[0][0]).toContain("/quiz/submit");
+    expect(fetchMock.mock.calls[0]![0]).toContain("/quiz/submit");
   });
 
   it("regenerateQuiz and generateQuizFromUrl hit their endpoints", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ quiz_id: "q2" }));
     await api.regenerateQuiz("q1");
-    expect(fetchMock.mock.calls[0][0]).toContain("/quiz/regenerate");
+    expect(fetchMock.mock.calls[0]![0]).toContain("/quiz/regenerate");
 
     fetchMock.mockResolvedValue(jsonResponse({ quiz_id: "q3" }));
     await api.generateQuizFromUrl({ url: "https://x.test" });
-    expect(fetchMock.mock.calls[1][0]).toContain("/quiz/generate-from-url");
+    expect(fetchMock.mock.calls[1]![0]).toContain("/quiz/generate-from-url");
   });
 
   it("getDailyChallenge GETs with a device id header", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ quiz_id: "daily-x" }));
     await api.getDailyChallenge();
-    const [url, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toContain("/quiz/daily-challenge");
     expect(init.headers["X-Device-Id"]).toBeTruthy();
   });
@@ -106,7 +106,7 @@ describe("api — auth + gamification", () => {
     fetchMock.mockResolvedValue(jsonResponse(user));
     const res = await api.loginWithGoogle("google-cred");
     expect(res).toEqual(user);
-    const [url, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toContain("/auth/google");
     expect(JSON.parse(init.body).credential).toBe("google-cred");
     // Adopts the canonical device id for subsequent gamification calls.
@@ -117,7 +117,7 @@ describe("api — auth + gamification", () => {
     fetchMock.mockResolvedValue(jsonResponse({ total_xp: 10, level: 1 }));
     const stats = await api.getGamificationStats();
     expect(stats).toMatchObject({ total_xp: 10 });
-    expect(fetchMock.mock.calls[0][1].headers["X-Device-Id"]).toBeTruthy();
+    expect(fetchMock.mock.calls[0]![1].headers["X-Device-Id"]).toBeTruthy();
   });
 
   it("gamification calls return null on a non-ok response (graceful 503)", async () => {
@@ -146,7 +146,7 @@ describe("api — auth + gamification", () => {
   it("recordQuizAttempt POSTs the attempt", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ xp_earned: 10 }));
     await api.recordQuizAttempt({ quiz_id: "q1", score: 80, understanding_level: "high" });
-    const [url, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0]!;
     expect(url).toContain("/gamification/record-attempt");
     expect(init.method).toBe("POST");
   });

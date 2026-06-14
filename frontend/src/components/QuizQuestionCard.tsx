@@ -7,8 +7,10 @@ interface QuizQuestionCardProps {
   index: number;
   total: number;
   selectedOptionIndex: number | null;
+  textAnswer?: string | null;
   isCurrent?: boolean;
   onSelect: (optionIndex: number) => void;
+  onTextChange?: (text: string) => void;
   onFocus?: () => void;
 }
 
@@ -22,8 +24,10 @@ export function QuizQuestionCard({
   index,
   total,
   selectedOptionIndex,
+  textAnswer,
   isCurrent,
   onSelect,
+  onTextChange,
   onFocus,
 }: QuizQuestionCardProps) {
   return (
@@ -44,27 +48,41 @@ export function QuizQuestionCard({
         {question.question}
       </h3>
       <div className="space-y-2">
-        {question.options.map((option, i) => {
-          const isSelected = selectedOptionIndex === i;
-          return (
-            <button
-              key={i}
-              type="button"
-              onClick={() => onSelect(i)}
-              className={cn(
-                "w-full rounded-xl border px-4 py-3 text-left text-sm transition-colors active:bg-bg-alt",
-                isSelected
-                  ? "border-brand-accent bg-bg-alt text-text-primary"
-                  : "border-border-standard bg-bg-page text-text-primary hover:bg-bg-alt",
-              )}
-            >
-              <span className="mr-3 font-mono text-xs font-medium text-text-muted">
-                {String.fromCharCode(65 + i)}
-              </span>
-              {option}
-            </button>
-          );
-        })}
+        {question.type === "short_answer" ? (
+          <input
+            type="text"
+            value={textAnswer ?? ""}
+            onChange={(e) => onTextChange?.(e.target.value)}
+            placeholder="Ketik jawaban kamu di sini..."
+            aria-label={`Jawaban untuk soal ${index + 1}`}
+            className={cn(
+              "w-full rounded-xl border px-4 py-3 text-sm transition-colors",
+              "border-border-standard bg-bg-page text-text-primary focus:border-brand-accent focus:outline-none focus:ring-1 focus:ring-brand-accent/40"
+            )}
+          />
+        ) : (
+          question.options?.map((option, i) => {
+            const isSelected = selectedOptionIndex === i;
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => onSelect(i)}
+                className={cn(
+                  "w-full rounded-xl border px-4 py-3 text-left text-sm transition-colors active:bg-bg-alt",
+                  isSelected
+                    ? "border-brand-accent bg-bg-alt text-text-primary"
+                    : "border-border-standard bg-bg-page text-text-primary hover:bg-bg-alt",
+                )}
+              >
+                <span className="mr-3 font-mono text-xs font-medium text-text-muted">
+                  {String.fromCharCode(65 + i)}
+                </span>
+                {option}
+              </button>
+            );
+          })
+        )}
       </div>
     </div>
   );

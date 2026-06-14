@@ -16,16 +16,19 @@ class QuestionInternal(BaseModel):
     """Question with the correct answer attached. Stored server-side only."""
 
     id: int = Field(..., ge=1)
+    type: str = Field(default="multiple_choice", pattern="^(multiple_choice|true_false|short_answer)$")
     question: str
-    options: Annotated[list[str], conlist(str, min_length=4, max_length=4)]
-    correct_option_index: int = Field(..., ge=0, le=3)
+    options: Optional[Annotated[list[str], conlist(str, min_length=2, max_length=4)]] = None
+    correct_option_index: Optional[int] = Field(default=None, ge=0, le=3)
+    correct_answer_text: Optional[str] = None
 
     def to_public(self) -> Question:
         """Strip the correct answer for client transport."""
         return Question(
             id=self.id,
+            type=self.type,
             question=self.question,
-            options=list(self.options),
+            options=list(self.options) if self.options else None,
         )
 
 
@@ -51,7 +54,9 @@ class QuestionResult(BaseModel):
 
     question_id: int
     selected_option_index: Optional[int]
-    correct_option_index: int
+    correct_option_index: Optional[int]
+    text_answer: Optional[str] = None
+    correct_answer_text: Optional[str] = None
     is_correct: bool
     is_unanswered: bool
 

@@ -21,11 +21,13 @@ const quiz: QuizGenerateResponse = {
   questions: [
     {
       id: 1,
+      type: "multiple_choice",
       question: "Apa ibu kota Indonesia?",
       options: ["Jakarta", "Bandung", "Surabaya", "Medan"],
     },
     {
       id: 2,
+      type: "multiple_choice",
       question: "Berapa 2 + 2?",
       options: ["3", "4", "5", "6"],
     },

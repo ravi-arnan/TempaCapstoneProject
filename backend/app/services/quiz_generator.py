@@ -102,9 +102,11 @@ def _wrap_quiz(
     renumbered = [
         QuestionInternal(
             id=i + 1,
+            type=q.type,
             question=q.question,
             options=q.options,
             correct_option_index=q.correct_option_index,
+            correct_answer_text=q.correct_answer_text,
         )
         for i, q in enumerate(questions)
     ]
@@ -203,9 +205,11 @@ def generate_quiz(
                         combined.append(
                             QuestionInternal(
                                 id=len(combined) + 1,
+                                type=rq.type,
                                 question=rq.question,
                                 options=rq.options,
                                 correct_option_index=rq.correct_option_index,
+                                correct_answer_text=rq.correct_answer_text,
                             )
                         )
                     if len(combined) >= fallback_floor:
@@ -558,6 +562,45 @@ def _build_rule_question(
         return None
 
     from app.services._distractors import _pick_similar_length_distractors
+
+    # Roll a die to determine question type (60% MC, 20% TF, 20% SA)
+    q_type_roll = rng.random()
+    if q_type_roll < 0.2:
+        # True/False
+        is_true = rng.choice([True, False])
+        if is_true:
+            question_text = f'Pernyataan berikut ini Benar atau Salah?\n"{sentence}"'
+            return QuestionInternal(
+                id=qid,
+                type="true_false",
+                question=question_text,
+                options=["Benar", "Salah"],
+                correct_option_index=0,
+            )
+        else:
+            distractors = _pick_similar_length_distractors(correct, pool, 1)
+            if not distractors:
+                return None
+            false_sentence = pattern.sub(distractors[0], sentence, count=1)
+            question_text = f'Pernyataan berikut ini Benar atau Salah?\n"{false_sentence}"'
+            return QuestionInternal(
+                id=qid,
+                type="true_false",
+                question=question_text,
+                options=["Benar", "Salah"],
+                correct_option_index=1,
+            )
+            
+    elif q_type_roll < 0.4:
+        # Short Answer
+        return QuestionInternal(
+            id=qid,
+            type="short_answer",
+            question=f'Isi bagian yang rumpang dengan kata yang tepat:\n"{blanked}"',
+            correct_answer_text=correct,
+        )
+
+    # Multiple Choice
     distractors = _pick_similar_length_distractors(correct, pool, 3)
     if len(distractors) < 3:
         return None
@@ -568,8 +611,9 @@ def _build_rule_question(
 
     return QuestionInternal(
         id=qid,
+        type="multiple_choice",
         question=f'Lengkapi kalimat berikut: "{blanked}"',
-        options=options,  # type: ignore[arg-type]
+        options=options,
         correct_option_index=correct_idx,
     )
 

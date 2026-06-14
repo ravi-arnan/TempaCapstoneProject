@@ -3,15 +3,19 @@
  * Source of truth: /API.md
  */
 
+export type QuestionType = "multiple_choice" | "true_false" | "short_answer";
+
 export interface Question {
   id: number;
+  type: QuestionType;
   question: string;
-  options: [string, string, string, string];
+  options: string[] | null;
 }
 
 export interface Answer {
   question_id: number;
   selected_option_index: number | null;
+  text_answer: string | null;
 }
 
 export interface QuizGenerateRequest {
