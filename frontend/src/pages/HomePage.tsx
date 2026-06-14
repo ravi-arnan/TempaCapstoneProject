@@ -68,7 +68,7 @@ export function HomePage() {
   return (
     <div className="space-y-8">
       <header className="space-y-3">
-        <h1 className="text-5xl font-medium leading-[1.05] tracking-tight text-text-primary">
+        <h1 className="text-4xl font-medium leading-[1.05] tracking-tight text-text-primary sm:text-5xl">
           {HOMEPAGE.hero}
         </h1>
         <p className="max-w-2xl text-lg text-text-secondary">
@@ -88,7 +88,7 @@ export function HomePage() {
           <button
             type="button"
             onClick={handleSampleClick}
-            className="rounded-full border border-border-standard bg-bg-page px-4 py-2 text-sm text-text-secondary shadow-level-1 transition-colors hover:bg-bg-alt hover:text-text-primary"
+            className="inline-flex min-h-[44px] items-center rounded-full border border-border-standard bg-bg-page px-4 py-2 text-sm text-text-secondary shadow-level-1 transition-colors hover:bg-bg-alt hover:text-text-primary active:bg-bg-alt"
           >
             {SAMPLE_MATERIALS.fotosintesis.label}
           </button>

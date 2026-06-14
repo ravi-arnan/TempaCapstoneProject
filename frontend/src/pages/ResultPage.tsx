@@ -114,7 +114,7 @@ export function ResultPage() {
           type="button"
           onClick={handleRetry}
           disabled={regenerating}
-          className="rounded-pill border border-brand-button bg-brand-button px-8 py-2 text-sm font-medium text-white shadow-level-1 transition-colors hover:bg-brand-button-hover disabled:cursor-not-allowed disabled:opacity-60"
+          className="min-h-[44px] rounded-pill border border-brand-button bg-brand-button px-8 py-2 text-sm font-medium text-white shadow-level-1 transition-colors hover:bg-brand-button-hover active:bg-brand-button-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {regenerating ? BUTTON_LABELS.resultRetryLoading : BUTTON_LABELS.resultRetry}
         </button>
@@ -122,7 +122,7 @@ export function ResultPage() {
           type="button"
           onClick={() => navigate("/", { replace: true })}
           disabled={regenerating}
-          className="rounded-md border border-transparent bg-transparent px-4 py-2 text-sm font-medium text-text-primary hover:bg-[var(--hover-tint)] disabled:cursor-not-allowed disabled:opacity-60"
+          className="min-h-[44px] rounded-md border border-transparent bg-transparent px-4 py-2 text-sm font-medium text-text-primary hover:bg-[var(--hover-tint)] active:bg-[var(--hover-tint)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {BUTTON_LABELS.backToHome}
         </button>

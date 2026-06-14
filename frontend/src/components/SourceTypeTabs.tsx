@@ -32,10 +32,10 @@ export function SourceTypeTabs({ value, onChange, disabled }: SourceTypeTabsProp
             disabled={disabled}
             onClick={() => onChange(tab.value)}
             className={cn(
-              "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
+              "flex min-h-[44px] items-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-colors sm:px-4",
               isActive
                 ? "bg-text-primary text-bg-page"
-                : "text-text-muted hover:text-text-primary",
+                : "text-text-muted hover:text-text-primary active:text-text-primary",
               disabled && "cursor-not-allowed opacity-60",
             )}
           >

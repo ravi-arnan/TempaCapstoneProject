@@ -44,7 +44,7 @@ export function UserMenu() {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={AUTH_LABELS.accountMenu}
-        className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-border-standard bg-bg-page text-sm font-semibold text-text-primary shadow-level-1 outline-none transition-colors hover:bg-[var(--hover-tint)] focus-visible:[box-shadow:var(--focus-ring)]"
+        className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border-standard bg-bg-page text-sm font-semibold text-text-primary shadow-level-1 outline-none transition-colors hover:bg-[var(--hover-tint)] active:bg-[var(--hover-tint)] focus-visible:[box-shadow:var(--focus-ring)]"
       >
         {user.avatar_url ? (
           <img
@@ -103,7 +103,7 @@ export function UserMenu() {
                 logout();
                 window.location.reload();
               }}
-              className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-text-primary outline-none transition-colors hover:bg-[var(--hover-tint)] focus-visible:bg-[var(--hover-tint)]"
+              className="flex min-h-[44px] w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-text-primary outline-none transition-colors hover:bg-[var(--hover-tint)] active:bg-[var(--hover-tint)] focus-visible:bg-[var(--hover-tint)]"
             >
               <LogOut className="h-4 w-4" aria-hidden="true" />
               {AUTH_LABELS.logout}
@@ -131,7 +131,7 @@ function MenuLink({
       to={to}
       role="menuitem"
       onClick={onNavigate}
-      className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-text-primary outline-none transition-colors hover:bg-[var(--hover-tint)] focus-visible:bg-[var(--hover-tint)]"
+      className="flex min-h-[44px] w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-text-primary outline-none transition-colors hover:bg-[var(--hover-tint)] active:bg-[var(--hover-tint)] focus-visible:bg-[var(--hover-tint)]"
     >
       <Icon className="h-4 w-4" aria-hidden="true" />
       {label}

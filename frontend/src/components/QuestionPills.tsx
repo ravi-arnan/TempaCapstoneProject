@@ -29,12 +29,12 @@ export function QuestionPills({ answers, currentIndex, onJump }: QuestionPillsPr
             aria-label={`Soal ${i + 1}${answered ? ", terjawab" : ""}`}
             aria-current={isCurrent ? "step" : undefined}
             className={cn(
-              "inline-flex h-7 w-7 items-center justify-center rounded-full font-mono text-[11px] font-medium transition-all",
+              "inline-flex h-8 w-8 items-center justify-center rounded-full font-mono text-[11px] font-medium transition-all",
               isCurrent
                 ? "bg-text-primary text-bg-page ring-2 ring-brand-accent ring-offset-2 ring-offset-bg-page"
                 : answered
-                  ? "bg-status-tinggi text-[var(--status-tinggi-text)] hover:opacity-90"
-                  : "border border-border-prominent bg-bg-page text-text-muted hover:border-text-muted hover:text-text-primary",
+                  ? "bg-status-tinggi text-[var(--status-tinggi-text)] hover:opacity-90 active:opacity-80"
+                  : "border border-border-prominent bg-bg-page text-text-muted hover:border-text-muted hover:text-text-primary active:text-text-primary",
             )}
           >
             {i + 1}

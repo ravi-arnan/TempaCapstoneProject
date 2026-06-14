@@ -262,7 +262,7 @@ export function MaterialInputForm({
       <button
         type="submit"
         disabled={!canSubmit}
-        className="rounded-pill border border-brand-button bg-brand-button px-8 py-2.5 text-sm font-medium text-white shadow-level-1 transition-colors hover:bg-brand-button-hover disabled:cursor-not-allowed disabled:opacity-60"
+        className="min-h-[44px] rounded-pill border border-brand-button bg-brand-button px-8 py-2.5 text-sm font-medium text-white shadow-level-1 transition-colors hover:bg-brand-button-hover active:bg-brand-button-hover disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isSubmitting ? BUTTON_LABELS.homeLoading : BUTTON_LABELS.homePrimary}
       </button>

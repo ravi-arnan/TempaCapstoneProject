@@ -21,10 +21,10 @@ export function ThemeToggle() {
         aria-selected={theme === "light"}
         onClick={() => setTheme("light")}
         className={cn(
-          "flex items-center gap-1.5 rounded-full px-2.5 py-2 font-mono text-[11px] font-medium uppercase tracking-[1.2px] transition-colors sm:px-4",
+          "flex min-h-[40px] min-w-[40px] items-center justify-center gap-1.5 rounded-full px-2.5 py-2 font-mono text-[11px] font-medium uppercase tracking-[1.2px] transition-colors sm:min-w-0 sm:px-4",
           theme === "light"
             ? "bg-text-primary text-bg-page"
-            : "text-text-muted hover:text-text-primary",
+            : "text-text-muted hover:text-text-primary active:text-text-primary",
         )}
       >
         <SunIcon />
@@ -36,10 +36,10 @@ export function ThemeToggle() {
         aria-selected={theme === "dark"}
         onClick={() => setTheme("dark")}
         className={cn(
-          "flex items-center gap-1.5 rounded-full px-2.5 py-2 font-mono text-[11px] font-medium uppercase tracking-[1.2px] transition-colors sm:px-4",
+          "flex min-h-[40px] min-w-[40px] items-center justify-center gap-1.5 rounded-full px-2.5 py-2 font-mono text-[11px] font-medium uppercase tracking-[1.2px] transition-colors sm:min-w-0 sm:px-4",
           theme === "dark"
             ? "bg-text-primary text-bg-page"
-            : "text-text-muted hover:text-text-primary",
+            : "text-text-muted hover:text-text-primary active:text-text-primary",
         )}
       >
         <MoonIcon />
