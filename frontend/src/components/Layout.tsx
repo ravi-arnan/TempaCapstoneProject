@@ -4,6 +4,7 @@ import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { XpBadge } from "@/components/XpBadge";
 import { AuthNav } from "@/components/auth/AuthNav";
+import { useAuth } from "@/context/AuthContext";
 import { useGamificationStats } from "@/hooks/useGamificationStats";
 
 interface LayoutProps {
@@ -17,6 +18,7 @@ interface LayoutProps {
  */
 export function Layout({ children }: LayoutProps) {
   const { stats } = useGamificationStats();
+  const { user } = useAuth();
   const { pathname } = useLocation();
 
   return (
@@ -31,9 +33,9 @@ export function Layout({ children }: LayoutProps) {
             <Logo variant="full" />
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* XP/streak is an in-app concern — keep the marketing landing nav
-                clean (and uncramped on mobile). */}
-            {pathname !== "/" && <XpBadge stats={stats} />}
+            {/* XP/streak only for logged-in users (gamification is account-bound);
+                guests and the marketing landing nav stay clean. */}
+            {pathname !== "/" && user && <XpBadge stats={stats} />}
             <ThemeToggle />
             <AuthNav />
           </div>
