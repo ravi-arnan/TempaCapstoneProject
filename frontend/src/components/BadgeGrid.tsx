@@ -1,11 +1,31 @@
-import { Award, Lock, icons } from "lucide-react";
+import {
+  Award,
+  Flame,
+  type LucideIcon,
+  Lock,
+  Sparkles,
+  Star,
+  TrendingUp,
+  Trophy,
+} from "lucide-react";
 import type { Badge } from "@/types/gamification";
 import { cn } from "@/lib/cn";
 import { PROFILE_PAGE } from "@/utils/i18n";
 
-/** Resolve a Lucide icon by its PascalCase name; fall back to Award. */
-function iconFor(name: string) {
-  return icons[name as keyof typeof icons] ?? Award;
+// Explicit allow-list of the Lucide icons used by badges. Importing the full
+// `icons` object pulls all ~1000 Lucide icons into the bundle (~800kB); this
+// keeps tree-shaking working. Keep in sync with backend achievements.py.
+const BADGE_ICONS: Record<string, LucideIcon> = {
+  Sparkles,
+  Star,
+  Flame,
+  TrendingUp,
+  Trophy,
+};
+
+/** Resolve a badge's Lucide icon by its PascalCase name; fall back to Award. */
+function iconFor(name: string): LucideIcon {
+  return BADGE_ICONS[name] ?? Award;
 }
 
 interface BadgeGridProps {

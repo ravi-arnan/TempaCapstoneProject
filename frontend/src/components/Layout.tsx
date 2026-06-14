@@ -22,7 +22,7 @@ export function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen bg-bg-page">
       <header className="safe-pt border-b border-border-standard bg-bg-page">
-        <nav className="safe-px mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-4 sm:gap-3 sm:px-6">
+        <nav className="safe-px mx-auto flex max-w-5xl items-center justify-between gap-2 py-4 [--safe-gutter:1rem] sm:gap-3 sm:[--safe-gutter:1.5rem]">
           <Link
             to={pathname === "/" ? "/" : "/app"}
             className="rounded-md outline-none focus-visible:[box-shadow:var(--focus-ring)]"
@@ -39,7 +39,7 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </nav>
       </header>
-      <main className="safe-px mx-auto max-w-5xl px-4 pt-12 pb-[calc(6rem_+_env(safe-area-inset-bottom,0px))] sm:px-6">
+      <main className="safe-px mx-auto max-w-5xl pt-12 pb-[calc(6rem_+_env(safe-area-inset-bottom,0px))] [--safe-gutter:1.5rem]">
         {children}
       </main>
     </div>

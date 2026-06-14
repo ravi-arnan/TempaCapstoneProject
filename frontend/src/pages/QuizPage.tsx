@@ -303,7 +303,7 @@ export function QuizPage() {
       )}
 
       {/* Sticky bottom nav: Prev / (Next or Submit) */}
-      <div className="safe-px fixed inset-x-0 bottom-0 z-10 border-t border-border-standard bg-bg-page/95 px-4 py-4 pb-[calc(1rem_+_env(safe-area-inset-bottom,0px))] backdrop-blur-sm shadow-level-3 sm:px-6">
+      <div className="safe-px fixed inset-x-0 bottom-0 z-10 border-t border-border-standard bg-bg-page/95 py-4 pb-[calc(1rem_+_env(safe-area-inset-bottom,0px))] backdrop-blur-sm shadow-level-3 [--safe-gutter:1.5rem]">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
           <button
             type="button"
