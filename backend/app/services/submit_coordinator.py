@@ -62,12 +62,18 @@ def process_submission(
     question_reviews = [
         QuestionReview(
             question_id=r.question_id,
+            type=questions_by_id[r.question_id].type,
             question=questions_by_id[r.question_id].question,
-            options=list(questions_by_id[r.question_id].options),
+            options=list(questions_by_id[r.question_id].options or []),
             selected_option_index=r.selected_option_index,
             correct_option_index=r.correct_option_index,
             is_correct=r.is_correct,
             is_unanswered=r.is_unanswered,
+            # §6.2 matching review payload (None for other types).
+            left_items=questions_by_id[r.question_id].left_items,
+            right_items=questions_by_id[r.question_id].right_items,
+            matches=r.matches,
+            correct_matches=r.correct_matches,
         )
         for r in eval_result.question_results
         if r.question_id in questions_by_id

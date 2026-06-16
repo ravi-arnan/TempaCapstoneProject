@@ -38,6 +38,7 @@ const result: QuizSubmitResponse = {
   question_reviews: [
     {
       question_id: 1,
+      type: "multiple_choice",
       question: "Apa itu fotosintesis?",
       options: ["A", "B", "C", "D"],
       selected_option_index: 0,

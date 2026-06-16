@@ -67,35 +67,39 @@ function ReviewCard({ review, index, total }: ReviewCardProps) {
         {review.question}
       </h3>
 
-      <ul className="space-y-1.5">
-        {review.options.map((option, i) => {
-          const isUserPick = review.selected_option_index === i;
-          const isCorrect = review.correct_option_index === i;
+      {review.type === "matching" && review.left_items && review.right_items ? (
+        <MatchingReview review={review} />
+      ) : (
+        <ul className="space-y-1.5">
+          {review.options.map((option, i) => {
+            const isUserPick = review.selected_option_index === i;
+            const isCorrect = review.correct_option_index === i;
 
-          return (
-            <li
-              key={i}
-              className={cn(
-                "flex items-start gap-3 rounded-lg border px-3 py-2 text-sm",
-                isCorrect
-                  ? "border-status-tinggi/40 bg-status-tinggi/10 text-text-primary"
-                  : isUserPick
-                    ? "border-status-rendah/40 bg-status-rendah/10 text-text-primary"
-                    : "border-transparent text-text-secondary",
-              )}
-            >
-              <span className="mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center font-mono text-[11px] text-text-muted">
-                {String.fromCharCode(65 + i)}
-              </span>
-              <span className="flex-1">{option}</span>
-              {isCorrect && <CheckIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-status-tinggi" />}
-              {isUserPick && !isCorrect && (
-                <CrossIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-status-rendah" />
-              )}
-            </li>
-          );
-        })}
-      </ul>
+            return (
+              <li
+                key={i}
+                className={cn(
+                  "flex items-start gap-3 rounded-lg border px-3 py-2 text-sm",
+                  isCorrect
+                    ? "border-status-tinggi/40 bg-status-tinggi/10 text-text-primary"
+                    : isUserPick
+                      ? "border-status-rendah/40 bg-status-rendah/10 text-text-primary"
+                      : "border-transparent text-text-secondary",
+                )}
+              >
+                <span className="mt-0.5 inline-flex h-5 w-5 flex-shrink-0 items-center justify-center font-mono text-[11px] text-text-muted">
+                  {String.fromCharCode(65 + i)}
+                </span>
+                <span className="flex-1">{option}</span>
+                {isCorrect && <CheckIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-status-tinggi" />}
+                {isUserPick && !isCorrect && (
+                  <CrossIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-status-rendah" />
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       {review.is_unanswered && (
         <p className="mt-3 text-xs font-mono uppercase tracking-[1.2px] text-text-muted">
@@ -103,6 +107,55 @@ function ReviewCard({ review, index, total }: ReviewCardProps) {
         </p>
       )}
     </article>
+  );
+}
+
+function MatchingReview({ review }: { review: QuestionReview }) {
+  const left = review.left_items ?? [];
+  const right = review.right_items ?? [];
+  const matches = review.matches ?? [];
+  const correct = review.correct_matches ?? [];
+
+  return (
+    <ul className="space-y-2">
+      {left.map((term, i) => {
+        const userIdx = matches[i] ?? -1;
+        const correctIdx = correct[i] ?? -1;
+        const isCorrect = userIdx === correctIdx;
+        const userText = userIdx >= 0 ? right[userIdx] : REVIEW_LABELS.noAnswer;
+
+        return (
+          <li
+            key={i}
+            className={cn(
+              "rounded-lg border px-3 py-2 text-sm",
+              isCorrect
+                ? "border-status-tinggi/40 bg-status-tinggi/10"
+                : "border-status-rendah/40 bg-status-rendah/10",
+            )}
+          >
+            <div className="flex items-start gap-2">
+              <span className="font-medium text-text-primary">{term}</span>
+              {isCorrect ? (
+                <CheckIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-status-tinggi" />
+              ) : (
+                <CrossIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-status-rendah" />
+              )}
+            </div>
+            <p className="mt-1 text-text-secondary">
+              <span className="text-text-muted">{REVIEW_LABELS.yourAnswer}: </span>
+              {userText}
+            </p>
+            {!isCorrect && correctIdx >= 0 && (
+              <p className="text-text-secondary">
+                <span className="text-text-muted">{REVIEW_LABELS.correctAnswer}: </span>
+                {right[correctIdx]}
+              </p>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

@@ -386,11 +386,22 @@ Submits user's answers and returns full result analysis.
 | `quiz_id` | string (UUID) | yes | must match an existing generated quiz |
 | `answers[]` | Answer[] | yes | length must equal `total_questions` from generate response |
 | `answers[].question_id` | int | yes | must reference an existing question in the quiz |
-| `answers[].selected_option_index` | int \| null | yes | 0–3 (matches `options` array index), or `null` for unanswered |
+| `answers[].selected_option_index` | int \| null | for MC/TF | 0–3 (matches `options` array index), or `null` for unanswered |
+| `answers[].text_answer` | string \| null | for short_answer | the typed answer; `null`/empty = unanswered |
+| `answers[].matches` | int[] \| null | for matching | `matches[i]` = chosen `right_items` index for `left_items[i]`, or `-1` when unpaired (§6.2) |
 | `time_taken_seconds` | int | yes | ≥ 0, ≤ 7200 (2 hours sanity cap) |
 
 > **Why `selected_option_index` (int 0–3) instead of `selected_answer` (string "A"–"D")?**
 > Index is robust to display reordering and avoids parsing. Frontend can map index→letter label for display purposes only.
+
+> **Question types (§6.2)**: `type` is one of `multiple_choice`, `true_false`,
+> `short_answer`, `matching`. A `matching` question carries `left_items` (terms)
+> and `right_items` (a shuffled answer bank) instead of `options`; the user
+> submits `matches`. Scoring gives **partial credit** for matching — each correct
+> pair counts fractionally toward `score_percentage` — but `correct_count`
+> only counts a question as correct when *fully* correct. `question_reviews[]`
+> for a matching row includes `left_items`, `right_items`, `matches`, and
+> `correct_matches`.
 
 #### Response · 200 OK
 

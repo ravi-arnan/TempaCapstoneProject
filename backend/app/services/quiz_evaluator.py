@@ -46,6 +46,10 @@ def evaluate(
         questions_by_id = {q.id: q for q in quiz.questions}
         results: list[QuestionResult] = []
         correct = wrong = unanswered = 0
+        # §6.2: points support partial credit (matching). For every other type
+        # earned is 0 or 1, so score_percentage is identical to the old
+        # correct/total formula — no behaviour change for existing quizzes.
+        earned_points = 0.0
 
         for ans in answers:
             q = questions_by_id.get(ans.question_id)
@@ -57,8 +61,25 @@ def evaluate(
                 )
 
             q_type = getattr(q, 'type', 'multiple_choice')
-            
-            if q_type == 'short_answer':
+            matches = correct_matches = None
+            earned = 0.0
+
+            if q_type == 'matching':
+                correct_matches = q.correct_matches or []
+                matches = ans.matches
+                is_unanswered = (
+                    not matches
+                    or all(m is None or m < 0 for m in matches)
+                )
+                if not is_unanswered and correct_matches:
+                    correct_pairs = sum(
+                        1
+                        for i, want in enumerate(correct_matches)
+                        if i < len(matches) and matches[i] == want
+                    )
+                    earned = correct_pairs / len(correct_matches)
+                is_correct = earned == 1.0
+            elif q_type == 'short_answer':
                 is_unanswered = not ans.text_answer or not ans.text_answer.strip()
                 is_correct = False
                 if not is_unanswered and q.correct_answer_text:
@@ -70,6 +91,7 @@ def evaluate(
                     user_ans = re.sub(r'[^\w\s]', '', ans.text_answer).strip().lower()
                     correct_ans = re.sub(r'[^\w\s]', '', q.correct_answer_text).strip().lower()
                     is_correct = (user_ans == correct_ans)
+                earned = 1.0 if is_correct else 0.0
             else:
                 # handles multiple_choice and true_false
                 is_unanswered = ans.selected_option_index is None
@@ -77,7 +99,13 @@ def evaluate(
                     not is_unanswered
                     and ans.selected_option_index == q.correct_option_index
                 )
+                earned = 1.0 if is_correct else 0.0
 
+            earned_points += earned
+
+            # correct_count / wrong_count stay integer: a question counts as
+            # "correct" only when fully correct. Partial matching credit is
+            # reflected in score_percentage via earned_points.
             if is_correct:
                 correct += 1
             elif is_unanswered:
@@ -94,11 +122,13 @@ def evaluate(
                     correct_answer_text=q.correct_answer_text,
                     is_correct=is_correct,
                     is_unanswered=is_unanswered,
+                    matches=matches,
+                    correct_matches=correct_matches,
                 )
             )
 
         total = quiz.total_questions
-        score_percentage = round((correct / total) * 100) if total > 0 else 0
+        score_percentage = round((earned_points / total) * 100) if total > 0 else 0
         # Bonus analytics: average time per question is useful for downstream
         # reporting or understanding pacing, but it is not required by the
         # core scoring contract.

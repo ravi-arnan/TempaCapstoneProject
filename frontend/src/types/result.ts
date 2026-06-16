@@ -19,14 +19,26 @@ export interface ChartData {
   unanswered: number;
 }
 
+export type QuestionType =
+  | "multiple_choice"
+  | "true_false"
+  | "short_answer"
+  | "matching";
+
 export interface QuestionReview {
   question_id: number;
+  type: QuestionType;
   question: string;
   options: string[];
   selected_option_index: number | null;
-  correct_option_index: number;
+  correct_option_index: number | null;
   is_correct: boolean;
   is_unanswered: boolean;
+  // §6.2 matching review
+  left_items?: string[] | null;
+  right_items?: string[] | null;
+  matches?: number[] | null;
+  correct_matches?: number[] | null;
 }
 
 export interface QuizSubmitResponse {
