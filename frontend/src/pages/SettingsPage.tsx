@@ -1,9 +1,10 @@
 import { LogOut, Settings as SettingsIcon } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LearningPreferences } from "@/components/LearningPreferences";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 import { useAuth } from "@/context/AuthContext";
-import { SETTINGS_PAGE } from "@/utils/i18n";
+import { LEARNING_PREFS, SETTINGS_PAGE } from "@/utils/i18n";
 
 /**
  * Settings (ROADMAP §4.8b): appearance (theme) + account (info / logout).
@@ -26,6 +27,13 @@ export function SettingsPage() {
         caption={SETTINGS_PAGE.appearanceCaption}
       >
         <ThemeToggle />
+      </SettingsCard>
+
+      <SettingsCard
+        title={LEARNING_PREFS.title}
+        caption={LEARNING_PREFS.subtitle}
+      >
+        <LearningPreferences />
       </SettingsCard>
 
       {isConfigured && (

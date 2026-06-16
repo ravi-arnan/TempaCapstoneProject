@@ -20,6 +20,7 @@ This directory contains SQL migration files for the Neon Postgres database.
 - `0002_add_topic_columns.sql` — Add `topic` columns for per-topic mastery analytics
 - `0003_add_google_auth.sql` — Add Google login columns (`google_sub`, `email`, `avatar_url`) to `users`
 - `0004_add_chat_messages.sql` — Add `chat_messages` table for Asahi free-chat memory
+- `0005_add_preferences_bookmarks.sql` — Add `user_preferences` + `material_bookmarks` tables (§4.8 Batch 2-B). **Until applied, `/gamification/preferences` and `/gamification/bookmarks` return 503 and their UI degrades to off; the rest of the app is unaffected.**
 
 ## Notes
 

@@ -17,6 +17,7 @@ import { DailyChallengeCard } from "@/components/DailyChallengeCard";
 import { StreakCard } from "@/components/StreakCard";
 import { WeeklyGoalCard } from "@/components/WeeklyGoalCard";
 import { LeaderboardCard } from "@/components/LeaderboardCard";
+import { BookmarksList } from "@/components/BookmarksList";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 import { useProfileData } from "@/hooks/useProfileData";
 import { useAuth } from "@/context/AuthContext";
@@ -75,6 +76,8 @@ export function ProfilePage() {
       <StreakCard current={stats.current_streak} longest={stats.longest_streak} />
 
       <WeeklyGoalCard />
+
+      <BookmarksList />
 
       <LeaderboardCard />
 

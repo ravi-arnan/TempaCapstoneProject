@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { AsahiChatWidget } from "@/components/AsahiChatWidget";
 import { MaterialInputForm } from "@/components/MaterialInputForm";
 import { SourceTypeTabs } from "@/components/SourceTypeTabs";
@@ -9,8 +9,10 @@ import { QuizSettingsControl } from "@/components/QuizSettingsControl";
 import { useQuiz } from "@/hooks/useQuiz";
 import { useOnboardingTour } from "@/hooks/useOnboardingTour";
 import { hasOnboarded } from "@/lib/onboarding";
-import type { QuizSettings, SourceType } from "@/types/quiz";
+import { createBookmark, getPreferences } from "@/services/api";
+import type { QuestionCount, QuizSettings, SourceType } from "@/types/quiz";
 import { DEFAULT_QUIZ_SETTINGS } from "@/types/quiz";
+import { BOOKMARKS } from "@/utils/i18n";
 import {
   HOMEPAGE,
   LOADING_PROGRESS_MESSAGES,
@@ -39,12 +41,50 @@ export function HomePage() {
   const [prefillText, setPrefillText] = useState<string | null>(null);
   const [prefillUrl, setPrefillUrl] = useState<string | null>(null);
   const [settings, setSettings] = useState<QuizSettings>(DEFAULT_QUIZ_SETTINGS);
+  const [savedMaterial, setSavedMaterial] = useState(false);
+
+  // §4.8: seed quiz settings from the user's saved learning preferences (no-op
+  // when gamification is off — getPreferences returns null).
+  useEffect(() => {
+    let active = true;
+    void getPreferences().then((prefs) => {
+      if (!active || !prefs) return;
+      setSettings({
+        num_questions: prefs.default_num_questions as QuestionCount,
+        difficulty: prefs.default_difficulty,
+        shuffle_options: prefs.shuffle_options,
+      });
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function handleSaveMaterial(text: string) {
+    const title = text.trim().split("\n")[0]?.slice(0, 80) || "Materi";
+    const saved = await createBookmark({ title, material_text: text });
+    if (saved) {
+      setSavedMaterial(true);
+      setTimeout(() => setSavedMaterial(false), 2500);
+    }
+  }
 
   // §4.6 Onboarding tour: auto-start on first visit, or when the nav "?" button
   // sends the user here with ?tour=1. Runs once per mount.
   const { startTour } = useOnboardingTour();
   const [searchParams, setSearchParams] = useSearchParams();
   const tourStartedRef = useRef(false);
+  const location = useLocation();
+
+  // §4.8: "Asah" on a saved material navigates here with the text to prefill.
+  const prefillMaterial = (location.state as { prefillMaterial?: string } | null)
+    ?.prefillMaterial;
+  useEffect(() => {
+    if (prefillMaterial) {
+      setSourceType("text");
+      setPrefillText(prefillMaterial);
+    }
+  }, [prefillMaterial]);
 
   useEffect(() => {
     if (tourStartedRef.current) return;
@@ -156,6 +196,8 @@ export function HomePage() {
         prefillText={prefillText}
         prefillUrl={prefillUrl}
         onSmartUrlPaste={handleSmartUrlPaste}
+        onSaveText={handleSaveMaterial}
+        saveTextLabel={savedMaterial ? BOOKMARKS.saved : BOOKMARKS.save}
       />
       </div>
 

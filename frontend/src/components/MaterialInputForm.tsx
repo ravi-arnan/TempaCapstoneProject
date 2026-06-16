@@ -19,6 +19,9 @@ interface MaterialInputFormProps {
   /** Called when the user pastes a URL into the text textarea. Caller should
    * switch to the URL tab and populate the URL field via `prefillUrl`. */
   onSmartUrlPaste?: (url: string) => void;
+  /** §4.8: save the current text material as a bookmark (text tab only). */
+  onSaveText?: (text: string) => void;
+  saveTextLabel?: string;
 }
 
 const URL_PASTE_RE = /^https?:\/\/\S+$/i;
@@ -38,6 +41,8 @@ export function MaterialInputForm({
   prefillText,
   prefillUrl,
   onSmartUrlPaste,
+  onSaveText,
+  saveTextLabel,
 }: MaterialInputFormProps) {
   const [text, setText] = useState("");
   const [url, setUrl] = useState("");
@@ -259,13 +264,25 @@ export function MaterialInputForm({
         </div>
       )}
 
-      <button
-        type="submit"
-        disabled={!canSubmit}
-        className="min-h-[44px] rounded-pill border border-brand-button bg-brand-button px-8 py-2.5 text-sm font-medium text-white shadow-level-1 transition-colors hover:bg-brand-button-hover active:bg-brand-button-hover disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {isSubmitting ? BUTTON_LABELS.homeLoading : BUTTON_LABELS.homePrimary}
-      </button>
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="min-h-[44px] rounded-pill border border-brand-button bg-brand-button px-8 py-2.5 text-sm font-medium text-white shadow-level-1 transition-colors hover:bg-brand-button-hover active:bg-brand-button-hover disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isSubmitting ? BUTTON_LABELS.homeLoading : BUTTON_LABELS.homePrimary}
+        </button>
+
+        {sourceType === "text" && onSaveText && textValid && !isSubmitting && (
+          <button
+            type="button"
+            onClick={() => onSaveText(trimmedText)}
+            className="min-h-[44px] rounded-pill border border-border-standard bg-bg-page px-5 py-2 text-sm font-medium text-text-secondary shadow-level-1 transition-colors hover:bg-bg-alt hover:text-text-primary active:bg-bg-alt"
+          >
+            {saveTextLabel}
+          </button>
+        )}
+      </div>
     </form>
   );
 }

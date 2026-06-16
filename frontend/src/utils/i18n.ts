@@ -98,6 +98,31 @@ export const WEEKLY_GOAL = {
 } as const;
 
 // ============================================================================
+// §4.8 Batch 2-B — Preferences + Material bookmarks
+// ============================================================================
+
+export const LEARNING_PREFS = {
+  title: "Preferensi Belajar",
+  subtitle: "Jadi default saat membuat kuis baru",
+  countLabel: "Jumlah soal default",
+  difficultyLabel: "Tingkat kesulitan default",
+  shuffleLabel: "Acak urutan opsi",
+  weeklyGoalLabel: "Target kuis per minggu",
+  saved: "Tersimpan",
+  unavailable: "Preferensi belum aktif (butuh database).",
+} as const;
+
+export const BOOKMARKS = {
+  save: "Simpan materi",
+  saved: "Materi tersimpan",
+  title: "Materi Tersimpan",
+  empty: "Belum ada materi tersimpan. Simpan materi untuk diasah lagi nanti.",
+  practice: "Asah",
+  delete: "Hapus",
+  deleteConfirm: "Hapus materi tersimpan ini?",
+} as const;
+
+// ============================================================================
 // Quiz settings — pre-generate (ROADMAP §4.3)
 // ============================================================================
 

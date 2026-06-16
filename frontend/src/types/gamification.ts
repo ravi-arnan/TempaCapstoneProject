@@ -91,3 +91,23 @@ export interface WeeklyProgress {
   goal_met: boolean;
   remaining: number;
 }
+
+// §4.8 Batch 2-B — Preferences + Material bookmarks
+export interface UserPreferences {
+  default_num_questions: number;
+  default_difficulty: "easy" | "medium" | "hard";
+  shuffle_options: boolean;
+  weekly_goal: number;
+  favorite_topic: string | null;
+}
+
+export interface Bookmark {
+  id: string;
+  title: string;
+  material_text: string;
+  created_at: string;
+}
+
+export interface BookmarkList {
+  items: Bookmark[];
+}
