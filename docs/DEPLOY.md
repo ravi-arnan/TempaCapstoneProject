@@ -16,8 +16,21 @@ Android app** (see `MOBILE.md`).
 ## 1. Quiz generator (Hugging Face Space)
 
 Already deployed: `https://raviarnan-asahlagi-quizgen.hf.space`
-(Dockerized, in `huggingface/quizgen/`.) No action needed unless the model
-changes.
+(Dockerized, in `huggingface/quizgen/`.)
+
+**This Space holds its own copy of the code** (it does NOT clone from GitHub
+like the backend Space). To redeploy after changing `huggingface/quizgen/*` —
+including syncing `qg_core.py` from `backend/ml/generator/qg_core.py` — run:
+
+```bash
+backend/.venv/bin/python scripts/redeploy_quizgen_space.py
+```
+
+The helper verifies the two `qg_core.py` copies are byte-identical, then uploads
+`huggingface/quizgen/` to the Space repo (the push triggers a rebuild). The
+quiz-assembly logic (answer-aware span selection, cloze fallback, same-category
+distractors) lives in `qg_core.py`, shared verbatim with the local backend
+fallback — **keep both copies in sync** (`diff -q` them).
 
 ---
 

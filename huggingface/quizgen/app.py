@@ -8,17 +8,23 @@ Endpoints:
 
 The local backend (backend/app/services/quiz_generator.py) calls this Space.
 If unreachable, backend falls back to local CPU inference, then rule-based.
+
+Quiz assembly (answer-span selection, question consistency, cloze fallback,
+same-category distractors) lives in `qg_core.py`, a verbatim copy of
+`backend/ml/generator/qg_core.py`. The Space and the local backend share that
+file so both serve identical answer-aware quizzes. Keep the two copies in sync.
 """
 
 from __future__ import annotations
 
 import logging
 import random
-import re
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+
+import qg_core
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -66,8 +72,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Asahlagi Quiz Generator (HF Space)",
-    description="Indonesian question generator using fine-tunable IndoT5",
-    version="0.1.0",
+    description="Indonesian question generator using fine-tuned IndoT5",
+    version="0.2.0",
     lifespan=lifespan,
 )
 
@@ -92,47 +98,19 @@ class GenerateResponse(BaseModel):
 
 
 # ============================================================================
-# Inference helpers (mirror local ml/generator/inference.py)
+# Model call — raw decode; all cleaning/validation lives in qg_core
 # ============================================================================
 
-_STOP_WORDS = frozenset({
-    "yang", "dan", "di", "ke", "dari", "untuk", "pada", "dengan", "ini",
-    "itu", "atau", "adalah", "akan", "tidak", "juga", "dapat", "sebagai",
-    "telah", "oleh", "dalam", "saat", "yaitu", "namun", "agar", "karena",
-    "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
-    "and", "or", "but", "of", "in", "on", "at", "to", "for", "with",
-    "this", "that", "these", "those", "it", "its", "they", "them",
-})
 
-_WORD_RE = re.compile(r"[A-Za-zÀ-ÿ]{4,}")
+def _run_model(prompt: str) -> str:
+    """Run IndoT5 on an answer-aware prompt; return raw decoded text.
 
-
-def _extract_keywords(text: str) -> list[str]:
-    seen: set[str] = set()
-    words: list[str] = []
-    for m in _WORD_RE.finditer(text):
-        w = m.group(0)
-        wl = w.lower()
-        if wl in _STOP_WORDS or wl in seen:
-            continue
-        seen.add(wl)
-        words.append(w)
-    return words
-
-
-def _split_passages(text: str, n: int = NUM_QUESTIONS) -> list[str]:
-    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
-    if len(sentences) <= n:
-        return sentences[:n]
-    step = max(1, len(sentences) // n)
-    return [sentences[i * step] for i in range(n) if i * step < len(sentences)]
-
-
-def _generate_question_for_passage(passage: str) -> str:
+    qg_core.build_quiz passes the highlighted (`<hl>`) prompt and handles all
+    cleaning, consistency checking, and cloze fallback on the result.
+    """
     if _model is None or _tokenizer is None:
         raise RuntimeError("Model not loaded")
 
-    prompt = f"buat pertanyaan: {passage}"
     inputs = _tokenizer(
         prompt,
         return_tensors="pt",
@@ -147,38 +125,7 @@ def _generate_question_for_passage(passage: str) -> str:
         no_repeat_ngram_size=NO_REPEAT_NGRAM_SIZE,
         early_stopping=True,
     )
-    decoded = _tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
-
-    # Clean up output (same logic as local inference)
-    for prefix in ("pertanyaan:", "Pertanyaan:", "PERTANYAAN:"):
-        if decoded.lower().startswith(prefix.lower()):
-            decoded = decoded[len(prefix):].strip()
-            break
-    if "?" in decoded:
-        decoded = decoded.split("?", 1)[0].strip() + "?"
-    if decoded and decoded[0].islower():
-        decoded = decoded[0].upper() + decoded[1:]
-    if decoded and decoded[-1] not in "?.!":
-        decoded += "?"
-    return decoded
-
-
-def _is_quality_acceptable(question: str) -> bool:
-    stripped = question.strip()
-    if len(stripped) < 15:
-        return False
-    words = [w for w in stripped.split() if any(c.isalpha() for c in w)]
-    if len(words) < 3:
-        return False
-    if not any(len("".join(c for c in w if c.isalpha())) >= 5 for w in words):
-        return False
-    letters = [c for c in stripped.lower() if c.isalpha()]
-    if not letters:
-        return False
-    most_common = max(letters, key=letters.count)
-    if letters.count(most_common) / len(letters) > 0.5:
-        return False
-    return True
+    return _tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
 
 
 # ============================================================================
@@ -201,51 +148,20 @@ async def generate(req: GenerateRequest):
         raise HTTPException(status_code=503, detail="Model not yet loaded")
 
     text = req.material_text.strip()
-    passages = _split_passages(text)
-    if len(passages) < 3:
-        raise HTTPException(status_code=400, detail="Material too short or homogeneous")
 
-    keywords_pool = _extract_keywords(text)
-    if len(keywords_pool) < 4:
-        raise HTTPException(status_code=400, detail="Not enough distinct keywords")
-
+    # Deterministic per-material RNG so the same text yields a stable quiz
+    # (mirrors backend/ml/generator/inference.py).
     rng = random.Random(abs(hash(text)) & 0xFFFFFFFF)
-    questions: list[GeneratedQuestion] = []
-
-    for i, passage in enumerate(passages):
-        try:
-            q_text = _generate_question_for_passage(passage)
-        except Exception as exc:  # noqa: BLE001
-            logger.warning("Question gen failed for passage %d: %s", i, exc)
-            continue
-
-        if not _is_quality_acceptable(q_text):
-            logger.info("Skipping low-quality output for passage %d: %r", i, q_text[:60])
-            continue
-
-        passage_keywords = _extract_keywords(passage)
-        if not passage_keywords:
-            continue
-        correct = max(passage_keywords, key=len)
-
-        distractor_pool = [k for k in keywords_pool if k.lower() != correct.lower()]
-        if len(distractor_pool) < 3:
-            continue
-        distractors = rng.sample(distractor_pool, 3)
-        options = [correct, *distractors]
-        rng.shuffle(options)
-        correct_idx = options.index(correct)
-
-        questions.append(GeneratedQuestion(
-            question=q_text,
-            options=options,
-            correct_option_index=correct_idx,
-        ))
-
-        if len(questions) >= NUM_QUESTIONS:
-            break
+    questions = qg_core.build_quiz(
+        text, _run_model, num_questions=NUM_QUESTIONS, rng=rng
+    )
 
     if not questions:
-        raise HTTPException(status_code=500, detail="Failed to generate any valid questions")
+        raise HTTPException(
+            status_code=400,
+            detail="Material too short or homogeneous to build a quiz",
+        )
 
-    return GenerateResponse(questions=questions)
+    return GenerateResponse(
+        questions=[GeneratedQuestion(**q) for q in questions]
+    )
