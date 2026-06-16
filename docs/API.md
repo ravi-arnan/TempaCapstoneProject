@@ -168,7 +168,9 @@ Generates a multiple-choice quiz from learning material.
 ```json
 {
   "material_text": "Fotosintesis adalah proses pembentukan glukosa...",
-  "difficulty": "medium"
+  "difficulty": "medium",
+  "num_questions": 5,
+  "shuffle_options": true
 }
 ```
 
@@ -176,13 +178,20 @@ Generates a multiple-choice quiz from learning material.
 |---|---|---|---|
 | `material_text` | string | yes | min 100 chars, max 20,000 chars; non-empty after trimming |
 | `difficulty` | string | no | one of `"easy"` \| `"medium"` \| `"hard"`. Omit to let the backend choose adaptively — see §4.10 |
+| `num_questions` | int | no | one of `3` \| `5` \| `7` \| `10` (§4.3). Overrides the difficulty-derived count. Omit to use the difficulty default |
+| `shuffle_options` | bool | no | default `true`. When `false`, multiple-choice options are returned in a stable alphabetical order instead of randomised (§4.3) |
 
 > **Adaptive difficulty**: when `difficulty` is omitted, the backend picks one
 > based on the caller's gamification level (via the `X-Device-Id` header, if sent
 > and the DB is configured): level ≤3 → `easy`, ≤8 → `medium`, else `hard`.
 > Falls back to `medium` when there is no device id or no DB. An explicit
-> `difficulty` always wins. `difficulty` controls question count:
-> `easy` = 3, `medium` = 5, `hard` = 7.
+> `difficulty` always wins.
+>
+> **Question count** (§4.3): `num_questions` is independent of difficulty and
+> wins when provided (clamped to 3–10). When omitted, `difficulty` sets the
+> count: `easy` = 3, `medium` = 5, `hard` = 7. The same `num_questions` /
+> `shuffle_options` fields apply to `/quiz/generate-from-url` (body) and
+> `/quiz/generate-from-pdf` (query params).
 
 #### Response · 200 OK
 

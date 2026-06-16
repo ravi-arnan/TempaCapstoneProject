@@ -18,12 +18,34 @@ export interface Answer {
   text_answer: string | null;
 }
 
+// §4.3 Quiz settings (pre-generate)
+export type QuestionCount = 3 | 5 | 7 | 10;
+export type Difficulty = "easy" | "medium" | "hard";
+
+export interface QuizSettings {
+  num_questions: QuestionCount;
+  difficulty: Difficulty;
+  shuffle_options: boolean;
+}
+
+export const DEFAULT_QUIZ_SETTINGS: QuizSettings = {
+  num_questions: 5,
+  difficulty: "medium",
+  shuffle_options: true,
+};
+
 export interface QuizGenerateRequest {
   material_text: string;
+  num_questions?: QuestionCount;
+  difficulty?: Difficulty;
+  shuffle_options?: boolean;
 }
 
 export interface QuizGenerateFromUrlRequest {
   url: string;
+  num_questions?: QuestionCount;
+  difficulty?: Difficulty;
+  shuffle_options?: boolean;
 }
 
 export type SourceType = "text" | "url" | "pdf";
@@ -33,6 +55,7 @@ export interface QuizGenerateResponse {
   questions: Question[];
   total_questions: number;
   generated_at: string;
+  difficulty?: Difficulty;
 }
 
 export interface QuizSubmitRequest {

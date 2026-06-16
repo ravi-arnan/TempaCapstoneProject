@@ -145,14 +145,14 @@ def _check_hf_space_available() -> bool:
     return False
 
 
-def _generate_via_hf_space(material_text: str) -> list[dict]:
+def _generate_via_hf_space(material_text: str, num_questions: int) -> list[dict]:
     """Call HF Space /generate endpoint. Returns list of question dicts."""
     import httpx
 
     with httpx.Client(timeout=_HF_SPACE_TIMEOUT_SECONDS) as client:
         response = client.post(
             f"{_HF_SPACE_URL}/generate",
-            json={"material_text": material_text},
+            json={"material_text": material_text, "num_questions": num_questions},
         )
         response.raise_for_status()
         data = response.json()
@@ -172,16 +172,20 @@ def is_available() -> bool:
     return _local_model is not None
 
 
-def generate(material_text: str) -> list[dict]:
+def generate(material_text: str, num_questions: int | None = None) -> list[dict]:
     """Generate quiz from material. Tries HF Space, falls back to local CPU.
+
+    `num_questions` (§4.3) is the requested question count; defaults to
+    _NUM_QUESTIONS. Threaded to both the HF Space request and local inference.
 
     Returns: list of dicts with keys {question, options, correct_option_index}
     Raises: RuntimeError if both HF Space and local model unavailable.
     """
+    n = num_questions if num_questions is not None else _NUM_QUESTIONS
     # Path 1: HF Space (cloud)
     if _check_hf_space_available():
         try:
-            questions = _generate_via_hf_space(material_text)
+            questions = _generate_via_hf_space(material_text, n)
             if questions:
                 logger.info(
                     "ml.generator: HF Space produced %d questions",
@@ -202,7 +206,7 @@ def generate(material_text: str) -> list[dict]:
             f"ml.generator unavailable: HF Space + local both failed. "
             f"Local error: {_local_load_error}"
         )
-    return _generate_locally(material_text)
+    return _generate_locally(material_text, n)
 
 
 # ============================================================================
@@ -237,12 +241,13 @@ def _run_local_model(prompt: str) -> str:
     return _local_tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
 
 
-def _generate_locally(material_text: str) -> list[dict]:
+def _generate_locally(material_text: str, num_questions: int | None = None) -> list[dict]:
     """Local CPU fallback when HF Space unavailable. Uses the same answer-aware
     assembly as the Space, so the correct answer always answers the question."""
+    n = num_questions if num_questions is not None else _NUM_QUESTIONS
     rng = random.Random(abs(hash(material_text)) & 0xFFFFFFFF)
     questions = qg_core.build_quiz(
-        material_text, _run_local_model, num_questions=_NUM_QUESTIONS, rng=rng
+        material_text, _run_local_model, num_questions=n, rng=rng
     )
     if not questions:
         raise RuntimeError("Failed to generate any valid questions locally")

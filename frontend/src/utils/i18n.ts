@@ -24,6 +24,23 @@ export const HOMEPAGE = {
 } as const;
 
 // ============================================================================
+// Quiz settings — pre-generate (ROADMAP §4.3)
+// ============================================================================
+
+export const QUIZ_SETTINGS = {
+  toggle: "Atur kuis",
+  toggleHint: "Jumlah soal, tingkat kesulitan, acak opsi",
+  countLabel: "Jumlah soal",
+  difficultyLabel: "Tingkat kesulitan",
+  shuffleLabel: "Acak urutan opsi",
+  difficulty: {
+    easy: "Mudah",
+    medium: "Sedang",
+    hard: "Sulit",
+  },
+} as const;
+
+// ============================================================================
 // Button labels (BRAND.md §7.2)
 // ============================================================================
 
