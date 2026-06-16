@@ -43,6 +43,42 @@ def test_rule_based_quiz_includes_one_matching_question(monkeypatch):
         assert m.left_items[i].lower() not in m.right_items[want].lower()
 
 
+def test_matching_survives_dl_plus_rule_supplement(monkeypatch):
+    """Regression: when DL underproduces and rule-based tops up, a matching
+    question from the supplement must keep its left_items/right_items (they were
+    being dropped by the combined.append in the supplement path)."""
+    from ml.generator import inference
+
+    # DL is "available" but only yields 2 MC questions (below target=5), forcing
+    # the rule-based supplement that contributes the matching question.
+    monkeypatch.setattr(inference, "is_available", lambda: True)
+    monkeypatch.setattr(
+        inference,
+        "generate",
+        lambda text, num_questions=None: [
+            {
+                "question": "Apa fungsi utama klorofil dalam tumbuhan hijau?",
+                "options": ["Menyerap cahaya", "Menyimpan air", "Memecah gula", "Menahan panas"],
+                "correct_option_index": 0,
+            },
+            {
+                "question": "Di organel manakah respirasi seluler berlangsung?",
+                "options": ["Nukleus", "Mitokondria", "Ribosom", "Vakuola"],
+                "correct_option_index": 1,
+            },
+        ],
+    )
+
+    quiz = quiz_generator.generate_quiz(_LONG_MATERIAL, num_questions=5)
+    matching = [q for q in quiz.questions if q.type == "matching"]
+    assert matching, "supplement path should still include a matching question"
+    for m in matching:
+        assert m.left_items and m.right_items and m.correct_matches, (
+            "matching pairing data must not be dropped in the supplement path"
+        )
+        assert len(m.left_items) == len(m.right_items) == len(m.correct_matches)
+
+
 def test_matching_not_exposed_to_client():
     """to_public must hide correct_matches but expose the two lists to pair."""
     q = QuestionInternal(

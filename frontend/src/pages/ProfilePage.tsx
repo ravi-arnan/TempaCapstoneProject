@@ -16,7 +16,6 @@ import { HistoryItemRow } from "@/components/HistoryItemRow";
 import { DailyChallengeCard } from "@/components/DailyChallengeCard";
 import { StreakCard } from "@/components/StreakCard";
 import { WeeklyGoalCard } from "@/components/WeeklyGoalCard";
-import { LeaderboardCard } from "@/components/LeaderboardCard";
 import { BookmarksList } from "@/components/BookmarksList";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 import { useProfileData } from "@/hooks/useProfileData";
@@ -78,8 +77,6 @@ export function ProfilePage() {
       <WeeklyGoalCard />
 
       <BookmarksList />
-
-      <LeaderboardCard />
 
       <section className="space-y-3" aria-labelledby="badges-heading">
         <SectionHeading id="badges-heading" icon={Trophy} title={PROFILE_PAGE.badgesTitle} caption={PROFILE_PAGE.badgesCaption} />

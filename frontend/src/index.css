@@ -51,10 +51,13 @@
     --border-standard: #2e2e2e;
     --border-prominent: #363636;
     --brand-link: #00c573;
-    --brand-button: #0f0f0f;
-    --brand-button-hover: #1a1a1a;
-    --brand-button-text: #fafafa;
-    --brand-button-border: #fafafa;
+    /* Primary buttons stay brand-green in dark mode (was monochrome #0f0f0f).
+       Green is deep enough to keep the hardcoded white button text readable on
+       the dark page background. */
+    --brand-button: #00a06a;
+    --brand-button-hover: #00875a;
+    --brand-button-text: #ffffff;
+    --brand-button-border: #00a06a;
     --brand-accent: rgba(62, 207, 142, 0.3);
     --hover-tint: rgba(255, 255, 255, 0.05);
 

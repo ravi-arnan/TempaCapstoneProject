@@ -475,12 +475,16 @@ def weekly_summary(completed: int, target: int) -> dict:
 
 
 def get_leaderboard(device_id: str, limit: int = 20) -> dict:
-    """Top players by XP. Display name falls back to 'Anonim' for guests. Also
-    returns the requester's own rank even when outside the top-N."""
+    """Top players by XP. Only named (logged-in) users appear — anonymous guests
+    are excluded so the board isn't flooded with 'Anonim' rows. Also returns the
+    requester's own rank among named users (None if they're a guest)."""
+    # A "named" user has a non-empty display_name (i.e. logged in).
+    named = User.display_name.isnot(None) & (func.trim(User.display_name) != "")
     with get_session() as session:
         rows = session.execute(
             select(User.device_id, User.display_name, UserStats.total_xp, UserStats.level)
             .join(UserStats, User.id == UserStats.user_id)
+            .where(named)
             .order_by(UserStats.total_xp.desc(), User.created_at.asc())
             .limit(limit)
         ).all()
@@ -491,13 +495,14 @@ def get_leaderboard(device_id: str, limit: int = 20) -> dict:
 
         you_rank: int | None = None
         me = session.scalar(select(User).where(User.device_id == device_id))
-        if me is not None:
+        if me is not None and (me.display_name or "").strip():
             my_stats = session.get(UserStats, me.id)
             if my_stats is not None:
                 higher = session.scalar(
-                    select(func.count(UserStats.user_id)).where(
-                        UserStats.total_xp > my_stats.total_xp
-                    )
+                    select(func.count(UserStats.user_id))
+                    .join(User, User.id == UserStats.user_id)
+                    .where(named)
+                    .where(UserStats.total_xp > my_stats.total_xp)
                 )
                 you_rank = (higher or 0) + 1
 

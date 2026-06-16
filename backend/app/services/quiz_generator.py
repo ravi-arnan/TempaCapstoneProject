@@ -270,6 +270,12 @@ def generate_quiz(
                                 options=rq.options,
                                 correct_option_index=rq.correct_option_index,
                                 correct_answer_text=rq.correct_answer_text,
+                                # §6.2: carry matching pairing data through the
+                                # DL+rule supplement path (else matching renders
+                                # empty/unanswerable).
+                                left_items=rq.left_items,
+                                right_items=rq.right_items,
+                                correct_matches=rq.correct_matches,
                             )
                         )
                     if len(combined) >= fallback_floor:

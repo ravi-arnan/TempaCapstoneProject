@@ -2,12 +2,17 @@ import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { LEADERBOARD } from "@/utils/i18n";
 import { cn } from "@/lib/cn";
 
+interface LeaderboardCardProps {
+  /** How many top players to show (default 10; the dedicated page passes more). */
+  limit?: number;
+}
+
 /**
  * §4.8 — XP leaderboard. Renders nothing while loading or when gamification is
  * unavailable. Guests show as "Anonim" (privacy handled server-side).
  */
-export function LeaderboardCard() {
-  const state = useLeaderboard(10);
+export function LeaderboardCard({ limit = 10 }: LeaderboardCardProps) {
+  const state = useLeaderboard(limit);
   if (state.status !== "ready") return null;
 
   const { entries, you_rank } = state.data;

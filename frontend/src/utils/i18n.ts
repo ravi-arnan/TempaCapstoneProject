@@ -80,6 +80,7 @@ export const ONBOARDING = {
 // ============================================================================
 
 export const LEADERBOARD = {
+  eyebrow: "Komunitas",
   title: "Papan Peringkat",
   subtitle: "Peringkat berdasarkan total XP",
   you: "Kamu",
@@ -308,6 +309,7 @@ export const AUTH_LABELS = {
   menuProfile: "Profilku",
   menuProgress: "Progresku",
   menuHistory: "Riwayat Kuis",
+  menuLeaderboard: "Papan Peringkat",
   menuSettings: "Pengaturan",
 } as const;
 
