@@ -18,6 +18,7 @@ import logging
 import os
 import random
 import re
+import time
 import difflib
 from typing import Optional
 
@@ -38,6 +39,12 @@ _LOCAL_MODEL_NAME = "Wikidepia/IndoT5-base"
 # If unset or unreachable, falls back to local CPU inference.
 _HF_SPACE_URL = os.getenv("HF_SPACE_URL", "").rstrip("/")
 _HF_SPACE_TIMEOUT_SECONDS = 60.0
+_HF_SPACE_HEALTH_TIMEOUT_SECONDS = 15.0
+# Re-probe a previously-unreachable Space after this many seconds. Free Spaces
+# sleep after 48h idle and take ~30-60s to wake, so the first probe after a
+# sleep can fail; without re-probing the backend would serve rule-based for the
+# whole process life instead of recovering once the Space is awake.
+_HF_SPACE_RECHECK_COOLDOWN_SECONDS = 30.0
 
 # Generation hyperparameters (used only by local fallback)
 _MAX_INPUT_LENGTH = 512
@@ -87,33 +94,54 @@ def _load_local_model() -> None:
 # ============================================================================
 
 _hf_space_available_cached: Optional[bool] = None
+_hf_space_last_negative_check: float = 0.0
 
 
 def _check_hf_space_available() -> bool:
-    """Quick health check on HF Space (cached after first call)."""
-    global _hf_space_available_cached
-    if _hf_space_available_cached is not None:
-        return _hf_space_available_cached
+    """Health check on HF Space.
+
+    A positive result is cached for the process lifetime (the Space is up). A
+    negative result is NOT sticky: free Spaces sleep after 48h idle and take
+    ~30-60s to wake, so the first probe after a sleep can fail. We re-probe
+    after a short cooldown instead of permanently dropping to rule-based — a
+    sleeping Space at startup would otherwise silently disable cloud inference
+    for the entire process (e.g. through a whole demo)."""
+    global _hf_space_available_cached, _hf_space_last_negative_check
+    if _hf_space_available_cached:
+        return True
     if not _HF_SPACE_URL:
-        _hf_space_available_cached = False
+        return False
+    # Recently probed and failed — don't hammer it (or block every request on a
+    # timeout) until the cooldown elapses.
+    if (
+        _hf_space_available_cached is False
+        and (time.monotonic() - _hf_space_last_negative_check)
+        < _HF_SPACE_RECHECK_COOLDOWN_SECONDS
+    ):
         return False
     try:
         import httpx
 
-        with httpx.Client(timeout=10.0) as client:
+        with httpx.Client(timeout=_HF_SPACE_HEALTH_TIMEOUT_SECONDS) as client:
             response = client.get(f"{_HF_SPACE_URL}/")
             if response.status_code == 200 and response.json().get("status") == "ready":
                 logger.info("ml.generator: HF Space available at %s", _HF_SPACE_URL)
                 _hf_space_available_cached = True
                 return True
             logger.warning(
-                "ml.generator: HF Space at %s returned status=%d",
+                "ml.generator: HF Space at %s returned status=%d (re-probe in %.0fs)",
                 _HF_SPACE_URL,
                 response.status_code,
+                _HF_SPACE_RECHECK_COOLDOWN_SECONDS,
             )
     except Exception as exc:  # noqa: BLE001
-        logger.warning("ml.generator: HF Space unreachable (%s)", exc)
+        logger.warning(
+            "ml.generator: HF Space unreachable (%s) — re-probe in %.0fs",
+            exc,
+            _HF_SPACE_RECHECK_COOLDOWN_SECONDS,
+        )
     _hf_space_available_cached = False
+    _hf_space_last_negative_check = time.monotonic()
     return False
 
 
