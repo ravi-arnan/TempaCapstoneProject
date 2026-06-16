@@ -23,6 +23,11 @@ const ProfilePage = lazy(() =>
 const HistoryPage = lazy(() =>
   import("@/pages/HistoryPage").then((m) => ({ default: m.HistoryPage })),
 );
+const LeaderboardPage = lazy(() =>
+  import("@/pages/LeaderboardPage").then((m) => ({
+    default: m.LeaderboardPage,
+  })),
+);
 const SettingsPage = lazy(() =>
   import("@/pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
 );
@@ -47,6 +52,7 @@ export function App() {
           <Route path="/progress" element={<ProgressPage />} />
           <Route path="/profil" element={<ProfilePage />} />
           <Route path="/riwayat" element={<HistoryPage />} />
+          <Route path="/peringkat" element={<LeaderboardPage />} />
           <Route path="/pengaturan" element={<SettingsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

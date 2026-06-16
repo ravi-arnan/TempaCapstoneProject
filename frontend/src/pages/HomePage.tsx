@@ -4,7 +4,6 @@ import { AsahiChatWidget } from "@/components/AsahiChatWidget";
 import { MaterialInputForm } from "@/components/MaterialInputForm";
 import { SourceTypeTabs } from "@/components/SourceTypeTabs";
 import { DailyChallengeCard } from "@/components/DailyChallengeCard";
-import { QuizGenerationSkeleton } from "@/components/QuizGenerationSkeleton";
 import { QuizSettingsControl } from "@/components/QuizSettingsControl";
 import { useQuiz } from "@/hooks/useQuiz";
 import { useOnboardingTour } from "@/hooks/useOnboardingTour";
@@ -200,8 +199,6 @@ export function HomePage() {
         saveTextLabel={savedMaterial ? BOOKMARKS.saved : BOOKMARKS.save}
       />
       </div>
-
-      {generating && <QuizGenerationSkeleton />}
 
       <AsahiChatWidget />
     </div>

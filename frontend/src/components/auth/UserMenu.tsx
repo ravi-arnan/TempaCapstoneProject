@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { CircleUserRound, History, LogOut, Settings, TrendingUp } from "lucide-react";
+import { CircleUserRound, History, LogOut, Settings, TrendingUp, Trophy } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { AUTH_LABELS } from "@/utils/i18n";
 
@@ -87,6 +87,12 @@ export function UserMenu() {
             to="/riwayat"
             icon={History}
             label={AUTH_LABELS.menuHistory}
+            onNavigate={() => setOpen(false)}
+          />
+          <MenuLink
+            to="/peringkat"
+            icon={Trophy}
+            label={AUTH_LABELS.menuLeaderboard}
             onNavigate={() => setOpen(false)}
           />
           <MenuLink
