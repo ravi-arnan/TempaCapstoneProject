@@ -24,11 +24,14 @@ import type { ApiError } from "@/types/api";
 import { ApiException } from "@/types/api";
 import type {
   Badge,
+  Bookmark,
+  BookmarkList,
   GamificationStats,
   GamificationAnalytics,
   HistoryResponse,
   LeaderboardResponse,
   RecordAttemptResult,
+  UserPreferences,
   WeeklyProgress,
 } from "@/types/gamification";
 import type { AuthUser } from "@/types/auth";
@@ -319,6 +322,50 @@ export function getWeeklyProgress(): Promise<WeeklyProgress | null> {
   return gamificationFetch<WeeklyProgress>("/gamification/weekly-progress", {
     method: "GET",
   });
+}
+
+// §4.8 Batch 2-B — preferences + bookmarks (need migration 0005; return null
+// until the tables exist, so the UI degrades gracefully).
+
+export function getPreferences(): Promise<UserPreferences | null> {
+  return gamificationFetch<UserPreferences>("/gamification/preferences", {
+    method: "GET",
+  });
+}
+
+export function updatePreferences(
+  changes: Partial<UserPreferences>,
+): Promise<UserPreferences | null> {
+  return gamificationFetch<UserPreferences>("/gamification/preferences", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(changes),
+  });
+}
+
+export function getBookmarks(): Promise<BookmarkList | null> {
+  return gamificationFetch<BookmarkList>("/gamification/bookmarks", {
+    method: "GET",
+  });
+}
+
+export function createBookmark(body: {
+  title: string;
+  material_text: string;
+}): Promise<Bookmark | null> {
+  return gamificationFetch<Bookmark>("/gamification/bookmarks", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteBookmark(id: string): Promise<boolean> {
+  const res = await gamificationFetch<{ deleted: boolean }>(
+    `/gamification/bookmarks/${id}`,
+    { method: "DELETE" },
+  );
+  return res != null;
 }
 
 export function regenerateQuiz(

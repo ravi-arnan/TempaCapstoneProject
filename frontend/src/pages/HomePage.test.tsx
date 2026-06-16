@@ -15,6 +15,9 @@ vi.mock("@/services/api", () => ({
   regenerateQuiz: vi.fn(),
   submitQuiz: vi.fn(),
   recordQuizAttempt: vi.fn(),
+  // §4.8: HomePage seeds settings from prefs + can save bookmarks.
+  getPreferences: vi.fn(() => Promise.resolve(null)),
+  createBookmark: vi.fn(() => Promise.resolve(null)),
 }));
 
 function renderHome() {

@@ -14,8 +14,13 @@ from fastapi import APIRouter, Header
 from app.db.session import is_db_configured
 from app.schemas.gamification import (
     AnalyticsResponse,
+    BookmarkCreate,
+    BookmarkItem,
+    BookmarkListResponse,
     HistoryResponse,
     LeaderboardResponse,
+    PreferencesResponse,
+    PreferencesUpdate,
     RecordAttemptRequest,
     RecordAttemptResponse,
     StatsResponse,
@@ -126,3 +131,67 @@ def weekly_progress_endpoint(
     _require_db()
     device_id = _require_device_id(x_device_id)
     return WeeklyProgressResponse(**gamification_service.get_weekly_progress(device_id))
+
+
+# --- §4.8 Batch 2-B: preferences + bookmarks (need migration 0005) ----------
+
+BOOKMARK_NOT_FOUND = "BOOKMARK_NOT_FOUND"
+
+
+@router.get("/preferences", response_model=PreferencesResponse)
+def get_preferences_endpoint(
+    x_device_id: str | None = Header(default=None),
+) -> PreferencesResponse:
+    _require_db()
+    device_id = _require_device_id(x_device_id)
+    return PreferencesResponse(**gamification_service.get_preferences(device_id))
+
+
+@router.patch("/preferences", response_model=PreferencesResponse)
+def update_preferences_endpoint(
+    req: PreferencesUpdate,
+    x_device_id: str | None = Header(default=None),
+) -> PreferencesResponse:
+    _require_db()
+    device_id = _require_device_id(x_device_id)
+    changes = req.model_dump(exclude_none=True)
+    return PreferencesResponse(
+        **gamification_service.update_preferences(device_id, changes)
+    )
+
+
+@router.get("/bookmarks", response_model=BookmarkListResponse)
+def list_bookmarks_endpoint(
+    x_device_id: str | None = Header(default=None),
+) -> BookmarkListResponse:
+    _require_db()
+    device_id = _require_device_id(x_device_id)
+    return BookmarkListResponse(items=gamification_service.list_bookmarks(device_id))
+
+
+@router.post("/bookmarks", response_model=BookmarkItem)
+def create_bookmark_endpoint(
+    req: BookmarkCreate,
+    x_device_id: str | None = Header(default=None),
+) -> BookmarkItem:
+    _require_db()
+    device_id = _require_device_id(x_device_id)
+    return BookmarkItem(
+        **gamification_service.add_bookmark(device_id, req.title, req.material_text)
+    )
+
+
+@router.delete("/bookmarks/{bookmark_id}")
+def delete_bookmark_endpoint(
+    bookmark_id: str,
+    x_device_id: str | None = Header(default=None),
+) -> dict:
+    _require_db()
+    device_id = _require_device_id(x_device_id)
+    if not gamification_service.delete_bookmark(device_id, bookmark_id):
+        raise ApiException(
+            status_code=404,
+            code=BOOKMARK_NOT_FOUND,
+            detail="Materi tersimpan tidak ditemukan.",
+        )
+    return {"deleted": True}

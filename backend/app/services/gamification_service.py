@@ -12,7 +12,16 @@ from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import func, select, update
 
-from app.db.models import Achievement, QuizAttempt, User, UserStats
+import uuid
+
+from app.db.models import (
+    Achievement,
+    MaterialBookmark,
+    QuizAttempt,
+    User,
+    UserPreference,
+    UserStats,
+)
 from app.db.session import get_session
 from app.services import achievements as ach
 from app.services import quiz_storage
@@ -495,8 +504,26 @@ def get_leaderboard(device_id: str, limit: int = 20) -> dict:
         return {"entries": entries, "you_rank": you_rank}
 
 
-def get_weekly_progress(device_id: str, target: int = WEEKLY_GOAL_DEFAULT) -> dict:
+def _safe_weekly_goal(device_id: str) -> int:
+    """Read the user's weekly_goal preference, falling back to the default if the
+    preferences table doesn't exist yet (migration 0005 not applied) or the user
+    has none. Kept separate so the weekly-progress endpoint — shipped before the
+    preferences table — never hard-depends on it."""
+    try:
+        with get_session() as session:
+            user = session.scalar(select(User).where(User.device_id == device_id))
+            if user is None:
+                return WEEKLY_GOAL_DEFAULT
+            pref = session.get(UserPreference, user.id)
+            return pref.weekly_goal if pref is not None else WEEKLY_GOAL_DEFAULT
+    except Exception:  # noqa: BLE001 — table-missing etc.; default is always safe
+        return WEEKLY_GOAL_DEFAULT
+
+
+def get_weekly_progress(device_id: str, target: int | None = None) -> dict:
     """How many quizzes the user finished in the last 7 days vs their target."""
+    if target is None:
+        target = _safe_weekly_goal(device_id)
     with get_session() as session:
         user = session.scalar(select(User).where(User.device_id == device_id))
         completed = 0
@@ -511,3 +538,102 @@ def get_weekly_progress(device_id: str, target: int = WEEKLY_GOAL_DEFAULT) -> di
                 or 0
             )
         return weekly_summary(completed, target)
+
+
+# ============================================================================
+# §4.8 Batch 2-B — Preferences + Material bookmarks (need migration 0005)
+# ============================================================================
+
+_PREF_DEFAULTS = {
+    "default_num_questions": 5,
+    "default_difficulty": "medium",
+    "shuffle_options": True,
+    "weekly_goal": WEEKLY_GOAL_DEFAULT,
+    "favorite_topic": None,
+}
+
+
+def _pref_payload(pref: UserPreference) -> dict:
+    return {
+        "default_num_questions": pref.default_num_questions,
+        "default_difficulty": pref.default_difficulty,
+        "shuffle_options": pref.shuffle_options,
+        "weekly_goal": pref.weekly_goal,
+        "favorite_topic": pref.favorite_topic,
+    }
+
+
+def get_preferences(device_id: str) -> dict:
+    """Current learning preferences, or sensible defaults when none are stored."""
+    with get_session() as session:
+        user = _get_or_create_user(session, device_id)
+        pref = session.get(UserPreference, user.id)
+        return _pref_payload(pref) if pref is not None else dict(_PREF_DEFAULTS)
+
+
+def update_preferences(device_id: str, changes: dict) -> dict:
+    """Upsert the user's preferences with the provided (non-None) fields."""
+    with get_session() as session:
+        user = _get_or_create_user(session, device_id)
+        pref = session.get(UserPreference, user.id)
+        if pref is None:
+            pref = UserPreference(user_id=user.id)
+            session.add(pref)
+        for key, value in changes.items():
+            if value is not None:
+                setattr(pref, key, value)
+        session.flush()
+        return _pref_payload(pref)
+
+
+def _bookmark_payload(bm: MaterialBookmark) -> dict:
+    return {
+        "id": str(bm.id),
+        "title": bm.title,
+        "material_text": bm.material_text,
+        "created_at": bm.created_at,
+    }
+
+
+def add_bookmark(device_id: str, title: str, material_text: str) -> dict:
+    with get_session() as session:
+        user = _get_or_create_user(session, device_id)
+        bm = MaterialBookmark(
+            user_id=user.id,
+            title=title.strip()[:120],
+            material_text=material_text[:20_000],
+        )
+        session.add(bm)
+        session.flush()
+        return _bookmark_payload(bm)
+
+
+def list_bookmarks(device_id: str, limit: int = 100) -> list[dict]:
+    with get_session() as session:
+        user = session.scalar(select(User).where(User.device_id == device_id))
+        if user is None:
+            return []
+        rows = session.scalars(
+            select(MaterialBookmark)
+            .where(MaterialBookmark.user_id == user.id)
+            .order_by(MaterialBookmark.created_at.desc())
+            .limit(limit)
+        ).all()
+        return [_bookmark_payload(b) for b in rows]
+
+
+def delete_bookmark(device_id: str, bookmark_id: str) -> bool:
+    """Delete a bookmark the user owns. Returns False if not found / not theirs."""
+    try:
+        bm_uuid = uuid.UUID(bookmark_id)
+    except (ValueError, AttributeError):
+        return False
+    with get_session() as session:
+        user = session.scalar(select(User).where(User.device_id == device_id))
+        if user is None:
+            return False
+        bm = session.get(MaterialBookmark, bm_uuid)
+        if bm is None or bm.user_id != user.id:
+            return False
+        session.delete(bm)
+        return True
