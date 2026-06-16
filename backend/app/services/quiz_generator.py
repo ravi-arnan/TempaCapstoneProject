@@ -91,25 +91,55 @@ def _extract_quiz_topic(text: str) -> str:
     return sentence or "Umum"
 
 
+def _order_mc_options(
+    options: list[str] | None,
+    correct_index: int,
+    shuffle_options: bool,
+) -> tuple[list[str] | None, int]:
+    """§4.3: when shuffle is off, present MC options in a stable alphabetical
+    order (not the generator's randomised order), re-pointing the correct index.
+
+    Alphabetical (rather than generation order) is used because generation order
+    puts the correct answer first — a predictable "always A" leak. Returns the
+    options unchanged when shuffling is on or there is nothing to reorder."""
+    if shuffle_options or not options:
+        return options, correct_index
+    correct_value = options[correct_index]
+    ordered = sorted(options)
+    return ordered, ordered.index(correct_value)
+
+
 def _wrap_quiz(
     questions: list[QuestionInternal],
     text: str,
     difficulty: str = "medium",
     quiz_id: str | None = None,
     topic: str | None = None,
+    shuffle_options: bool = True,
 ) -> QuizInternal:
-    """Build a QuizInternal from a list of questions, renumbering IDs."""
-    renumbered = [
-        QuestionInternal(
-            id=i + 1,
-            type=q.type,
-            question=q.question,
-            options=q.options,
-            correct_option_index=q.correct_option_index,
-            correct_answer_text=q.correct_answer_text,
+    """Build a QuizInternal from a list of questions, renumbering IDs.
+
+    Only `multiple_choice` options are reordered when shuffle is off —
+    `true_false` keeps its semantic [Benar, Salah] order and `short_answer`
+    has no options.
+    """
+    renumbered = []
+    for i, q in enumerate(questions):
+        options, correct_index = q.options, q.correct_option_index
+        if q.type == "multiple_choice":
+            options, correct_index = _order_mc_options(
+                q.options, q.correct_option_index, shuffle_options
+            )
+        renumbered.append(
+            QuestionInternal(
+                id=i + 1,
+                type=q.type,
+                question=q.question,
+                options=options,
+                correct_option_index=correct_index,
+                correct_answer_text=q.correct_answer_text,
+            )
         )
-        for i, q in enumerate(questions)
-    ]
     return QuizInternal(
         quiz_id=quiz_id or str(uuid.uuid4()),
         questions=renumbered,
@@ -120,13 +150,24 @@ def _wrap_quiz(
     )
 
 
+MAX_QUESTION_COUNT = 10       # §4.3 — hard ceiling on user-requested count
+
+
 def generate_quiz(
     material_text: str,
     difficulty: str | None = None,
     quiz_id: str | None = None,
     topic: str | None = None,
+    num_questions: int | None = None,
+    shuffle_options: bool = True,
 ) -> QuizInternal:
-    """Generate a multiple-choice quiz from raw material text with difficulty support.
+    """Generate a multiple-choice quiz from raw material text.
+
+    `difficulty` controls question hardness (keyword/sentence selection).
+    `num_questions` (§4.3) is an INDEPENDENT target count (3/5/7/10); when given
+    it overrides the difficulty-derived count. `shuffle_options` (§4.3) keeps the
+    generator's randomised option order when True, or sorts MC options into a
+    stable alphabetical order when False.
 
     Strategy:
         1. Try DL (HF Space → local). Collect questions that pass cleanup.
@@ -145,6 +186,11 @@ def generate_quiz(
     else:
         target_count = 5
         fallback_floor = 3
+
+    # §4.3: an explicit num_questions overrides the difficulty-derived count.
+    if num_questions is not None:
+        target_count = max(MIN_QUESTION_COUNT, min(MAX_QUESTION_COUNT, num_questions))
+        fallback_floor = max(2, min(fallback_floor, target_count))
 
     text = material_text.strip()
     if len(text) < MIN_MATERIAL_LENGTH:
@@ -165,7 +211,7 @@ def generate_quiz(
     dl_questions: list[QuestionInternal] = []
     if ml_generator.is_available():
         try:
-            raw_questions = ml_generator.generate(text)
+            raw_questions = ml_generator.generate(text, num_questions=target_count)
             for q in raw_questions:
                 cleaned = _clean_question_text(q["question"])
                 if cleaned is None:
@@ -187,7 +233,10 @@ def generate_quiz(
                     "quiz_generator: DL path produced %d questions",
                     len(dl_questions),
                 )
-                return _wrap_quiz(dl_questions[:target_count], text, diff, quiz_id)
+                return _wrap_quiz(
+                    dl_questions[:target_count], text, diff, quiz_id,
+                    shuffle_options=shuffle_options,
+                )
 
             if dl_questions:
                 logger.info(
@@ -195,7 +244,7 @@ def generate_quiz(
                     len(dl_questions),
                 )
                 try:
-                    rule_quiz = _generate_rule_based(text, diff)
+                    rule_quiz = _generate_rule_based(text, diff, target=target_count)
                     combined: list[QuestionInternal] = list(dl_questions)
                     for rq in rule_quiz.questions:
                         if len(combined) >= target_count:
@@ -217,7 +266,10 @@ def generate_quiz(
                             "quiz_generator: mixed DL+rule produced %d questions",
                             len(combined),
                         )
-                        return _wrap_quiz(combined, text, diff, quiz_id)
+                        return _wrap_quiz(
+                            combined, text, diff, quiz_id,
+                            shuffle_options=shuffle_options,
+                        )
                 except ApiException as exc:
                     logger.info(
                         "quiz_generator: rule-based supplement failed (%s), "
@@ -232,7 +284,10 @@ def generate_quiz(
                         len(dl_questions),
                         target_count,
                     )
-                    return _wrap_quiz(dl_questions, text, diff, quiz_id)
+                    return _wrap_quiz(
+                        dl_questions, text, diff, quiz_id,
+                        shuffle_options=shuffle_options,
+                    )
         except Exception as exc:  # noqa: BLE001
             logger.warning(
                 "quiz_generator: DL path failed (%s), falling back to rule-based",
@@ -240,7 +295,9 @@ def generate_quiz(
             )
 
     # === Path 2: rule-based fallback (DL unavailable, empty, or below floor) ===
-    return _generate_rule_based(text, diff, quiz_id)
+    return _generate_rule_based(
+        text, diff, quiz_id, target=target_count, shuffle_options=shuffle_options
+    )
 
 
 # ============================================================================
@@ -622,6 +679,8 @@ def _generate_rule_based(
     text: str,
     difficulty: str = "medium",
     quiz_id: str | None = None,
+    target: int | None = None,
+    shuffle_options: bool = True,
 ) -> QuizInternal:
     """Rule-based fill-in-the-blank quiz generator. Used as fallback.
 
@@ -666,12 +725,14 @@ def _generate_rule_based(
         else:
             candidate_sentences = [s for s in sentences if _is_safe_sentence(s)]
 
-        if difficulty == "easy":
-            target = 3
-        elif difficulty == "hard":
-            target = 7
-        else:
-            target = 5
+        # §4.3: explicit target wins; otherwise derive from difficulty.
+        if target is None:
+            if difficulty == "easy":
+                target = 3
+            elif difficulty == "hard":
+                target = 7
+            else:
+                target = 5
 
         # Apply sentence length filter based on difficulty
         filtered_sentences = []
@@ -735,7 +796,9 @@ def _generate_rule_based(
             )
 
         logger.info("quiz_generator: rule-based path produced %d questions", len(questions))
-        return _wrap_quiz(questions, text, difficulty, quiz_id)
+        return _wrap_quiz(
+            questions, text, difficulty, quiz_id, shuffle_options=shuffle_options
+        )
     except ApiException:
         raise
     except Exception as exc:  # noqa: BLE001

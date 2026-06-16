@@ -166,6 +166,12 @@ Implementasi: backend terima parameter, generator hormati.
 
 **Effort**: ~2-3 jam
 
+> ✅ **Status 2026-06-17**: SELESAI. `num_questions` (independen dari difficulty,
+> clamp 3–10) + `shuffle_options` di `/quiz/generate` (body), `-from-url` (body),
+> `-from-pdf` (query). Generator hormati count via DL+supplement; shuffle-off =
+> opsi MC diurut alfabetis (anti "selalu A"). UI: `QuizSettingsControl` collapsible
+> di HomePage. HF Space terima `num_questions`. Tests: 8 backend + 6 frontend.
+
 ### 4.4 Per-topic mastery tracking (BIG)
 Selaras dengan judul capstone "Sistem Deteksi Tingkat Pemahaman".
 - Tag tiap kuis dengan topik (auto-extract dari materi atau user input)

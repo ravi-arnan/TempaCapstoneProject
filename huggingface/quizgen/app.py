@@ -85,6 +85,8 @@ app = FastAPI(
 
 class GenerateRequest(BaseModel):
     material_text: str = Field(..., min_length=100, max_length=20_000)
+    # §4.3 Quiz settings — requested question count (backend clamps to 3/5/7/10).
+    num_questions: int = Field(default=NUM_QUESTIONS, ge=1, le=10)
 
 
 class GeneratedQuestion(BaseModel):
@@ -153,7 +155,7 @@ async def generate(req: GenerateRequest):
     # (mirrors backend/ml/generator/inference.py).
     rng = random.Random(abs(hash(text)) & 0xFFFFFFFF)
     questions = qg_core.build_quiz(
-        text, _run_model, num_questions=NUM_QUESTIONS, rng=rng
+        text, _run_model, num_questions=req.num_questions, rng=rng
     )
 
     if not questions:

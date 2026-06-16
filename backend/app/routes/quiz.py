@@ -92,7 +92,12 @@ def generate_quiz_endpoint(
 ) -> QuizGenerateResponse:
     """POST /quiz/generate — see API.md §4.2."""
     difficulty = _determine_adaptive_difficulty(x_device_id, req.difficulty)
-    quiz_internal = quiz_generator.generate_quiz(req.material_text, difficulty=difficulty)
+    quiz_internal = quiz_generator.generate_quiz(
+        req.material_text,
+        difficulty=difficulty,
+        num_questions=req.num_questions,
+        shuffle_options=req.shuffle_options,
+    )
     quiz_storage.save_quiz(quiz_internal)
     return _quiz_internal_to_response(quiz_internal)
 
@@ -115,7 +120,12 @@ def generate_from_url_endpoint(
     """
     material_text = source_extractor.extract_text_from_url(req.url)
     difficulty = _determine_adaptive_difficulty(x_device_id, req.difficulty)
-    quiz_internal = quiz_generator.generate_quiz(material_text, difficulty=difficulty)
+    quiz_internal = quiz_generator.generate_quiz(
+        material_text,
+        difficulty=difficulty,
+        num_questions=req.num_questions,
+        shuffle_options=req.shuffle_options,
+    )
     quiz_storage.save_quiz(quiz_internal)
     return _quiz_internal_to_response(quiz_internal)
 
@@ -131,6 +141,8 @@ async def generate_from_pdf_endpoint(
     request: Request,
     file: UploadFile = File(...),
     difficulty: str | None = None,
+    num_questions: int | None = None,
+    shuffle_options: bool = True,
     x_device_id: str | None = Header(default=None),
 ) -> QuizGenerateResponse:
     """POST /quiz/generate-from-pdf — multipart PDF upload, generate quiz.
@@ -148,7 +160,12 @@ async def generate_from_pdf_endpoint(
 
     material_text = source_extractor.extract_text_from_pdf(pdf_bytes)
     diff = _determine_adaptive_difficulty(x_device_id, difficulty)
-    quiz_internal = quiz_generator.generate_quiz(material_text, difficulty=diff)
+    quiz_internal = quiz_generator.generate_quiz(
+        material_text,
+        difficulty=diff,
+        num_questions=num_questions,
+        shuffle_options=shuffle_options,
+    )
     quiz_storage.save_quiz(quiz_internal)
     return _quiz_internal_to_response(quiz_internal)
 

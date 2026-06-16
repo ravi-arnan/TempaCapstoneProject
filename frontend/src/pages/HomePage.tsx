@@ -5,8 +5,10 @@ import { MaterialInputForm } from "@/components/MaterialInputForm";
 import { SourceTypeTabs } from "@/components/SourceTypeTabs";
 import { DailyChallengeCard } from "@/components/DailyChallengeCard";
 import { QuizGenerationSkeleton } from "@/components/QuizGenerationSkeleton";
+import { QuizSettingsControl } from "@/components/QuizSettingsControl";
 import { useQuiz } from "@/hooks/useQuiz";
-import type { SourceType } from "@/types/quiz";
+import type { QuizSettings, SourceType } from "@/types/quiz";
+import { DEFAULT_QUIZ_SETTINGS } from "@/types/quiz";
 import {
   HOMEPAGE,
   LOADING_PROGRESS_MESSAGES,
@@ -34,6 +36,7 @@ export function HomePage() {
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
   const [prefillText, setPrefillText] = useState<string | null>(null);
   const [prefillUrl, setPrefillUrl] = useState<string | null>(null);
+  const [settings, setSettings] = useState<QuizSettings>(DEFAULT_QUIZ_SETTINGS);
 
   function handleSampleClick() {
     setSourceType("text");
@@ -95,11 +98,23 @@ export function HomePage() {
         )}
       </div>
 
+      <QuizSettingsControl
+        settings={settings}
+        onChange={setSettings}
+        disabled={generating}
+      />
+
       <MaterialInputForm
         sourceType={sourceType}
-        onSubmitText={async (text) => handleSubmit(await generateFromText(text))}
-        onSubmitUrl={async (url) => handleSubmit(await generateFromUrl(url))}
-        onSubmitPdf={async (file) => handleSubmit(await generateFromPdf(file))}
+        onSubmitText={async (text) =>
+          handleSubmit(await generateFromText(text, settings))
+        }
+        onSubmitUrl={async (url) =>
+          handleSubmit(await generateFromUrl(url, settings))
+        }
+        onSubmitPdf={async (file) =>
+          handleSubmit(await generateFromPdf(file, settings))
+        }
         isSubmitting={generating}
         loadingMessage={
           generating ? LOADING_PROGRESS_MESSAGES[loadingMessageIndex] : undefined

@@ -9,6 +9,7 @@ import type {
   QuizGenerateFromUrlRequest,
   QuizGenerateRequest,
   QuizGenerateResponse,
+  QuizSettings,
   QuizSubmitRequest,
 } from "@/types/quiz";
 import type { QuizSubmitResponse } from "@/types/result";
@@ -163,14 +164,24 @@ export function generateQuizFromUrl(
 
 export async function generateQuizFromPdf(
   file: File,
+  settings?: Partial<QuizSettings>,
 ): Promise<QuizGenerateResponse> {
   const formData = new FormData();
   formData.append("file", file);
 
+  // §4.3 settings go on the query string — the body is multipart for the file.
+  const params = new URLSearchParams();
+  if (settings?.num_questions != null)
+    params.set("num_questions", String(settings.num_questions));
+  if (settings?.difficulty) params.set("difficulty", settings.difficulty);
+  if (settings?.shuffle_options != null)
+    params.set("shuffle_options", String(settings.shuffle_options));
+  const query = params.toString();
+
   let res: Response;
   try {
     res = await fetchWithTimeout(
-      `${BASE_URL}/quiz/generate-from-pdf`,
+      `${BASE_URL}/quiz/generate-from-pdf${query ? `?${query}` : ""}`,
       { method: "POST", body: formData },
       QUIZ_GENERATE_TIMEOUT_MS,
     );

@@ -40,6 +40,39 @@ describe("api — happy paths", () => {
     expect(JSON.parse(init.body)).toEqual({ material_text: "halo dunia" });
   });
 
+  it("generateQuiz forwards §4.3 settings in the body", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ quiz_id: "q1" }));
+    await api.generateQuiz({
+      material_text: "halo dunia",
+      num_questions: 7,
+      difficulty: "hard",
+      shuffle_options: false,
+    });
+    const [, init] = fetchMock.mock.calls[0]!;
+    expect(JSON.parse(init.body)).toEqual({
+      material_text: "halo dunia",
+      num_questions: 7,
+      difficulty: "hard",
+      shuffle_options: false,
+    });
+  });
+
+  it("generateQuizFromPdf puts §4.3 settings on the query string", async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ quiz_id: "pdf1" }));
+    const file = new File(["%PDF-1.4"], "m.pdf", { type: "application/pdf" });
+    await api.generateQuizFromPdf(file, {
+      num_questions: 10,
+      difficulty: "easy",
+      shuffle_options: false,
+    });
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url).toContain("/quiz/generate-from-pdf?");
+    expect(url).toContain("num_questions=10");
+    expect(url).toContain("difficulty=easy");
+    expect(url).toContain("shuffle_options=false");
+    expect(init.method).toBe("POST");
+  });
+
   it("submitQuiz POSTs to /quiz/submit", async () => {
     fetchMock.mockResolvedValue(jsonResponse({ quiz_id: "q1" }));
     await api.submitQuiz({ quiz_id: "q1", answers: [], time_taken_seconds: 5 });

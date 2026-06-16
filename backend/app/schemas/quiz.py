@@ -7,9 +7,12 @@ reflected in:
 """
 
 from datetime import datetime
-from typing import Annotated, Optional
+from typing import Annotated, Literal, Optional
 
 from pydantic import BaseModel, Field, conlist
+
+# §4.3 Quiz settings — shared field definitions reused across request bodies.
+NumQuestions = Literal[3, 5, 7, 10]
 
 
 class Question(BaseModel):
@@ -35,6 +38,9 @@ class QuizGenerateRequest(BaseModel):
 
     material_text: str = Field(..., min_length=1, max_length=20_000)
     difficulty: Optional[str] = Field(default=None, pattern="^(easy|medium|hard)$")
+    # §4.3 Quiz settings (pre-generate)
+    num_questions: Optional[NumQuestions] = Field(default=None)
+    shuffle_options: bool = Field(default=True)
 
 
 class QuizGenerateFromUrlRequest(BaseModel):
@@ -42,6 +48,9 @@ class QuizGenerateFromUrlRequest(BaseModel):
 
     url: str = Field(..., min_length=1, max_length=2048)
     difficulty: Optional[str] = Field(default=None, pattern="^(easy|medium|hard)$")
+    # §4.3 Quiz settings (pre-generate)
+    num_questions: Optional[NumQuestions] = Field(default=None)
+    shuffle_options: bool = Field(default=True)
 
 
 class QuizGenerateResponse(BaseModel):

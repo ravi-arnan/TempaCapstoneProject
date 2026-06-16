@@ -9,6 +9,7 @@ import {
 } from "@/services/api";
 import type {
   QuizGenerateResponse,
+  QuizSettings,
   QuizSubmitRequest,
 } from "@/types/quiz";
 import type { QuizSubmitResponse } from "@/types/result";
@@ -40,10 +41,16 @@ export function useQuiz() {
   }
 
   const generateFromText = useCallback(
-    async (materialText: string): Promise<QuizGenerateResponse | null> => {
+    async (
+      materialText: string,
+      settings?: Partial<QuizSettings>,
+    ): Promise<QuizGenerateResponse | null> => {
       setState((s) => ({ ...s, generating: true, generateError: null }));
       try {
-        const res = await generateQuiz({ material_text: materialText });
+        const res = await generateQuiz({
+          material_text: materialText,
+          ...settings,
+        });
         setState((s) => ({ ...s, generating: false }));
         return res;
       } catch (err) {
@@ -59,10 +66,13 @@ export function useQuiz() {
   );
 
   const generateFromUrl = useCallback(
-    async (url: string): Promise<QuizGenerateResponse | null> => {
+    async (
+      url: string,
+      settings?: Partial<QuizSettings>,
+    ): Promise<QuizGenerateResponse | null> => {
       setState((s) => ({ ...s, generating: true, generateError: null }));
       try {
-        const res = await generateQuizFromUrl({ url });
+        const res = await generateQuizFromUrl({ url, ...settings });
         setState((s) => ({ ...s, generating: false }));
         return res;
       } catch (err) {
@@ -78,10 +88,13 @@ export function useQuiz() {
   );
 
   const generateFromPdf = useCallback(
-    async (file: File): Promise<QuizGenerateResponse | null> => {
+    async (
+      file: File,
+      settings?: Partial<QuizSettings>,
+    ): Promise<QuizGenerateResponse | null> => {
       setState((s) => ({ ...s, generating: true, generateError: null }));
       try {
-        const res = await generateQuizFromPdf(file);
+        const res = await generateQuizFromPdf(file, settings);
         setState((s) => ({ ...s, generating: false }));
         return res;
       } catch (err) {
