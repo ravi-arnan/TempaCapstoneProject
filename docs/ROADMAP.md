@@ -156,6 +156,15 @@ nyambung dengan pertanyaan → opsi ngawur ("Berapa jumlah planet?" → "mengita
 
 **Effort**: ~3-5 jam (basic) sampai 1 hari (dengan OG)
 
+> ✅ **Status 2026-06-17**: SELESAI (jalur **decode**, bukan fetch). Ringkasan
+> hasil (skor/level/insight/rekomendasi/waktu) di-encode URL-safe base64 ke
+> `/result?s=<token>` — **self-contained, tak bergantung backend** (store in-memory
+> + Space tidur). ResultPage men-decode `?s=` jadi tampilan read-only: aksi
+> owner (asah lagi, chat, breakdown, reward) disembunyikan, ganti banner + CTA
+> "Buat kuismu sendiri". Tombol "Bagikan hasil" pakai `navigator.share` (mobile)
+> atau clipboard. Per-soal **tidak** ikut di-share (hindari bocor isi kuis).
+> OG image / download-as-image = opsional, di-skip. Tests: 6 lib + 3 ResultPage.
+
 ### 4.3 Quiz settings (pre-generate)
 User pilih sebelum generate:
 - Jumlah soal: 3 / 5 / 7 / 10

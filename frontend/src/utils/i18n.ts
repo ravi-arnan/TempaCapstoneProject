@@ -24,6 +24,21 @@ export const HOMEPAGE = {
 } as const;
 
 // ============================================================================
+// Share result (ROADMAP §4.2)
+// ============================================================================
+
+export const RESULT_SHARE = {
+  button: "Bagikan hasil",
+  copied: "Tertaut tersalin!",
+  shareTitle: "Hasil kuis Asahlagi",
+  shareText: (pct: number) =>
+    `Aku dapat ${pct}% di kuis Asahlagi. Coba ukur pemahamanmu juga!`,
+  sharedBanner:
+    "Ini hasil kuis yang dibagikan seseorang. Buat kuismu sendiri untuk mengukur pemahamanmu.",
+  ctaCreate: "Buat kuismu sendiri",
+} as const;
+
+// ============================================================================
 // Onboarding tour (ROADMAP §4.6) — voice per BRAND.md: "kamu", calm, no patronising
 // ============================================================================
 

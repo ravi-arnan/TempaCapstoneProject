@@ -1,10 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { ResultPage } from "@/pages/ResultPage";
 import type { QuizSubmitResponse } from "@/types/result";
 import type { RecordAttemptResult } from "@/types/gamification";
-import { RESULT_HEADERS } from "@/utils/i18n";
+import { buildShareUrl, encodeSharedResult, toSharedResult } from "@/lib/shareResult";
+import { RESULT_HEADERS, RESULT_SHARE } from "@/utils/i18n";
 
 vi.mock("@/services/api", () => ({
   regenerateQuiz: vi.fn(),
@@ -89,5 +90,58 @@ describe("ResultPage", () => {
     renderResult({ result, reward: null });
     expect(screen.getByText(RESULT_HEADERS.medium.headline)).toBeInTheDocument();
     expect(screen.queryByText("+40 XP")).not.toBeInTheDocument();
+  });
+
+  // §4.2 — shared-link mode
+  function renderSharedLink(token: string) {
+    return render(
+      <MemoryRouter initialEntries={[`/result?s=${token}`]}>
+        <Routes>
+          <Route path="/result" element={<ResultPage />} />
+          <Route path="/app" element={<div>app home</div>} />
+          <Route path="/" element={<div>home</div>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+  }
+
+  it("decodes a shared ?s= link into a read-only result with a create CTA", () => {
+    const token = encodeSharedResult(toSharedResult(result));
+    renderSharedLink(token);
+    // Summary content is rendered from the decoded token...
+    expect(screen.getByText(result.insight)).toBeInTheDocument();
+    expect(screen.getByText(result.recommendation)).toBeInTheDocument();
+    // ...the shared banner + create CTA appear...
+    expect(screen.getByText(RESULT_SHARE.sharedBanner)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: RESULT_SHARE.ctaCreate }),
+    ).toBeInTheDocument();
+    // ...and owner-only actions (retry) are hidden.
+    expect(
+      screen.queryByRole("button", { name: /asah lagi/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("redirects home when the ?s= token is malformed", () => {
+    renderSharedLink("not-a-valid-token!!");
+    expect(screen.getByText("home")).toBeInTheDocument();
+  });
+
+  it("share button copies a self-contained link to the clipboard", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    // No native share sheet → falls back to clipboard.
+    Object.defineProperty(navigator, "share", {
+      value: undefined,
+      configurable: true,
+    });
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+    renderResult({ result, reward: null });
+
+    fireEvent.click(screen.getByRole("button", { name: RESULT_SHARE.button }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    expect(writeText.mock.calls[0]![0]).toBe(buildShareUrl(result));
   });
 });
