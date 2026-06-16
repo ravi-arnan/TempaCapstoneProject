@@ -15,9 +15,11 @@ from app.db.session import is_db_configured
 from app.schemas.gamification import (
     AnalyticsResponse,
     HistoryResponse,
+    LeaderboardResponse,
     RecordAttemptRequest,
     RecordAttemptResponse,
     StatsResponse,
+    WeeklyProgressResponse,
 )
 from app.services import gamification_service
 from app.utils.errors import ApiException
@@ -102,3 +104,25 @@ def achievements_endpoint(
     _require_db()
     device_id = _require_device_id(x_device_id)
     return gamification_service.get_achievements(device_id)
+
+
+@router.get("/leaderboard", response_model=LeaderboardResponse)
+def leaderboard_endpoint(
+    x_device_id: str | None = Header(default=None),
+    limit: int = 20,
+) -> LeaderboardResponse:
+    """§4.8 — top players by XP. Guests appear as 'Anonim'."""
+    _require_db()
+    device_id = _require_device_id(x_device_id)
+    limit = max(1, min(limit, 100))
+    return LeaderboardResponse(**gamification_service.get_leaderboard(device_id, limit))
+
+
+@router.get("/weekly-progress", response_model=WeeklyProgressResponse)
+def weekly_progress_endpoint(
+    x_device_id: str | None = Header(default=None),
+) -> WeeklyProgressResponse:
+    """§4.8 — quizzes completed in the last 7 days vs the weekly target."""
+    _require_db()
+    device_id = _require_device_id(x_device_id)
+    return WeeklyProgressResponse(**gamification_service.get_weekly_progress(device_id))

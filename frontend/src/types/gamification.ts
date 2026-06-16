@@ -69,3 +69,25 @@ export interface HistoryResponse {
   summary: HistorySummary;
   items: HistoryItem[];
 }
+
+// §4.8 Batch 2 — Leaderboard + Weekly goal
+export interface LeaderboardEntry {
+  rank: number;
+  name: string;
+  total_xp: number;
+  level: number;
+  is_you: boolean;
+}
+
+export interface LeaderboardResponse {
+  entries: LeaderboardEntry[];
+  you_rank: number | null;
+}
+
+export interface WeeklyProgress {
+  completed: number;
+  target: number;
+  percent: number;
+  goal_met: boolean;
+  remaining: number;
+}

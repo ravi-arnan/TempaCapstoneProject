@@ -257,6 +257,7 @@ Cluster fitur yang mengarah ke user, dibangun di atas login (#4.7). Status fonda
 **Catatan scope** (CLAUDE.md: utamakan flow end-to-end, jangan semua sekaligus). Saran batching:
 - **Batch 1 — "User Hub"** (cepat, mostly frontend): a) Profil + c) History + b) Settings (tema/logout) + h) badge. **~1-1.5 hari.**
 - **Batch 2** (butuh backend, review Ariq): e) edit preferensi + d) leaderboard + f) goal + g) bookmark. **~2-3 hari.**
+  - 🟡 **2026-06-17 — Batch 2-A SELESAI**: d) **leaderboard** + f) **weekly goal**. Tanpa migrasi (query atas tabel existing `users`/`user_stats`/`quiz_attempts`). Endpoint `GET /gamification/leaderboard` (top-N by XP, guest=Anonim, `you_rank`) + `GET /gamification/weekly-progress` (kuis 7 hari terakhir vs target default 5). Kartu di ProfilePage; degrade ke null kalau DB off. Tests: 6 backend (helper murni + kontrak 503) + 3 frontend. **Batch 2-B (e prefs + g bookmark) menyusul — butuh migrasi `0005`.**
 - **Batch 3**: j) share/export + i) daily challenge surfacing. **~0.5-1 hari.**
 - **Hati-hati / skip**: teman/social (berat, butuh relasi), notifikasi (butuh push infra → lihat #6.4).
 
