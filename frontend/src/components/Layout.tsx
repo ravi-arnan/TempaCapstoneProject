@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { XpBadge } from "@/components/XpBadge";
 import { AuthNav } from "@/components/auth/AuthNav";
 import { useAuth } from "@/context/AuthContext";
 import { useGamificationStats } from "@/hooks/useGamificationStats";
+import { ONBOARDING } from "@/utils/i18n";
 
 interface LayoutProps {
   children: ReactNode;
@@ -20,6 +21,14 @@ export function Layout({ children }: LayoutProps) {
   const { stats } = useGamificationStats();
   const { user } = useAuth();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+
+  // §4.6: replay the onboarding tour on demand. The tour lives on the home page,
+  // so send the user there with a flag the page reads to auto-start it.
+  const isAppArea = pathname !== "/";
+  function handleReplayTour() {
+    navigate("/app?tour=1");
+  }
 
   return (
     <div className="min-h-screen bg-bg-page">
@@ -36,6 +45,17 @@ export function Layout({ children }: LayoutProps) {
             {/* XP/streak only for logged-in users (gamification is account-bound);
                 guests and the marketing landing nav stay clean. */}
             {pathname !== "/" && user && <XpBadge stats={stats} />}
+            {isAppArea && (
+              <button
+                type="button"
+                onClick={handleReplayTour}
+                aria-label={ONBOARDING.replayLabel}
+                title={ONBOARDING.replayLabel}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border-standard bg-bg-page text-text-secondary shadow-level-1 transition-colors hover:bg-bg-alt hover:text-text-primary focus-visible:[box-shadow:var(--focus-ring)]"
+              >
+                <HelpIcon />
+              </button>
+            )}
             <ThemeToggle />
             <AuthNav />
           </div>
@@ -45,5 +65,24 @@ export function Layout({ children }: LayoutProps) {
         {children}
       </main>
     </div>
+  );
+}
+
+function HelpIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-5 w-5"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .8-1 1.7" />
+      <path d="M12 17h.01" />
+    </svg>
   );
 }

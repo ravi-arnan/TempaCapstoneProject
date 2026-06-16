@@ -204,6 +204,14 @@ Guided tour saat kunjungan pertama, highlight elemen kunci satu per satu.
 
 **Effort**: ~0.5-1 hari
 
+> ✅ **Status 2026-06-17**: SELESAI. `driver.js` (lazy di chunk `/app`, landing
+> tetap ringan). Tur first-visit (flag `asahlagi:onboarded:v1`) + tombol "?" di
+> nav (navigate `/app?tour=1`). Sorot: source tabs → quiz settings → input materi
+> → daily challenge, plus langkah pembuka/penutup yang menjelaskan alur (timer,
+> navigasi, hasil). `prefers-reduced-motion` → `animate:false`. Copy suara "kamu"
+> per BRAND.md. Target via `data-tour=` (step hilang di-skip otomatis). Tests:
+> onboarding lib + hook (driver mount).
+
 ### 4.7 Login — Third-party OAuth (BARU 2026-06-06)
 **Owner: Ravi (full) · review: Ariq (data layer)**
 
