@@ -3,19 +3,29 @@
  * Source of truth: /API.md
  */
 
-export type QuestionType = "multiple_choice" | "true_false" | "short_answer";
+export type QuestionType =
+  | "multiple_choice"
+  | "true_false"
+  | "short_answer"
+  | "matching";
 
 export interface Question {
   id: number;
   type: QuestionType;
   question: string;
   options: string[] | null;
+  // §6.2 matching: prompts (left) + shuffled answer bank (right).
+  left_items?: string[] | null;
+  right_items?: string[] | null;
 }
 
 export interface Answer {
   question_id: number;
   selected_option_index: number | null;
   text_answer: string | null;
+  // §6.2 matching: matches[i] = chosen right_items index for left_items[i],
+  // or -1 when unpaired.
+  matches?: number[] | null;
 }
 
 // §4.3 Quiz settings (pre-generate)

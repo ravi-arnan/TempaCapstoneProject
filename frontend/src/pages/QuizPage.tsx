@@ -13,6 +13,7 @@ import {
 import { useTimer } from "@/hooks/useTimer";
 import { recordQuizAttempt } from "@/services/api";
 import type { Answer, QuizGenerateResponse } from "@/types/quiz";
+import { isAnswered } from "@/lib/answerStatus";
 import {
   BUTTON_LABELS,
   EMPTY_STATES,
@@ -59,6 +60,7 @@ export function QuizPage() {
       question_id: q.id,
       selected_option_index: null,
       text_answer: null,
+      matches: null,
     }));
   });
 
@@ -66,13 +68,7 @@ export function QuizPage() {
   const [currentIndex, setCurrentIndex] = useState(() => {
     if (!savedState) return 0;
     const idx = savedState.answers.findIndex(
-      (a, i) => {
-        const type = quiz?.questions[i]?.type;
-        if (type === "short_answer") {
-          return !a.text_answer || a.text_answer.trim() === "";
-        }
-        return a.selected_option_index === null;
-      }
+      (a, i) => !isAnswered(a, quiz?.questions[i]?.type),
     );
     return idx === -1 ? 0 : idx;
   });
@@ -80,7 +76,9 @@ export function QuizPage() {
   const [showRestoredNotice, setShowRestoredNotice] = useState(
     () =>
       savedState !== null &&
-      savedState.answers.some((a) => a.selected_option_index !== null || (a.text_answer && a.text_answer.trim() !== "")),
+      savedState.answers.some((a, i) =>
+        isAnswered(a, quiz?.questions[i]?.type),
+      ),
   );
 
   useEffect(() => {
@@ -119,6 +117,15 @@ export function QuizPage() {
     [],
   );
 
+  const handleMatchChange = useCallback(
+    (questionIndex: number, matches: number[]) => {
+      setAnswers((prev) =>
+        prev.map((a, i) => (i === questionIndex ? { ...a, matches } : a)),
+      );
+    },
+    [],
+  );
+
   const gotoQuestion = useCallback(
     (index: number) => {
       const clamped = Math.max(
@@ -130,14 +137,8 @@ export function QuizPage() {
     [quiz?.total_questions],
   );
 
-  const answeredCount = answers.filter(
-    (a, i) => {
-      const type = quiz?.questions[i]?.type;
-      if (type === "short_answer") {
-        return a.text_answer && a.text_answer.trim() !== "";
-      }
-      return a.selected_option_index !== null;
-    }
+  const answeredCount = answers.filter((a, i) =>
+    isAnswered(a, quiz?.questions[i]?.type),
   ).length;
   const allAnswered = quiz ? answeredCount === quiz.total_questions : false;
   const progressPercent = quiz
@@ -171,13 +172,9 @@ export function QuizPage() {
   }, [answers, navigate, quiz, seconds, start, stop, submit]);
 
   const jumpToFirstUnanswered = useCallback(() => {
-    const idx = answers.findIndex((a, i) => {
-      const type = quiz?.questions[i]?.type;
-      if (type === "short_answer") {
-        return !a.text_answer || a.text_answer.trim() === "";
-      }
-      return a.selected_option_index === null;
-    });
+    const idx = answers.findIndex(
+      (a, i) => !isAnswered(a, quiz?.questions[i]?.type),
+    );
     if (idx !== -1) gotoQuestion(idx);
   }, [answers, gotoQuestion, quiz]);
 
@@ -295,6 +292,7 @@ export function QuizPage() {
             answers={answers}
             currentIndex={currentIndex}
             onJump={gotoQuestion}
+            questions={quiz.questions}
           />
         </div>
       </div>
@@ -322,9 +320,11 @@ export function QuizPage() {
             answers[currentIndex]?.selected_option_index ?? null
           }
           textAnswer={answers[currentIndex]?.text_answer ?? null}
+          matches={answers[currentIndex]?.matches ?? null}
           isCurrent
           onSelect={(opt) => handleSelect(currentIndex, opt)}
           onTextChange={(text) => handleTextChange(currentIndex, text)}
+          onMatchChange={(m) => handleMatchChange(currentIndex, m)}
         />
       </div>
 

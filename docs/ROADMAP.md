@@ -310,13 +310,25 @@ user nyeleneh / digombal) — butuh sinyal mood dari backend chat. Mood `sleepy`
 
 ### 6.2 More question types
 **Owner: Ariq** (assigned 2026-06-06)
-- True/False
-- Isian singkat (free text, butuh string matching atau LLM grading)
-- Matching (cocok pernyataan A dengan jawaban B)
+- True/False ✅
+- Isian singkat (free text, butuh string matching atau LLM grading) ✅
+- Matching (cocok pernyataan A dengan jawaban B) ✅ (2026-06-17)
 
 Backend evaluator + UI both perlu refactor untuk handle question type variant.
 
 **Effort**: 3-5 hari
+
+> ✅ **Status 2026-06-17 — matching SELESAI.** Lintas-layer: schema (`matching`
+> di pattern; `left_items`/`right_items`/`correct_matches` internal, `matches` di
+> Answer), generator rule-based bikin 1 soal matching (istilah↔pernyataan dengan
+> kata kunci di-blank biar tak bocor) untuk kuis ≥5 soal + **di-inject ke jalur
+> DL** (DL hanya hasilkan MC/cloze, jadi soal terakhir diganti matching). Evaluator
+> **partial credit**: tiap pasangan benar nyumbang fraksi ke `score_percentage`,
+> tapi `correct_count` hanya hitung yang full-benar (fitur classifier tetap int).
+> UI: `MatchingField` tap-to-pair (aksesibel, mobile-friendly), QuestionPills &
+> progress type-aware (sekalian benerin short_answer), review per-pasangan di
+> QuestionBreakdown. Tests: 6 backend + 3 frontend. Catatan: drag-and-drop
+> di-skip demi aksesibilitas (tap-to-pair); bisa jadi polish lanjutan.
 
 ### 6.3 Gamification (lihat `GAMIFICATION.md`)
 Jalur B (hybrid) disetujui tim. Fase 1 (XP/streak/level) sudah selesai.

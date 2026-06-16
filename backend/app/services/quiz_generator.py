@@ -138,6 +138,9 @@ def _wrap_quiz(
                 options=options,
                 correct_option_index=correct_index,
                 correct_answer_text=q.correct_answer_text,
+                left_items=q.left_items,
+                right_items=q.right_items,
+                correct_matches=q.correct_matches,
             )
         )
     return QuizInternal(
@@ -233,8 +236,16 @@ def generate_quiz(
                     "quiz_generator: DL path produced %d questions",
                     len(dl_questions),
                 )
+                final = list(dl_questions[:target_count])
+                # §6.2: DL produces only MC/cloze — inject one matching question
+                # into larger quizzes so the type is actually reachable in prod.
+                if target_count >= 5:
+                    mrng = random.Random(abs(hash(text)) & 0xFFFFFFFF)
+                    matching_q = _build_matching_from_text(text, len(final), mrng)
+                    if matching_q is not None:
+                        final[-1] = matching_q
                 return _wrap_quiz(
-                    dl_questions[:target_count], text, diff, quiz_id,
+                    final, text, diff, quiz_id,
                     shuffle_options=shuffle_options,
                 )
 
@@ -675,6 +686,85 @@ def _build_rule_question(
     )
 
 
+_MATCHING_MIN_PAIRS = 3
+_MATCHING_MAX_PAIRS = 4
+_MATCHING_RIGHT_MAXLEN = 120
+
+
+def _shorten_clause(s: str, maxlen: int) -> str:
+    s = " ".join(s.split())
+    if len(s) <= maxlen:
+        return s
+    return s[:maxlen].rsplit(" ", 1)[0].strip() + "…"
+
+
+def _build_matching_question(
+    qid: int,
+    candidate_sentences: list[str],
+    used_correct_lower: set[str],
+    rng: random.Random,
+) -> QuestionInternal | None:
+    """§6.2: build ONE matching question from several sentences.
+
+    Each pair is (keyword, the keyword's sentence with the keyword blanked). The
+    user matches the term to the statement it completes. The keyword is blanked
+    out of the right-hand text so the answer isn't given away. Returns None if
+    fewer than _MATCHING_MIN_PAIRS distinct usable pairs can be formed.
+    """
+    pairs: list[tuple[str, str]] = []
+    seen_keywords: set[str] = set()
+    for sentence in candidate_sentences:
+        if len(pairs) >= _MATCHING_MAX_PAIRS:
+            break
+        keyword = _pick_keyword_from_by_difficulty(
+            sentence, used_correct_lower, "medium"
+        )
+        if not keyword or keyword.lower() in seen_keywords:
+            continue
+        pattern = re.compile(r"\b" + re.escape(keyword) + r"\b")
+        blanked = pattern.sub("___", sentence, count=1)
+        if blanked == sentence:
+            continue
+        seen_keywords.add(keyword.lower())
+        pairs.append((keyword, _shorten_clause(blanked, _MATCHING_RIGHT_MAXLEN)))
+
+    if len(pairs) < _MATCHING_MIN_PAIRS:
+        return None
+
+    left_items = [kw for kw, _ in pairs]
+    right_texts = [text for _, text in pairs]
+
+    # Shuffle the answer bank; record where each correct right text landed.
+    order = list(range(len(right_texts)))
+    rng.shuffle(order)
+    shuffled_right = [right_texts[j] for j in order]
+    landed_at = {orig: idx for idx, orig in enumerate(order)}
+    correct_matches = [landed_at[i] for i in range(len(right_texts))]
+
+    return QuestionInternal(
+        id=qid,
+        type="matching",
+        question="Pasangkan setiap istilah dengan pernyataan yang tepat.",
+        left_items=left_items,
+        right_items=shuffled_right,
+        correct_matches=correct_matches,
+    )
+
+
+def _build_matching_from_text(
+    text: str, qid: int, rng: random.Random
+) -> QuestionInternal | None:
+    """Build a matching question straight from raw text (used to inject one into
+    a DL-only quiz, which otherwise never produces matching)."""
+    sentences = [_sanitize_sentence(s) for s in _split_sentences(text)]
+    candidates = [s for s in sentences if _is_quality_sentence(s)] or [
+        s for s in sentences if _is_safe_sentence(s)
+    ]
+    if len(candidates) < _MATCHING_MIN_PAIRS + 1:
+        return None
+    return _build_matching_question(qid, candidates, set(), rng)
+
+
 def _generate_rule_based(
     text: str,
     difficulty: str = "medium",
@@ -750,6 +840,16 @@ def _generate_rule_based(
         rng = random.Random(abs(hash(text)) & 0xFFFFFFFF)
         used_correct_lower: set[str] = set()
         questions: list[QuestionInternal] = []
+
+        # §6.2: include ONE matching question for larger quizzes (target >= 5),
+        # consuming a few sentences/keywords before the per-sentence loop fills
+        # the rest. Skipped for short quizzes so matching never dominates.
+        if target >= 5 and len(filtered_sentences) >= _MATCHING_MIN_PAIRS + 1:
+            matching_q = _build_matching_question(
+                len(questions) + 1, filtered_sentences, used_correct_lower, rng
+            )
+            if matching_q is not None:
+                questions.append(matching_q)
 
         # Try sentences first — generates richest questions
         for sentence in filtered_sentences[: target * 3]:

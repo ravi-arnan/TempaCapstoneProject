@@ -44,12 +44,18 @@ class QuestionReview(BaseModel):
     """
 
     question_id: int
+    type: str = "multiple_choice"
     question: str
-    options: list[str]
-    selected_option_index: Optional[int]
-    correct_option_index: int
+    options: list[str] = Field(default_factory=list)
+    selected_option_index: Optional[int] = None
+    correct_option_index: Optional[int] = None
     is_correct: bool
     is_unanswered: bool
+    # §6.2 matching review: prompts, answer bank, user's pairing, correct pairing.
+    left_items: Optional[list[str]] = None
+    right_items: Optional[list[str]] = None
+    matches: Optional[list[int]] = None
+    correct_matches: Optional[list[int]] = None
 
 
 class QuizSubmitResponse(BaseModel):

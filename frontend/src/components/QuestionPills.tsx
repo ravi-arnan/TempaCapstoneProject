@@ -1,17 +1,25 @@
-import type { Answer } from "@/types/quiz";
+import type { Answer, Question } from "@/types/quiz";
+import { isAnswered } from "@/lib/answerStatus";
 import { cn } from "@/lib/cn";
 
 interface QuestionPillsProps {
   answers: Answer[];
   currentIndex: number;
   onJump: (index: number) => void;
+  /** Questions, so status reflects each type (short_answer, matching, …). */
+  questions?: Question[];
 }
 
 /**
  * Compact pills showing per-question status: answered / current / pending.
  * Clicking a pill jumps to that question. Lives in the sticky quiz header.
  */
-export function QuestionPills({ answers, currentIndex, onJump }: QuestionPillsProps) {
+export function QuestionPills({
+  answers,
+  currentIndex,
+  onJump,
+  questions,
+}: QuestionPillsProps) {
   return (
     <div
       role="navigation"
@@ -19,7 +27,7 @@ export function QuestionPills({ answers, currentIndex, onJump }: QuestionPillsPr
       className="flex flex-wrap items-center gap-1.5"
     >
       {answers.map((a, i) => {
-        const answered = a.selected_option_index !== null;
+        const answered = isAnswered(a, questions?.[i]?.type);
         const isCurrent = i === currentIndex;
         return (
           <button

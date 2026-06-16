@@ -1,4 +1,5 @@
 import type { Question } from "@/types/quiz";
+import { MatchingField } from "@/components/MatchingField";
 import { QUIZ_PAGE } from "@/utils/i18n";
 import { cn } from "@/lib/cn";
 
@@ -8,9 +9,11 @@ interface QuizQuestionCardProps {
   total: number;
   selectedOptionIndex: number | null;
   textAnswer?: string | null;
+  matches?: number[] | null;
   isCurrent?: boolean;
   onSelect: (optionIndex: number) => void;
   onTextChange?: (text: string) => void;
+  onMatchChange?: (matches: number[]) => void;
   onFocus?: () => void;
 }
 
@@ -25,9 +28,11 @@ export function QuizQuestionCard({
   total,
   selectedOptionIndex,
   textAnswer,
+  matches,
   isCurrent,
   onSelect,
   onTextChange,
+  onMatchChange,
   onFocus,
 }: QuizQuestionCardProps) {
   return (
@@ -48,7 +53,20 @@ export function QuizQuestionCard({
         {question.question}
       </h3>
       <div className="space-y-2">
-        {question.type === "short_answer" ? (
+        {question.type === "matching" &&
+        question.left_items &&
+        question.right_items ? (
+          <MatchingField
+            leftItems={question.left_items}
+            rightItems={question.right_items}
+            matches={
+              matches && matches.length === question.left_items.length
+                ? matches
+                : question.left_items.map(() => -1)
+            }
+            onChange={(m) => onMatchChange?.(m)}
+          />
+        ) : question.type === "short_answer" ? (
           <input
             type="text"
             value={textAnswer ?? ""}
