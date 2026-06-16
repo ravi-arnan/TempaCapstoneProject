@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AsahiChatWidget } from "@/components/AsahiChatWidget";
 import { MaterialInputForm } from "@/components/MaterialInputForm";
 import { SourceTypeTabs } from "@/components/SourceTypeTabs";
@@ -7,6 +7,8 @@ import { DailyChallengeCard } from "@/components/DailyChallengeCard";
 import { QuizGenerationSkeleton } from "@/components/QuizGenerationSkeleton";
 import { QuizSettingsControl } from "@/components/QuizSettingsControl";
 import { useQuiz } from "@/hooks/useQuiz";
+import { useOnboardingTour } from "@/hooks/useOnboardingTour";
+import { hasOnboarded } from "@/lib/onboarding";
 import type { QuizSettings, SourceType } from "@/types/quiz";
 import { DEFAULT_QUIZ_SETTINGS } from "@/types/quiz";
 import {
@@ -37,6 +39,28 @@ export function HomePage() {
   const [prefillText, setPrefillText] = useState<string | null>(null);
   const [prefillUrl, setPrefillUrl] = useState<string | null>(null);
   const [settings, setSettings] = useState<QuizSettings>(DEFAULT_QUIZ_SETTINGS);
+
+  // §4.6 Onboarding tour: auto-start on first visit, or when the nav "?" button
+  // sends the user here with ?tour=1. Runs once per mount.
+  const { startTour } = useOnboardingTour();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tourStartedRef = useRef(false);
+
+  useEffect(() => {
+    if (tourStartedRef.current) return;
+    const forced = searchParams.get("tour") === "1";
+    if (!forced && hasOnboarded()) return;
+
+    tourStartedRef.current = true;
+    if (forced) {
+      // Drop the param so a refresh doesn't replay the tour.
+      searchParams.delete("tour");
+      setSearchParams(searchParams, { replace: true });
+    }
+    // Let the page paint (and lazy elements mount) before highlighting.
+    const id = setTimeout(() => startTour(), 400);
+    return () => clearTimeout(id);
+  }, [searchParams, setSearchParams, startTour]);
 
   function handleSampleClick() {
     setSourceType("text");
@@ -79,9 +103,11 @@ export function HomePage() {
         </p>
       </header>
 
-      <DailyChallengeCard />
+      <div data-tour="daily-challenge">
+        <DailyChallengeCard />
+      </div>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div data-tour="source-tabs" className="flex flex-wrap items-center gap-3">
         <SourceTypeTabs
           value={sourceType}
           onChange={setSourceType}
@@ -98,12 +124,15 @@ export function HomePage() {
         )}
       </div>
 
-      <QuizSettingsControl
-        settings={settings}
-        onChange={setSettings}
-        disabled={generating}
-      />
+      <div data-tour="quiz-settings">
+        <QuizSettingsControl
+          settings={settings}
+          onChange={setSettings}
+          disabled={generating}
+        />
+      </div>
 
+      <div data-tour="material-input">
       <MaterialInputForm
         sourceType={sourceType}
         onSubmitText={async (text) =>
@@ -128,6 +157,7 @@ export function HomePage() {
         prefillUrl={prefillUrl}
         onSmartUrlPaste={handleSmartUrlPaste}
       />
+      </div>
 
       {generating && <QuizGenerationSkeleton />}
 

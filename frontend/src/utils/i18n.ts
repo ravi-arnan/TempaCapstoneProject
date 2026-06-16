@@ -24,6 +24,43 @@ export const HOMEPAGE = {
 } as const;
 
 // ============================================================================
+// Onboarding tour (ROADMAP §4.6) — voice per BRAND.md: "kamu", calm, no patronising
+// ============================================================================
+
+export const ONBOARDING = {
+  replayLabel: "Lihat panduan singkat",
+  next: "Lanjut",
+  prev: "Kembali",
+  done: "Selesai",
+  steps: {
+    welcome: {
+      title: "Halo, selamat datang di Asahlagi 👋",
+      body: "Tempel materi belajarmu, kerjakan kuis otomatis, lalu lihat seberapa paham kamu. Kuajak keliling sebentar, ya.",
+    },
+    source: {
+      title: "Pilih sumber materi",
+      body: "Kamu bisa mulai dari teks, tautan artikel, atau berkas PDF. Pilih yang paling pas.",
+    },
+    settings: {
+      title: "Atur kuismu",
+      body: "Tentukan jumlah soal dan tingkat kesulitan kalau mau. Boleh juga dibiarkan default.",
+    },
+    input: {
+      title: "Tempel materimu di sini",
+      body: "Masukkan materi (minimal 100 karakter), lalu tekan Mulai Mengasah untuk membuat kuis.",
+    },
+    daily: {
+      title: "Atau coba Tantangan Harian",
+      body: "Kuis pilihan tiap hari dengan bonus XP. Cara cepat menjaga streak belajarmu.",
+    },
+    finish: {
+      title: "Setelah kuis",
+      body: "Kamu akan lihat skor, tingkat pemahaman, insight, dan rekomendasi langkah berikutnya. Selamat mengasah!",
+    },
+  },
+} as const;
+
+// ============================================================================
 // Quiz settings — pre-generate (ROADMAP §4.3)
 // ============================================================================
 
