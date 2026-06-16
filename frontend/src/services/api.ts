@@ -27,7 +27,9 @@ import type {
   GamificationStats,
   GamificationAnalytics,
   HistoryResponse,
+  LeaderboardResponse,
   RecordAttemptResult,
+  WeeklyProgress,
 } from "@/types/gamification";
 import type { AuthUser } from "@/types/auth";
 import { getDeviceId, setDeviceId } from "@/lib/deviceId";
@@ -302,6 +304,21 @@ export async function getAchievements(): Promise<Badge[]> {
     method: "GET",
   });
   return res ?? [];
+}
+
+export function getLeaderboard(
+  limit = 20,
+): Promise<LeaderboardResponse | null> {
+  return gamificationFetch<LeaderboardResponse>(
+    `/gamification/leaderboard?limit=${limit}`,
+    { method: "GET" },
+  );
+}
+
+export function getWeeklyProgress(): Promise<WeeklyProgress | null> {
+  return gamificationFetch<WeeklyProgress>("/gamification/weekly-progress", {
+    method: "GET",
+  });
 }
 
 export function regenerateQuiz(

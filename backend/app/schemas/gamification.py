@@ -85,3 +85,31 @@ class AnalyticsResponse(BaseModel):
     total_xp: int
     score_trend: list[TrendPoint]
     topic_mastery: list[TopicMasteryItem]
+
+
+# ============================================================================
+# §4.8 Batch 2 — Leaderboard + Weekly goal
+# ============================================================================
+
+
+class LeaderboardEntry(BaseModel):
+    rank: int
+    name: str
+    total_xp: int
+    level: int
+    is_you: bool = False
+
+
+class LeaderboardResponse(BaseModel):
+    entries: list[LeaderboardEntry]
+    # The requester's rank even when they're outside the returned top-N
+    # (None when they have no recorded progress yet).
+    you_rank: int | None = None
+
+
+class WeeklyProgressResponse(BaseModel):
+    completed: int
+    target: int
+    percent: int
+    goal_met: bool
+    remaining: int

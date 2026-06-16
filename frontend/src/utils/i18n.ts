@@ -76,6 +76,28 @@ export const ONBOARDING = {
 } as const;
 
 // ============================================================================
+// §4.8 Batch 2 — Leaderboard + Weekly goal
+// ============================================================================
+
+export const LEADERBOARD = {
+  title: "Papan Peringkat",
+  subtitle: "Peringkat berdasarkan total XP",
+  you: "Kamu",
+  yourRankTemplate: (rank: number) => `Peringkatmu: #${rank}`,
+  levelTemplate: (level: number) => `Lv ${level}`,
+  empty: "Belum ada yang masuk papan peringkat. Jadilah yang pertama!",
+} as const;
+
+export const WEEKLY_GOAL = {
+  title: "Target Mingguan",
+  progressTemplate: (done: number, target: number) =>
+    `${done} dari ${target} kuis minggu ini`,
+  remainingTemplate: (n: number) =>
+    n === 1 ? "1 kuis lagi menuju target" : `${n} kuis lagi menuju target`,
+  met: "Target minggu ini tercapai! 🎉",
+} as const;
+
+// ============================================================================
 // Quiz settings — pre-generate (ROADMAP §4.3)
 // ============================================================================
 

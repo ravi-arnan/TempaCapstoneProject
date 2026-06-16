@@ -8,7 +8,7 @@ OWNER: Ariq (data/persistence) + Desta (rules via xp_engine/achievements).
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import func, select, update
 
@@ -418,3 +418,96 @@ def link_google_identity(
             "avatar_url": user.avatar_url,
             "device_id": user.device_id,
         }
+
+
+# ============================================================================
+# §4.8 Batch 2 — Leaderboard + Weekly goal (no new tables; reads existing data)
+# ============================================================================
+
+WEEKLY_GOAL_DEFAULT = 5
+_ANON_NAME = "Anonim"
+
+
+def _display_name(name: str | None) -> str:
+    """Privacy: only logged-in users have a display name; guests show as Anonim."""
+    cleaned = (name or "").strip()
+    return cleaned or _ANON_NAME
+
+
+def build_leaderboard_entries(
+    rows: list[tuple[str, str | None, int, int]], device_id: str
+) -> list[dict]:
+    """Pure: shape ranked (device_id, display_name, total_xp, level) rows into
+    leaderboard entries, flagging the requester. Ranks are 1-based by position."""
+    return [
+        {
+            "rank": i + 1,
+            "name": _display_name(display_name),
+            "total_xp": total_xp,
+            "level": level,
+            "is_you": did == device_id,
+        }
+        for i, (did, display_name, total_xp, level) in enumerate(rows)
+    ]
+
+
+def weekly_summary(completed: int, target: int) -> dict:
+    """Pure: weekly-goal progress payload from a completed count + target."""
+    target = max(1, target)
+    completed = max(0, completed)
+    percent = min(100, round(completed / target * 100))
+    return {
+        "completed": completed,
+        "target": target,
+        "percent": percent,
+        "goal_met": completed >= target,
+        "remaining": max(0, target - completed),
+    }
+
+
+def get_leaderboard(device_id: str, limit: int = 20) -> dict:
+    """Top players by XP. Display name falls back to 'Anonim' for guests. Also
+    returns the requester's own rank even when outside the top-N."""
+    with get_session() as session:
+        rows = session.execute(
+            select(User.device_id, User.display_name, UserStats.total_xp, UserStats.level)
+            .join(UserStats, User.id == UserStats.user_id)
+            .order_by(UserStats.total_xp.desc(), User.created_at.asc())
+            .limit(limit)
+        ).all()
+        entries = build_leaderboard_entries(
+            [(r.device_id, r.display_name, r.total_xp, r.level) for r in rows],
+            device_id,
+        )
+
+        you_rank: int | None = None
+        me = session.scalar(select(User).where(User.device_id == device_id))
+        if me is not None:
+            my_stats = session.get(UserStats, me.id)
+            if my_stats is not None:
+                higher = session.scalar(
+                    select(func.count(UserStats.user_id)).where(
+                        UserStats.total_xp > my_stats.total_xp
+                    )
+                )
+                you_rank = (higher or 0) + 1
+
+        return {"entries": entries, "you_rank": you_rank}
+
+
+def get_weekly_progress(device_id: str, target: int = WEEKLY_GOAL_DEFAULT) -> dict:
+    """How many quizzes the user finished in the last 7 days vs their target."""
+    with get_session() as session:
+        user = session.scalar(select(User).where(User.device_id == device_id))
+        completed = 0
+        if user is not None:
+            since = datetime.now(timezone.utc) - timedelta(days=7)
+            completed = (
+                session.scalar(
+                    select(func.count(QuizAttempt.id))
+                    .where(QuizAttempt.user_id == user.id)
+                    .where(QuizAttempt.completed_at >= since)
+                )
+                or 0
+            )
+        return weekly_summary(completed, target)
