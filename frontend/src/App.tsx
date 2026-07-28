@@ -2,34 +2,57 @@ import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { LandingPage } from "@/pages/LandingPage";
 import { Layout } from "@/components/Layout";
+import { withChunkReload } from "@/lib/chunkReload";
 
 // Landing is the entry route → keep it eager (no loading flash on first paint).
 // Every other page is code-split so the initial bundle stays light on mobile.
-const HomePage = lazy(() =>
-  import("@/pages/HomePage").then((m) => ({ default: m.HomePage })),
+//
+// Each loader goes through withChunkReload so a tab left open across a deploy
+// recovers by itself instead of dead-ending on a chunk that no longer exists.
+// Wrapped inline rather than through a generic helper: React.lazy infers each
+// page's props from its loader, and a helper signature erases that inference.
+
+const HomePage = lazy(
+  withChunkReload(() =>
+    import("@/pages/HomePage").then((m) => ({ default: m.HomePage })),
+  ),
 );
-const QuizPage = lazy(() =>
-  import("@/pages/QuizPage").then((m) => ({ default: m.QuizPage })),
+const QuizPage = lazy(
+  withChunkReload(() =>
+    import("@/pages/QuizPage").then((m) => ({ default: m.QuizPage })),
+  ),
 );
-const ResultPage = lazy(() =>
-  import("@/pages/ResultPage").then((m) => ({ default: m.ResultPage })),
+const ResultPage = lazy(
+  withChunkReload(() =>
+    import("@/pages/ResultPage").then((m) => ({ default: m.ResultPage })),
+  ),
 );
-const ProgressPage = lazy(() =>
-  import("@/pages/ProgressPage").then((m) => ({ default: m.ProgressPage })),
+const ProgressPage = lazy(
+  withChunkReload(() =>
+    import("@/pages/ProgressPage").then((m) => ({ default: m.ProgressPage })),
+  ),
 );
-const ProfilePage = lazy(() =>
-  import("@/pages/ProfilePage").then((m) => ({ default: m.ProfilePage })),
+const ProfilePage = lazy(
+  withChunkReload(() =>
+    import("@/pages/ProfilePage").then((m) => ({ default: m.ProfilePage })),
+  ),
 );
-const HistoryPage = lazy(() =>
-  import("@/pages/HistoryPage").then((m) => ({ default: m.HistoryPage })),
+const HistoryPage = lazy(
+  withChunkReload(() =>
+    import("@/pages/HistoryPage").then((m) => ({ default: m.HistoryPage })),
+  ),
 );
-const LeaderboardPage = lazy(() =>
-  import("@/pages/LeaderboardPage").then((m) => ({
-    default: m.LeaderboardPage,
-  })),
+const LeaderboardPage = lazy(
+  withChunkReload(() =>
+    import("@/pages/LeaderboardPage").then((m) => ({
+      default: m.LeaderboardPage,
+    })),
+  ),
 );
-const SettingsPage = lazy(() =>
-  import("@/pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+const SettingsPage = lazy(
+  withChunkReload(() =>
+    import("@/pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+  ),
 );
 
 function RouteFallback() {
