@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { App } from "@/App";
 import { AuthProvider, GOOGLE_CLIENT_ID } from "@/context/AuthContext";
+import { registerServiceWorker } from "@/lib/pwa";
 import "@/index.css";
 
 const app = (
@@ -13,6 +14,8 @@ const app = (
     </BrowserRouter>
   </AuthProvider>
 );
+
+registerServiceWorker();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

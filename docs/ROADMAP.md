@@ -3,7 +3,7 @@
 **Status**: OPEN. Living document.
 **Owner**: Ravi
 **Created**: 2026-05-18
-**Last updated**: 2026-06-14
+**Last updated**: 2026-07-29
 
 ---
 
@@ -31,6 +31,11 @@ Dokumen ini menangkap arah pengembangan setelah batch hari ini, supaya keputusan
 **Hasil**: link publik yang bisa di-share ke pembimbing/audience, sekaligus prasyarat untuk app Android (lihat #6.4 + `MOBILE.md`).
 
 **Effort**: ~2-3 jam (setup awal + debugging CORS + healthcheck)
+
+> ✅ **Status 2026-07-29**: SELESAI & live. Diverifikasi hari ini:
+> `https://tempa-capstone-project.vercel.app` → 200, dan backend Space
+> `https://raviarnan-asahlagi-backend.hf.space/health` → `{"status":"ok"}`.
+> Prasyarat #6.4 (Capacitor) sudah terpenuhi.
 
 ### 1.2 README screenshots + demo GIF
 - Setelah deploy, screen-record 60-90 detik full flow
@@ -78,7 +83,10 @@ Beberapa dokumen drift dari kode setelah banyak perubahan hari ini.
 ## 3. Reliability / quality
 
 ### 3.1 Frontend tests (Vitest + RTL)
-Saat ini 0 tests di frontend.
+> ✅ **SELESAI** (2026-06-08, diperluas sampai 2026-07-29). Vitest + RTL terpasang,
+> **128 test di 30 file** hijau. Teks di bawah dipertahankan sebagai catatan rencana awal.
+
+~~Saat ini 0 tests di frontend.~~
 
 **Minimum viable suite**:
 - Smoke: HomePage renders, sample button populates textarea
@@ -385,6 +393,25 @@ Track polish khusus mobile, melengkapi wrap Capacitor (#6.4). Dipisah menjadi ya
 
 **Effort**: A ~0.5-1 hari (bisa segera) · B ~0.5 hari (setelah wrap) · C ~0.5 hari · PWA ~0.5 hari.
 
+> ✅ **§6.5-C SELESAI** (lihat `App.tsx`): semua rute kecuali landing di-`lazy()`.
+> Bundle awal sekarang ~238 kB (77 kB gzip); halaman berat (Result, Home, Quiz)
+> + `canvas-confetti` masing-masing jadi chunk sendiri.
+>
+> ✅ **PWA SELESAI 2026-07-29.** Tanpa dependensi baru — `vite-plugin-pwa` sengaja
+> tidak dipakai karena nama aset Vite sudah content-hashed, jadi runtime
+> cache-first setara precache manifest.
+> - `public/manifest.webmanifest` — installable, `start_url: /app`, `display: standalone`,
+>   ikon 192/512 `any maskable`, plus shortcut "Kuis baru" & "Riwayat".
+> - `public/icon-{192,512}.png` + `apple-touch-icon.png` — di-render dari mark "A"
+>   emerald di atas `#171717` (sumber SVG di-render lewat Inkscape).
+> - `public/sw.js` — navigasi network-first (fallback shell offline), aset
+>   `/assets/`+`/mascot/` cache-first, **cross-origin (backend HF Space) tidak
+>   pernah di-cache** supaya kuis basi tak pernah tersaji.
+> - `src/lib/pwa.ts` — registrasi hanya saat `import.meta.env.PROD` (dev tetap HMR).
+> - Tests: 3 (`pwa.test.ts`). Total suite 128 hijau, typecheck + build hijau.
+>
+> **Sisa §6.5-B** (StatusBar/Splash/Haptics) tetap butuh shell Capacitor (#6.4).
+
 ### 6.6 AI Chatbot Asahi — game-dialog (BARU 2026-06-12)
 **Owner: TBD · ⚠️ butuh persetujuan tim (scope expansion)**
 
@@ -393,11 +420,12 @@ Track polish khusus mobile, melengkapi wrap Capacitor (#6.4). Dipisah menjadi ya
 
 Asahi sebagai teman belajar — **dialog terkekang (game-style)**, bukan chat bebas, supaya
 murah/aman/on-brand.
-- **Model**: GitHub Models (gratis, auth via **GitHub PAT**) — mis. `gpt-4o-mini`. Free tier
+- **Model**: ~~GitHub Models~~ → **Groq** `openai/gpt-oss-120b` (gratis, auth via **API key**
+  dari console.groq.com; pindah 2026-07-29, lihat decision log). Free tier
   untuk prototipe, ada rate limit (bukan skala produksi besar).
 - **Arsitektur**: Frontend (UI dialog) → `POST /chat` (FastAPI) → ambil konteks user dari DB
-  (**scoped ke user login saja**) + system prompt → panggil GitHub Models (**PAT di env server
-  `GITHUB_TOKEN`**) → filter output → reply. **PAT server-side only — JANGAN `VITE_`**
+  (**scoped ke user login saja**) + system prompt → panggil Groq (**key di env server
+  `GROQ_API_KEY`**) → filter output → reply. **PAT server-side only — JANGAN `VITE_`**
   (kalau ke frontend, akun GitHub bocor).
 - **Safeguard**: rate limit (`slowapi`), authz konteks DB per-user, input validation +
   anti prompt-injection, system prompt kunci persona BRAND voice + batas topik (belajar/kuis),
@@ -413,16 +441,19 @@ PAT hanya untuk model AI; akses DB terpisah (backend query Neon).
 
 ## Saran prioritas
 
-**▶ Prioritas terkini (2026-06-12, updated) — urut kerjakan dari atas:**
-1. ✅ **Maskot (#4.9)** — SELESAI (7 ekspresi front-facing, ter-wire).
-2. ✅ **AI Chatbot Asahi (#6.6)** — BUILT this session (free-chat + memori Neon + konteks kuis +
-   rate-limit + material pre-check). Sisa: set `GITHUB_TOKEN` di secret HF Space saat deploy.
-3. **▶ BERIKUTNYA: Deploy publik (#1.1)** + **demo GIF/screenshot (#1.2)** — ROI capstone terbesar.
-   Prasyarat: merge `feat/mascot-asahi-v2` → main; set HF Space secret `GITHUB_TOKEN` (chat).
-4. **Capacitor wrap (#6.4)** — kalau mobile bagian demo. ~1 hari. (Bukan React Native.)
-5. **React Native** — **v2 pasca-demo**, jangan sekarang (lihat #6.4 + decision log).
+**▶ Prioritas terkini (2026-07-29, updated) — urut kerjakan dari atas:**
+1. ✅ **Maskot (#4.9)**, ✅ **AI Chatbot Asahi (#6.6)**, ✅ **Deploy publik (#1.1)** — semua live.
+2. ✅ **PWA (#6.5)** — installable + offline shell, tanpa dep baru. Perlu verifikasi manual
+   sekali di HP (Chrome Android → "Tambahkan ke layar utama") setelah deploy berikutnya.
+3. **▶ BERIKUTNYA: demo GIF/screenshot (#1.2)** — satu-satunya item ROI-tinggi yang tersisa
+   dan **butuh Ravi** (screen-record 60-90 detik flow lengkap, embed di README).
+4. **Capacitor wrap (#6.4)** — prasyarat (backend HTTPS publik) sudah terpenuhi. ~1 hari.
+   Nilai tambah nyata di atas PWA cuma push notification; kalau tidak dipakai, PWA cukup.
+5. **Distraktor via embeddings (#3.3)** + **model v2 answer-aware (#3.5)** — lever kualitas
+   kuis terakhir; #3.5 butuh Audry jalankan Colab.
+6. **React Native** — **v2 pasca-demo**, jangan sekarang (lihat #6.4 + decision log).
 
-> Yang **bukan** sekarang: RN migration. Fokus: deploy → demo.
+> Yang **bukan** sekarang: RN migration.
 
 **Saat demo capstone deket (≤ 1 minggu)**:
 1. **#2 Doc sync** (~2 jam, wajib)
@@ -458,6 +489,9 @@ PAT hanya untuk model AI; akses DB terpisah (backend query Neon).
 | 2026-06-12 | **AI Chatbot Asahi (#6.6)** diterima sebagai **POST-MVP** (butuh sepakat tim). GitHub Models (PAT server-side) + dialog terkekang + safeguard. | Asahi jadi teman belajar; jalur gratis (GitHub Models) & terkekang supaya aman/murah/on-brand. Scope expansion CLAUDE.md, pola seperti login #4.7. |
 | 2026-06-12 | Mobile: tetap **Capacitor** untuk demo; **React Native ditunda ke v2 pasca-demo**. | RN native feel nyata tapi gain kecil untuk app form/kuis ini; cost = rewrite total frontend → risiko jebol demo + lawan mandat "simpel + demo andal". Capacitor reuse 100% kode (~1 hari). RN nanti pakai Expo + NativeWind. |
 | 2026-06-14 | **#6.5-A Mobile polish (web-responsive & touch) SELESAI** — branch `feat/mobile-polish-6.5a`. Touch target ≥44px, `active:` states, safe-area bottom bar kuis, responsif 320/375/430 (0 overflow, verified Playwright). | Bagian yang bisa dikerjakan tanpa shell Capacitor; prasyarat ringan untuk #6.4 wrap. §6.5-B (StatusBar/Splash/Haptics) & §6.5-C (code-split) menyusul. Typecheck + 100 test + build hijau. |
+| 2026-07-29 | **Chatbot Asahi (#6.6) pindah dari GitHub Models ke Groq** `openai/gpt-oss-120b`; env `GITHUB_TOKEN` → `GROQ_API_KEY`. | GitHub Models pensiun **2026-07-30** — chat live bakal mati diam-diam kalau dibiarkan. Groq juga free-tier & OpenAI-compatible, jadi cuma URL + nama model + nama secret yang berubah. Pilihan model direvisi di sesi yang sama: `llama-3.3-70b-versatile` menang di adu karakter, tapi tabel deprecation Groq menunjukkan shutdown-nya **2026-08-16**, jadi itu cuma memindahkan tenggat 18 hari ke depan. `qwen/qwen3.6-27b` membocorkan `<think>` mentah ke isi pesan. Jatuh ke `openai/gpt-oss-120b`, diverifikasi live lewat `_call_model`. Pelajaran: cek tabel deprecation dulu, baru adu kualitas. **Sisa: `scripts/redeploy_space.py` untuk push secret + factory rebuild Space.** |
+| 2026-07-29 | **PWA (#6.5)** dipilih sebagai jalur "berasa app", **hand-rolled** (`manifest.webmanifest` + `sw.js` + `lib/pwa.ts`), bukan `vite-plugin-pwa`. Backend (cross-origin) eksplisit tidak pernah di-cache. | Aset Vite sudah content-hashed → runtime cache-first setara precache manifest, jadi build plugin tak menambah nilai tapi menambah dep. Meng-cache respons kuis justru bahaya: hasil basi lebih buruk daripada error jujur. Capacitor (#6.4) tetap dibutuhkan hanya kalau push notification jadi dipakai. |
+| 2026-07-29 | Doc sync: #1.1 (deploy) ditandai SELESAI setelah verifikasi live hari ini; §6.5-C (code-split) ditandai SELESAI; prioritas ditulis ulang — item ROI tertinggi yang tersisa = demo GIF/screenshot (#1.2). | ROADMAP terakhir di-update 2026-06-14 sementara pekerjaan lanjut sampai 2026-06-17 (matching, leaderboard, preferensi/bookmark, QA fixes) dan deploy sudah live; dokumen jadi menyesatkan soal "apa berikutnya". |
 | 2026-06-14 | **Kualitas quiz (#3.5)**: bug "jawaban benar = kata terpanjang" diperbaiki **answer-aware** (branch `feat/quiz-answer-aware` + HF Space `9e9e99b/2aa8bc7` live). Pilih span jawaban dulu → highlight → guard konsistensi (angka/nama, anti-superlatif, anti-verb) → fallback cloze koheren → distraktor sekategori. | Fine-tune lama ternyata **plain QG** (tak ber-`<hl>`), jadi model tak patuh span jawaban. Inference-fix menutup ~70-75%; untuk presisi penuh, notebook di-upgrade ke **answer-aware v2** (latih dengan `<hl>`, token khusus) — Audry jalankan di Colab lalu Factory rebuild. |
 
 ---

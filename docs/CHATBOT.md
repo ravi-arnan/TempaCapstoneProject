@@ -17,7 +17,7 @@
 | **Lingkup** | Reaksi hasil kuis + motivasi belajar **saja** (tidak jawab pertanyaan materi) | Aman, murah, on-brand; hindari "tutor palsu" & halusinasi |
 | **Interaksi** | **Dialog tombol** (game-style), bukan textbox bebas | Token terkontrol, minim prompt-injection, terasa "game" |
 | **Lokasi** | **ResultPage** (di bawah hasil, nyambung maskot di header) | Konteks jelas (hasil kuis), fokus, tidak nambah surface |
-| **Model** | GitHub Models `gpt-4o-mini` (gratis, PAT) | Free tier untuk prototipe; ganti mudah (OpenAI-compatible) |
+| **Model** | Groq `openai/gpt-oss-120b` (gratis, API key) | Free tier untuk prototipe; ganti mudah (OpenAI-compatible). Sebelumnya GitHub Models `gpt-4o-mini`, pindah 2026-07-29 karena layanan itu pensiun 2026-07-30 |
 
 ---
 
@@ -117,13 +117,25 @@ Response:
 
 ## 5. Backend — GitHub Models (catatan implementasi)
 
-- Endpoint OpenAI-compatible. **Verifikasi endpoint/SDK terkini di docs GitHub Models saat
-  implementasi** (jangan hardcode dari ingatan). Pola umum: base URL GitHub Models +
-  `Authorization: Bearer <PAT>`, body ala Chat Completions (`messages`, `model`, `temperature`,
-  `max_tokens`).
-- **PAT = secret server-side**: env `GITHUB_TOKEN`. **JANGAN** `VITE_`/expose ke
-  frontend. Pakai **fine-grained PAT scope minimal** (mis. `models: read`).
-- Model awal: `gpt-4o-mini`. `max_tokens` kecil (mis. 120) + `temperature` ~0.7.
+- Endpoint OpenAI-compatible: `https://api.groq.com/openai/v1/chat/completions` +
+  `Authorization: Bearer <key>`, body ala Chat Completions (`messages`, `model`,
+  `temperature`, `max_tokens`).
+- **Key = secret server-side**: env `GROQ_API_KEY` (ambil di https://console.groq.com).
+  **JANGAN** `VITE_`/expose ke frontend.
+- Model: `openai/gpt-oss-120b`. `llama-3.3-70b-versatile` sebenarnya lebih pas karakternya
+  waktu diadu pakai `_FREE_SYSTEM_PROMPT` asli, TAPI Groq mengumumkan deprecation-nya
+  2026-06-17 dengan shutdown **2026-08-16**, jadi memilih itu berarti pindah dua kali dalam
+  tiga minggu. Kandidat pengganti satunya, `qwen/qwen3.6-27b`, membocorkan penalaran `<think>`
+  mentah ke isi pesan sehingga tidak bisa dipakai tanpa dibersihkan.
+  `max_tokens` kecil (mis. 120) + `temperature` ~0.7.
+- **Cek tabel deprecation Groq sebelum memilih model**, jangan cuma adu kualitas:
+  https://console.groq.com/docs/deprecations
+- **Dua mode, dua aturan materi, jangan tertukar**: mode reaksi-hasil (`_SYSTEM_PROMPT`)
+  melarang menjelaskan materi dan menyuruh mengarahkan ke "asah lagi"; mode free-chat
+  (`_FREE_SYSTEM_PROMPT`) justru **membolehkan** penjelasan ringkas asal jujur. Jadi jawaban
+  free-chat atas "jelasin apa itu integral" memang sesuai desain, bukan guardrail bocor.
+  Mode reaksi-hasil sendiri hanya bisa dipicu tombol intent, jadi tidak ada jalan bagi teks
+  bebas pengguna untuk masuk ke sana.
 - Service tipis di `backend/app/services/asahi_chat.py`; route tipis di `backend/app/routes/chat.py`.
 - Free tier ada **rate limit** → untuk prototipe/demo, bukan skala besar.
 

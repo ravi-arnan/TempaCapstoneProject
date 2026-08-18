@@ -1,10 +1,10 @@
-"""Asahi chatbot service — calls GitHub Models (see docs/CHATBOT.md).
+"""Asahi chatbot service — calls Groq (see docs/CHATBOT.md).
 
 Two modes:
   - result reactions (button intents on the result page) — narrow & safe,
   - free chat (open text box on the home page) — guarded tightly via the system
     prompt (Asahi only discusses studying / the app, refuses off-topic, resists
-    prompt-injection). Both run server-side; the GitHub token never leaves here.
+    prompt-injection). Both run server-side; the API key never leaves here.
 
 Matches the codebase convention of sync services + httpx.
 """
@@ -25,9 +25,20 @@ from app.utils.errors import (
 
 logger = logging.getLogger("asahlagi")
 
-# GitHub Models — OpenAI-compatible. Verified working 2026-06-12.
-_API_URL = "https://models.github.ai/inference/chat/completions"
-_MODEL = "openai/gpt-4o-mini"
+# Groq — OpenAI-compatible, free tier. Verified working 2026-07-29.
+#
+# This was GitHub Models (`openai/gpt-4o-mini`) until 2026-07-29. GitHub
+# announced that service's retirement for 2026-07-30, so it moved rather than
+# breaking in production. Groq needs no change beyond the URL, model and key.
+#
+# Model choice: openai/gpt-oss-120b. llama-3.3-70b-versatile actually read
+# better in a side-by-side on the real `_FREE_SYSTEM_PROMPT`, but Groq
+# announced its deprecation on 2026-06-17 with shutdown on 2026-08-16, so
+# choosing it would have meant migrating twice in three weeks.
+# qwen/qwen3.6-27b, the other suggested replacement, leaks its raw `<think>`
+# reasoning into the message content and is unusable here. Verified 2026-07-29.
+_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+_MODEL = "openai/gpt-oss-120b"
 _TIMEOUT_S = 30.0
 _TEMPERATURE = 0.7
 
@@ -78,6 +89,7 @@ santai & main-main dikit; kalau kamu ngeluh/kesel, akui dulu perasaannya dengan 
 defensif. JANGAN balas dengan kalimat template yang sama berulang.
 - Variasikan kata-kata. Hindari mengulang frasa seperti "Maaf, aku cuma bisa...".
 - Boleh sesekali 1 emoji ringan kalau pas, tapi jangan norak/lebay.
+- Jangan pernah pakai tanda em dash. Pakai titik, koma, atau tanda kurung.
 - Tetap calm & jujur: nggak hype berlebihan, nggak menggurui, nggak sok pintar.
 
 ATURAN (tetap dijaga, tapi sampaikan dengan luwes & ramah, bukan kaku):
@@ -130,7 +142,7 @@ _LEVEL_LABEL = {"high": "tinggi", "medium": "sedang", "low": "rendah"}
 
 
 def _require_token() -> str:
-    token = os.getenv("GITHUB_TOKEN")
+    token = os.getenv("GROQ_API_KEY")
     if not token:
         raise ApiException(
             503, CHAT_UNAVAILABLE, "Fitur ngobrol dengan Asahi belum tersedia."
@@ -141,7 +153,7 @@ def _require_token() -> str:
 def _call_model(
     messages: list[dict], max_tokens: int, temperature: float = _TEMPERATURE
 ) -> str:
-    """Call GitHub Models and return the reply text. Never leaks the token."""
+    """Call the model and return the reply text. Never leaks the key."""
     token = _require_token()
     try:
         resp = httpx.post(

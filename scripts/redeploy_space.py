@@ -1,6 +1,6 @@
 """Redeploy the Asahlagi backend Hugging Face Space.
 
-Reads tokens from backend/.env (never hard-coded), pushes the GITHUB_TOKEN
+Reads tokens from backend/.env (never hard-coded), pushes the GROQ_API_KEY
 secret to the Space, then triggers a factory rebuild so the Space re-clones
 the latest `main` (which includes the /chat/* chatbot routes).
 
@@ -9,7 +9,7 @@ Usage:
 
 Requires in backend/.env:
     HF_WRITE_TOKEN   — Hugging Face token with write access to the Space
-    GITHUB_TOKEN     — GitHub PAT that powers the Asahi chatbot (GitHub Models)
+    GROQ_API_KEY     — Groq API key that powers the Asahi chatbot
 """
 
 import sys
@@ -25,19 +25,19 @@ ENV_PATH = Path(__file__).resolve().parent.parent / "backend" / ".env"
 def main() -> int:
     env = dotenv_values(ENV_PATH)
     hf_token = env.get("HF_WRITE_TOKEN")
-    github_token = env.get("GITHUB_TOKEN")
+    groq_key = env.get("GROQ_API_KEY")
 
     if not hf_token:
         print(f"ERROR: HF_WRITE_TOKEN missing in {ENV_PATH}", file=sys.stderr)
         return 1
-    if not github_token:
-        print(f"ERROR: GITHUB_TOKEN missing in {ENV_PATH}", file=sys.stderr)
+    if not groq_key:
+        print(f"ERROR: GROQ_API_KEY missing in {ENV_PATH}", file=sys.stderr)
         return 1
 
     api = HfApi(token=hf_token)
 
-    print(f"→ Setting GITHUB_TOKEN secret on {SPACE_REPO_ID} ...")
-    api.add_space_secret(repo_id=SPACE_REPO_ID, key="GITHUB_TOKEN", value=github_token)
+    print(f"→ Setting GROQ_API_KEY secret on {SPACE_REPO_ID} ...")
+    api.add_space_secret(repo_id=SPACE_REPO_ID, key="GROQ_API_KEY", value=groq_key)
     print("  done.")
 
     print(f"→ Factory-rebuilding {SPACE_REPO_ID} (re-clones latest main) ...")

@@ -11,7 +11,7 @@
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white">
   <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white">
   <img alt="Python" src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-52%20passing-brightgreen">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-246%20passing-brightgreen">
 </p>
 
 <p align="center">
@@ -50,6 +50,9 @@ Berdasarkan Hasil Kuis Berbasis Data*
 - **Gamification** — XP, streaks, levels, and achievement badges persisted to a cloud database,
   to keep learners coming back. See [`GAMIFICATION.md`](docs/GAMIFICATION.md).
 - **Light and dark mode**, motion-respecting animations, and an Indonesian-first interface.
+- **Installable (PWA)** — add it to the home screen on Android or iOS and the shell keeps
+  loading without a network. Quiz generation still needs the backend, by design: a cached
+  quiz would be a stale answer pretending to be a fresh one.
 
 ## How It Works
 

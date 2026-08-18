@@ -50,6 +50,6 @@ INVALID_TIME = "INVALID_TIME"
 EVALUATION_FAILED = "EVALUATION_FAILED"
 
 # Asahi chatbot (POST /chat)
-CHAT_UNAVAILABLE = "CHAT_UNAVAILABLE"    # GITHUB_TOKEN not configured
+CHAT_UNAVAILABLE = "CHAT_UNAVAILABLE"    # GROQ_API_KEY not configured
 CHAT_FAILED = "CHAT_FAILED"              # upstream GitHub Models call failed
 CHAT_RATE_LIMITED = "CHAT_RATE_LIMITED"  # too many requests from one client

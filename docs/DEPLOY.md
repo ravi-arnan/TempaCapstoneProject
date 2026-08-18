@@ -54,8 +54,8 @@ HTTPS automatically, and the team already uses HF Spaces. Config lives in
    - `CORS_ALLOWED_ORIGINS` = `https://<your-vercel-app>.vercel.app,https://localhost`
      (`https://localhost` is for the Capacitor Android app)
    - `GOOGLE_CLIENT_ID` = the Google OAuth client ID (login `/auth/google`)
-   - `GITHUB_TOKEN` = a GitHub fine-grained PAT (no scopes needed) — powers the
-     **Asahi chatbot** via GitHub Models. **Server-side only; never expose as `VITE_`.**
+   - `GROQ_API_KEY` = a Groq API key (console.groq.com, free tier) — powers the
+     **Asahi chatbot**. **Server-side only; never expose as `VITE_`.**
      Without it, `/chat/*` returns `CHAT_UNAVAILABLE` (rest of the app still works).
 4. **DB migrations** (Neon, applied manually — no Alembic): ensure every file in
    `backend/app/db/migrations/` has run, incl. `0003_*` (login `users`) and
@@ -69,7 +69,7 @@ HTTPS automatically, and the team already uses HF Spaces. Config lives in
   does nothing until you rebuild. To pull a newer commit, either Settings →
   **Factory rebuild** (re-clones fresh) in the HF UI, or run the helper:
   `backend/.venv/bin/python scripts/redeploy_space.py` (reads `HF_WRITE_TOKEN` +
-  `GITHUB_TOKEN` from `backend/.env`, sets the secret, then factory-rebuilds).
+  `GROQ_API_KEY` from `backend/.env`, sets the secret, then factory-rebuilds).
   This is exactly the gap that left `/chat/*` 404'ing after the chatbot merge.
 - HF free CPU is generous (2 vCPU, 16 GB RAM) — fits scikit-learn + pandas easily.
 - Free Spaces sleep after 48h idle; first request wakes it (~30-60s). Warm up
@@ -103,6 +103,6 @@ set the same three secrets, deploy.
 - [ ] Submit works end-to-end (score, level, insight, recommendation)
 - [ ] Gamification: `GET /gamification/stats` works with `X-Device-Id` header
 - [ ] Chatbot: send a message in the homepage Asahi bubble — reply returns (not
-      `CHAT_UNAVAILABLE`); confirms `GITHUB_TOKEN` is set and `chat_messages` exists
+      `CHAT_UNAVAILABLE`); confirms `GROQ_API_KEY` is set and `chat_messages` exists
 - [ ] CORS allows the Vercel origin (no console errors in the browser)
 - [ ] Update `VITE_API_BASE_URL` in the Android build before packaging (see `MOBILE.md`)
