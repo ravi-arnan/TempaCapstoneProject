@@ -107,3 +107,6 @@ tmp/
 # HF Space clone (separate git repo for huggingface.co/spaces/raviarnan/asahlagi-quizgen)
 backend/asahlagi-quizgen/
 .vercel
+
+# Claude Code local overrides
+.claude/settings.local.json
