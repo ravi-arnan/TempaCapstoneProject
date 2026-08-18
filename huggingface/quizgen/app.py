@@ -18,6 +18,7 @@ file so both serve identical answer-aware quizzes. Keep the two copies in sync.
 from __future__ import annotations
 
 import logging
+import hashlib
 import random
 from contextlib import asynccontextmanager
 
@@ -104,6 +105,19 @@ class GenerateResponse(BaseModel):
 # ============================================================================
 
 
+def stable_seed(text: str) -> int:
+    """Seed derived from the material that survives a process restart.
+
+    Mirrors backend/ml/generator/inference.py. Seeding from `hash(text)` looked
+    deterministic but is not: Python salts str hashing per interpreter process,
+    so the same material produced a different quiz after every restart, and a
+    sleeping Space restarts constantly.
+    """
+    return int.from_bytes(
+        hashlib.blake2b(text.encode("utf-8"), digest_size=8).digest(), "big"
+    )
+
+
 def _run_model(prompt: str) -> str:
     """Run IndoT5 on an answer-aware prompt; return raw decoded text.
 
@@ -151,9 +165,9 @@ async def generate(req: GenerateRequest):
 
     text = req.material_text.strip()
 
-    # Deterministic per-material RNG so the same text yields a stable quiz
-    # (mirrors backend/ml/generator/inference.py).
-    rng = random.Random(abs(hash(text)) & 0xFFFFFFFF)
+    # Per-material RNG so the same text yields the same quiz, across restarts
+    # too (mirrors backend/ml/generator/inference.py).
+    rng = random.Random(stable_seed(text))
     questions = qg_core.build_quiz(
         text, _run_model, num_questions=req.num_questions, rng=rng
     )

@@ -34,6 +34,7 @@ from app.utils.errors import (
     QUIZ_GENERATION_FAILED,
 )
 from ml.generator import inference as ml_generator
+from ml.generator.inference import stable_seed
 
 logger = logging.getLogger(__name__)
 
@@ -240,7 +241,7 @@ def generate_quiz(
                 # §6.2: DL produces only MC/cloze — inject one matching question
                 # into larger quizzes so the type is actually reachable in prod.
                 if target_count >= 5:
-                    mrng = random.Random(abs(hash(text)) & 0xFFFFFFFF)
+                    mrng = random.Random(stable_seed(text))
                     matching_q = _build_matching_from_text(text, len(final), mrng)
                     if matching_q is not None:
                         final[-1] = matching_q
@@ -843,7 +844,7 @@ def _generate_rule_based(
         if len(filtered_sentences) < target:
             filtered_sentences = candidate_sentences
 
-        rng = random.Random(abs(hash(text)) & 0xFFFFFFFF)
+        rng = random.Random(stable_seed(text))
         used_correct_lower: set[str] = set()
         questions: list[QuestionInternal] = []
 

@@ -14,6 +14,7 @@ OWNER: Audry (integration + quality), Ravi (HF Space setup)
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import random
@@ -241,11 +242,28 @@ def _run_local_model(prompt: str) -> str:
     return _local_tokenizer.decode(outputs[0], skip_special_tokens=True).strip()
 
 
+def stable_seed(text: str) -> int:
+    """Seed derived from the material that survives a process restart.
+
+    The call sites want the same material to yield the same quiz. They used to
+    seed from `hash(text)`, and Python salts str hashing per interpreter
+    process, so the seed changed on every restart and the promise was never
+    kept. Spaces sleep and wake constantly, which made that the normal case
+    rather than an edge one.
+
+    blake2b is in the stdlib and stable across processes and versions; the
+    digest is only a seed, so its size is about spread, not security.
+    """
+    return int.from_bytes(
+        hashlib.blake2b(text.encode("utf-8"), digest_size=8).digest(), "big"
+    )
+
+
 def _generate_locally(material_text: str, num_questions: int | None = None) -> list[dict]:
     """Local CPU fallback when HF Space unavailable. Uses the same answer-aware
     assembly as the Space, so the correct answer always answers the question."""
     n = num_questions if num_questions is not None else _NUM_QUESTIONS
-    rng = random.Random(abs(hash(material_text)) & 0xFFFFFFFF)
+    rng = random.Random(stable_seed(material_text))
     questions = qg_core.build_quiz(
         material_text, _run_local_model, num_questions=n, rng=rng
     )
