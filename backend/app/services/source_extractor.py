@@ -13,8 +13,11 @@ service exactly like raw text input would.
 from __future__ import annotations
 
 import io
+import ipaddress
 import logging
+import socket
 from typing import Optional
+from urllib.parse import urlsplit
 
 import httpx
 
@@ -28,6 +31,10 @@ MAX_LENGTH = 20_000
 
 # URL fetch timeout
 URL_FETCH_TIMEOUT_SECONDS = 15.0
+
+# Redirects are followed by hand so every hop can be re-checked. Following them
+# inside httpx would let a public URL bounce to an internal one unchecked.
+URL_MAX_REDIRECTS = 4
 URL_USER_AGENT = (
     "Mozilla/5.0 (compatible; AsahlagiBot/1.0; capstone TP-G005)"
 )
@@ -131,26 +138,21 @@ def extract_text_from_url(url: str) -> str:
             code=URL_INVALID,
             detail="URL tidak boleh kosong.",
         )
-    if not (url.startswith("http://") or url.startswith("https://")):
-        raise ApiException(
-            status_code=400,
-            code=URL_INVALID,
-            detail="URL harus dimulai dengan http:// atau https://",
-        )
 
     # 1. Try lightweight extraction first (httpx)
     text = None
     fallback_to_playwright = False
     try:
-        with httpx.Client(timeout=URL_FETCH_TIMEOUT_SECONDS, headers={"User-Agent": URL_USER_AGENT}) as client:
-            resp = client.get(url, follow_redirects=True)
-            resp.raise_for_status()
-            html = resp.text
-            text = _extract_article_with_trafilatura(html)
-            
-            if not text or len(text) < MIN_LENGTH:
-                logger.info("source_extractor: lightweight extraction insufficient, falling back to Playwright for %s", url)
-                fallback_to_playwright = True
+        html = _fetch_html(url)
+        text = _extract_article_with_trafilatura(html)
+
+        if not text or len(text) < MIN_LENGTH:
+            logger.info("source_extractor: lightweight extraction insufficient, falling back to Playwright for %s", url)
+            fallback_to_playwright = True
+    except ApiException:
+        # A refused address is the caller's answer, not a reason to retry the
+        # same address through a browser.
+        raise
     except Exception as exc:
         logger.info("source_extractor: lightweight fetch failed (%s), falling back to Playwright for %s", exc, url)
         fallback_to_playwright = True
@@ -164,6 +166,7 @@ def extract_text_from_url(url: str) -> str:
                 browser = p.chromium.launch(headless=True)
                 try:
                     context = browser.new_context(user_agent=URL_USER_AGENT)
+                    context.route("**/*", _block_private_requests)
                     page = context.new_page()
                     page.goto(
                         url, 
@@ -203,6 +206,109 @@ def extract_text_from_url(url: str) -> str:
         )
 
     return _validate_length(text, code_short=URL_TOO_SHORT, code_long=URL_TOO_LONG)
+
+
+def _assert_public_url(url: str) -> None:
+    """Refuse anything that is not a public http(s) address.
+
+    /quiz/generate-from-url takes a URL from an unauthenticated caller and the
+    server fetches it, so without this check the endpoint is a request forgery
+    primitive: it will happily read loopback services, the container's own
+    ports, private LAN ranges, and cloud metadata at 169.254.169.254, and hand
+    the contents back rendered as quiz questions.
+
+    `is_global` is the one flag that covers loopback, private, link-local,
+    reserved and unspecified in a single test, for IPv4 and IPv6 alike.
+
+    Known limit: the name is resolved here and connected to separately, so a
+    DNS entry that changes between the two calls could still slip through.
+    Closing that needs pinning the connection to the resolved address, which
+    httpx does not expose cleanly; the checks below stop the whole realistic
+    range of hand-typed internal URLs.
+    """
+    parts = urlsplit(url)
+    if parts.scheme not in ("http", "https"):
+        raise ApiException(
+            status_code=400,
+            code=URL_INVALID,
+            detail="URL harus dimulai dengan http:// atau https://",
+        )
+    host = parts.hostname
+    if not host:
+        raise ApiException(
+            status_code=400,
+            code=URL_INVALID,
+            detail="URL tidak memuat nama host yang sah.",
+        )
+
+    port = parts.port or (443 if parts.scheme == "https" else 80)
+    try:
+        infos = socket.getaddrinfo(host, port, proto=socket.IPPROTO_TCP)
+    except (socket.gaierror, UnicodeError, ValueError) as exc:
+        raise ApiException(
+            status_code=400,
+            code=URL_FETCH_FAILED,
+            detail="Alamat URL tidak bisa ditemukan. Cek kembali linknya.",
+        ) from exc
+
+    for info in infos:
+        address = ipaddress.ip_address(info[4][0])
+        if not address.is_global or address.is_multicast:
+            logger.warning("source_extractor: refused non-public target %s (%s)", host, address)
+            raise ApiException(
+                status_code=400,
+                code=URL_INVALID,
+                detail="URL itu menunjuk ke alamat internal, jadi tidak bisa diambil.",
+            )
+
+
+def _fetch_html(url: str) -> str:
+    """Fetch a page, validating the target before every hop.
+
+    Redirects are walked by hand: httpx following them itself would let a
+    public URL hand off to an internal one without any further check.
+    """
+    with httpx.Client(
+        timeout=URL_FETCH_TIMEOUT_SECONDS,
+        headers={"User-Agent": URL_USER_AGENT},
+        follow_redirects=False,
+    ) as client:
+        current = url
+        for _ in range(URL_MAX_REDIRECTS):
+            _assert_public_url(current)
+            resp = client.get(current)
+            if resp.is_redirect:
+                location = resp.headers.get("location")
+                if not location:
+                    raise ApiException(
+                        status_code=400,
+                        code=URL_FETCH_FAILED,
+                        detail="Halaman itu membalas redirect yang tidak lengkap.",
+                    )
+                current = str(httpx.URL(current).join(location))
+                continue
+            resp.raise_for_status()
+            return resp.text
+
+    raise ApiException(
+        status_code=400,
+        code=URL_FETCH_FAILED,
+        detail="Terlalu banyak pengalihan pada URL itu.",
+    )
+
+
+def _block_private_requests(route) -> None:
+    """Playwright route guard, same rule as the httpx path.
+
+    The browser resolves and follows on its own, so the check has to sit on
+    every request it makes rather than only on the URL we were given.
+    """
+    try:
+        _assert_public_url(route.request.url)
+    except ApiException:
+        route.abort()
+        return
+    route.continue_()
 
 
 def _extract_article_with_trafilatura(html: str) -> Optional[str]:
